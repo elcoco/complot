@@ -16,36 +16,29 @@ typedef struct Line Line;
 /* Point holds data for a one datapoint */
 struct Point {
     int32_t x;
-    float open;
-    float high;
-    float low;
-    float close;
+    int32_t open;
+    int32_t high;
+    int32_t low;
+    int32_t close;
 };
 
 /* Container to put points in that can be stored inside the Group struct.
  * This enables for quick filtering of points  */
 struct Line {
-    // head of Points linked list
-    Point** phead;
-};
+    // holds averages of points in line
+    int32_t open;
+    int32_t high;
+    int32_t low;
+    int32_t close;
 
-/* Group represents a column on the screen, with a width of one character.
- * A column has an xstart and xend, these are data/datetime boundaries.
- * A group contains the y values for all lines within this x range.
- *
- */
-struct Group {
-    // window start and end X values for this group
-    int32_t wstart;
-    int32_t wend;
+    bool is_empty;
 
-    // neighbours of group linked list
-    Group* prev;
-    Group* next;
+    // x limits so we can keep track of open and close values
+    int32_t xmin;
+    int32_t xmax;
 
-    // holds an array of lines
-    // Line is a container that groups points per lines
-    Line* lines;
+    // amount of datapoints in line
+    int32_t npoints;
 };
 
 /* Bucket is points container that is used by Index to be able to evenly space groups of points
@@ -57,12 +50,12 @@ struct Bucket {
     int32_t wstart;
     int32_t wend;
 
-    // hold average of points per line
-    float* open;
-    float* close;
-    float* high;
-    float* low;
+    Line** lines;
+    bool is_empty;
+
 };
+
+
 
 /* Index holds columns */
 struct Index {
@@ -103,10 +96,14 @@ int32_t index_map_to_index(Index* index, int32_t x);
 // inserts point in appropriate line in group, creates new if data falls out of current index range
 // line_id is the array index for line, is mapped by ENUM
 int8_t index_insert(Index* index, uint8_t lineid, Point* point);
+void index_print(Index* index);
+
+// get last amount of grouped buckets with size gsize
+int8_t index_get_grouped(Index* index, uint32_t gsize, uint32_t amount);
 
 Point* point_create(int32_t x, int32_t open, int32_t high, int32_t low, int32_t close);
 int8_t point_destroy(Point* point);
 
-int8_t bucket_add_point(Bucket* b, int8_t lineid, Point* p);
+int8_t line_add_point(Line* l, Point* p);
 
 #endif
