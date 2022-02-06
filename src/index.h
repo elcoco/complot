@@ -5,10 +5,11 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <math.h>
 
 
 typedef struct Group Group;
-typedef struct Bucket Bucket;
+typedef struct Bin Bin;
 typedef struct Index Index;
 typedef struct Point Point;
 typedef struct Line Line;
@@ -20,6 +21,22 @@ struct Point {
     int32_t high;
     int32_t low;
     int32_t close;
+};
+
+/* A Group is a slice of the bins array in Index.
+ * It represents a column on the display
+ * Groups should be cached
+ */
+struct Group {
+    //Bin** bins;
+    int32_t wstart;
+    int32_t wend;
+
+    int32_t open;
+    int32_t high;
+    int32_t low;
+    int32_t close;
+    bool is_empty;
 };
 
 /* Container to put points in that can be stored inside the Group struct.
@@ -41,18 +58,17 @@ struct Line {
     int32_t npoints;
 };
 
-/* Bucket is points container that is used by Index to be able to evenly space groups of points
+/* Bin is points container that is used by Index to be able to evenly space groups of points
  * It abstracts loads of datapoints
  * This enable Index to do very fast slicing of data to return groups of a certain length.
  */
-struct Bucket {
-    // window start and end X values for this bucket
+struct Bin {
+    // window start and end X values for this bin
     int32_t wstart;
     int32_t wend;
 
     Line** lines;
     bool is_empty;
-
 };
 
 
@@ -71,7 +87,7 @@ struct Index {
     // indices can be mapped with: 
     // data_index = istart + (i * spread)
     // array_index = key - ((key-start_offset) % spread)
-    Bucket** buckets;
+    Bin** bins;
 
     // keep track of all points so we can re-index when spread changes
     // head of the Point linked list
@@ -83,6 +99,10 @@ struct Index {
 
     // current index size
     int32_t imax;
+
+    // index of last non-empty bin, this is used to quickly find
+    // end of data when creating groups
+    int32_t last_data;
 
 };
 
@@ -98,12 +118,16 @@ int32_t index_map_to_index(Index* index, int32_t x);
 int8_t index_insert(Index* index, uint8_t lineid, Point* point);
 void index_print(Index* index);
 
-// get last amount of grouped buckets with size gsize
-int8_t index_get_grouped(Index* index, uint32_t gsize, uint32_t amount);
+// get last amount of grouped bins with size gsize
+Group** index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount);
 
 Point* point_create(int32_t x, int32_t open, int32_t high, int32_t low, int32_t close);
 int8_t point_destroy(Point* point);
 
 int8_t line_add_point(Line* l, Point* p);
+
+Group* group_create();
+
+void groups_print(Group** groups, uint32_t amount);
 
 #endif
