@@ -10,6 +10,7 @@
 #define INDEX_GROW_AMOUNT 1000
 #define INDEX_START_KEY 50
 #define INDEX_SPREAD 5
+#define AMOUNT_LINES 2
 
 
 enum lines {
@@ -21,12 +22,16 @@ int main(int argc, char **argkv)
 {
 
     Index* index = index_create(INDEX_GROW_AMOUNT);
-    index_build(index, INDEX_START_KEY, INDEX_SPREAD);
+    index_build(index, INDEX_START_KEY, INDEX_SPREAD, AMOUNT_LINES);
 
-    for (int8_t i=0 ; i<50 ; i++) {
-        Point* p = point_create(i+100, 20, 30, 10, 0);
+    for (int32_t i=100 ; i<150 ; i++) {
+
+        Point* p = point_create(i, 20, 30, 10, 0);
+
         index_insert(index, LINE1, p);
-        printf("Creating point: %3d\n", i);
+        //printf("Creating point: %3d\n", i);
+
+        printf("data:index: %d -> %d\n", p->x, index_map_to_index(index, p->x));
     }
 
     return 0;
