@@ -3,8 +3,11 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
+
 
 typedef struct Group Group;
+typedef struct Bucket Bucket;
 typedef struct Index Index;
 typedef struct Point Point;
 typedef struct Line Line;
@@ -47,25 +50,56 @@ struct Group {
     Line* lines;
 };
 
+
+
+/* Bucket is points container that is used by Index to be able to evenly space groups of points
+ * It abstracts loads of datapoints
+ * This enable Index to do very fast slicing of data to return groups of a certain length.
+ */
+struct Bucket {
+    // window start and end X values for this group
+    int32_t wstart;
+    int32_t wend;
+
+    // neighbours of group linked list
+    Group* prev;
+    Group* next;
+
+    // holds an array of lines
+    // Line is a container that groups points per lines
+    Line* lines;
+};
+
 /* Index holds columns */
 struct Index {
-    // x window width of the groups that are requested
-    int xwin;
+    // grow/extend index when we're trying to add an out of bound value
+    int32_t grow_amount;
 
-    // keep track of all points so we can re-index when window size changes
+    // space between index x values
+    int32_t spread;
+
+    // the offset from index array index to data index
+    int32_t start_key;
+
+    // This is the actual index array
+    // It holds grouped datapoints. Array indices are evenly spaced.
+    // This enables fast slicing to quickly group datapoints.
+    // indices can be mapped with: 
+    // data_index = istart + (i * spread)
+    // array_index = key - ((key-start_key) % spread)
+    Bucket** buckets;
+
+    // keep track of all points so we can re-index when spread changes
     // head of the Point linked list
     Point** phead;
-
-    // head of the Group linked list
-    Group** ghead;
 };
 
 
 // build an index of groups with a x xindow
 // In the groups are sets of datapoints that fall within this window
 // the sets are grouped by line name
-Index* index_create();
-int8_t index_build(Index* index, uint32_t window);
+Index* index_create(int32_t grow_amount);
+int8_t index_build(Index* index, int32_t start_key, uint32_t spread);
 
 // inserts point in appropriate line in group, creates new if data falls out of current index range
 // line_id is the array index for line, is mapped by ENUM
