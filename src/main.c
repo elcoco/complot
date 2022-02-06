@@ -11,11 +11,10 @@
 #define INDEX_START_KEY 50
 #define INDEX_SPREAD 5
 
-#define info(...) printf("INFO  " __VA_ARGS__"\n")
-#define debug(...) printf("DEBUG "__VA_ARGS__"\n")
 
 enum lines {
-    LINE1
+    LINE1,
+    LINE2
 } lines;
 
 int main(int argc, char **argkv)
@@ -27,7 +26,7 @@ int main(int argc, char **argkv)
     for (int8_t i=0 ; i<50 ; i++) {
         Point* p = point_create(i+100, 20, 30, 10, 0);
         index_insert(index, LINE1, p);
-        debug("Creating point");
+        printf("Creating point: %3d\n", i);
     }
 
     return 0;
