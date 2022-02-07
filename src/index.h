@@ -130,6 +130,7 @@ Index* index_create(int32_t grow_amount, int32_t spread, uint8_t nlines);
 int8_t index_build(Index* index, int32_t dmin);
 int32_t index_map_to_index(Index* index, int32_t x);
 int32_t index_map_to_x(Index* index, int32_t i);
+int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount);
 
 // inserts point in appropriate line in group, creates new if data falls out of current index range
 // line_id is the array index for line, is mapped by ENUM

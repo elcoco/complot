@@ -154,16 +154,22 @@ Group* group_create(Index* index, int32_t gstart, uint32_t gsize)
     return g;
 }
 
+int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount)
+{
+    /* calculate bin index of first group */
+    int32_t last_group_i  = index->ilast - (index->ilast % gsize);
+    int32_t first_group_i = last_group_i - (amount * gsize);
+    first_group_i += gsize;
+    return first_group_i;
+}
+
 Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount)
 {
     /* Create groups, get data from last data */
     Bin** bins = index->bins;
 
-    // calculate at which bin the last group starts
-    int32_t last_group_i  = index->ilast - (index->ilast % gsize);
-    int32_t first_group_i = last_group_i - (amount * gsize);
-    first_group_i += gsize;
-    int32_t gstart = first_group_i;
+    // calculate at which bin index the first group starts
+    int32_t gstart = index_get_gstart(index, gsize, amount);
 
     // setup linked list
     Group** ghead = (Group**)malloc(sizeof(Group*));
@@ -173,8 +179,7 @@ Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t 
 
     for (int32_t gindex=0 ; gindex<amount ; gstart+=gsize, gindex++) {
 
-        Group* g = group_create(index, gstart, gsize);
-
+        Group* g = group_create(index, gsize, amount);
 
         // connect linked list
         if (*ghead == NULL) {
