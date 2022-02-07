@@ -21,6 +21,8 @@ struct Point {
     int32_t high;
     int32_t low;
     int32_t close;
+    Point* prev;
+    Point* next;
 };
 
 /* A Group is a slice of the bins array in Index, for one line.
@@ -37,6 +39,9 @@ struct Group {
     int32_t low;
     int32_t close;
     bool is_empty;
+
+    // iter groups using linked list
+    Group* next;
 };
 
 /* Container to put points in that can be stored inside the Group struct.
@@ -97,20 +102,21 @@ struct Index {
     // keep track of all points so we can re-index when spread changes
     // head of the Point linked list
     Point** phead;
+    Point** ptail;
 
     // current data limits represented by index
     int32_t dmin;   // this offset is important for calculating array index
     int32_t dmax;
 
     // current index size
-    int32_t imax;
+    int32_t isize;
 
     // amount of lines this index represents
     uint8_t nlines;
 
     // index of last non-empty bin, this is used to quickly find
     // end of data when creating groups
-    int32_t last_data;
+    int32_t ilast;
 
     // is true after first index build
     bool is_initialized;
@@ -123,6 +129,7 @@ struct Index {
 Index* index_create(int32_t grow_amount, int32_t spread, uint8_t nlines);
 int8_t index_build(Index* index, int32_t dmin);
 int32_t index_map_to_index(Index* index, int32_t x);
+int32_t index_map_to_x(Index* index, int32_t i);
 
 // inserts point in appropriate line in group, creates new if data falls out of current index range
 // line_id is the array index for line, is mapped by ENUM
@@ -130,15 +137,18 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* point);
 void index_print(Index* index);
 
 // get last amount of grouped bins with size gsize
-Group** index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount);
+Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount);
 
 Point* point_create(int32_t x, int32_t open, int32_t high, int32_t low, int32_t close);
 int8_t point_destroy(Point* point);
 
 int8_t line_add_point(Line* l, Point* p);
 
-Group* group_create();
+Group* group_create(Index* index, int32_t gstart, uint32_t gsize);
 
-void groups_print(Group** groups, uint32_t amount);
+void groups_print(Group* g);
+void points_print(Point* p);
 
+void point_append(Point* p, Point** tail);
+void group_append(Group* g, Group** tail);
 #endif

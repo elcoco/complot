@@ -5,16 +5,19 @@ Index* index_create(int32_t grow_amount, int32_t spread, uint8_t nlines)
     Index* index = (Index*)malloc(sizeof(Index));
     index->bins = (Bin**)malloc(grow_amount*sizeof(Bin*));
 
-    index->phead = NULL;
+    index->phead = (Point**)malloc(sizeof(Point*));
+    index->ptail = (Point**)malloc(sizeof(Point*));
+    *(index->phead) = NULL;
+    *(index->ptail) = NULL;
 
     // data distance inbetween aray indices
     index->spread = spread;
 
     index->grow_amount = grow_amount;
-    index->imax = grow_amount;
+    index->isize = grow_amount;
     index->nlines = nlines;
 
-    index->last_data = 0;
+    index->ilast = 0;
 
     index->dmin = 0;
     index->dmax = 0;
@@ -34,7 +37,7 @@ int8_t index_build(Index* index, int32_t dmin)
 
     // init bins
     Bin** b = index->bins;
-    for (int i=0 ; i<index->imax ; i++,b++) {
+    for (int i=0 ; i<index->isize ; i++,b++) {
 
         *b = (Bin*)malloc(sizeof(Bin));
 
@@ -69,6 +72,33 @@ int32_t index_map_to_x(Index* index, int32_t i)
     return (i * index->spread) + index->dmin;
 }
 
+void points_print(Point* p)
+{
+    uint32_t i = 0;
+
+    while (p != NULL) {
+        printf("[%d] %d\n", i, p->x);
+        p = p->next;
+        i++;
+    }
+}
+
+void point_append(Point* p, Point** tail)
+{
+    /* Append point in linked list */
+    Point* prev = *tail;
+    *tail = p;
+    prev->next = p;
+}
+
+void group_append(Group* g, Group** tail)
+{
+    /* Append point in linked list */
+    Group* prev = *tail;
+    *tail = g;
+    prev->next = g;
+}
+
 int8_t index_insert(Index* index, uint8_t lineid, Point* p)
 {
     /* Insert point into index, create Bin if necessary
@@ -77,86 +107,99 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* p)
     if (! index->is_initialized)
         index_build(index, p->x);
 
+    // connect point in linked list
+    if (*(index->phead) == NULL) {
+        *(index->phead) = p;
+        *(index->ptail) = p;
+    } else {
+        point_append(p, index->ptail);
+    }
+
     // map data to array index
     int32_t i = index_map_to_index(index, p->x);
 
-    if (p->x > index->dmax)
-        index->dmax = p->x;
-
-    if (i > index->imax) {
-        printf("Out of bounds, grow to right!: %d > %d \n", i, index->imax);
+    // check if index is too small for data
+    if (i > index->isize-1) {
+        printf("Out of bounds, grow to right!: %d > %d \n", i, index->isize-1);
         return -1;
     } else if (i < 0) {
         printf("Out of bounds, grow to left!: %d < 0 \n", i);
         return -1;
     }
 
+    // set data limit if bigger X
+    if (p->x > index->dmax)
+        index->dmax = p->x;
+
     // keep track of last non-empty bin.
-    if (i > index->last_data)
-        index->last_data = i;
+    if (i > index->ilast)
+        index->ilast = i;
 
     // at this point, we know bin exists
     Bin* b  = index->bins[i];
-    Line* l = b->lines[lineid];
-
-    line_add_point(l, p);
-
     b->is_empty = false;
+
+    Line* l = b->lines[lineid];
+    line_add_point(l, p);
 
     return 1;
 }
 
-Group** index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount)
+Group* group_create(Index* index, int32_t gstart, uint32_t gsize)
+{
+    Group* g = (Group*)malloc(sizeof(Group));
+    g->wstart = index_map_to_x(index, gstart);
+    g->wend   = index_map_to_x(index, gstart + gsize-1);
+    g->is_empty = true;
+    return g;
+}
+
+Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount)
 {
     /* Create groups, get data from last data */
-    Group** groups = (Group**)malloc(amount*sizeof(Group*));
     Bin** bins = index->bins;
 
     // calculate at which bin the last group starts
-    int32_t last_group_i  = index->last_data - (index->last_data % gsize);
+    int32_t last_group_i  = index->ilast - (index->ilast % gsize);
     int32_t first_group_i = last_group_i - (amount * gsize);
-
-
-    // when there is an unfinished group at the end, make sure the amount is correct
-    //if (index->last_data > index->last_data - (index->last_data % gsize)) {
-    //    printf(">>>>>>>> correcting\n");
-    //    first_group_i += gsize;
-    //}
     first_group_i += gsize;
-
-    printf("first group i=%d\n", first_group_i);
-    printf("last group  i=%d, start: %d\n", last_group_i, bins[last_group_i]->wstart);
-
     int32_t gstart = first_group_i;
 
+    // setup linked list
+    Group** ghead = (Group**)malloc(sizeof(Group*));
+    Group** gtail = (Group**)malloc(sizeof(Group*));
+    *gtail = NULL;
+    *ghead = NULL;
+
     for (int32_t gindex=0 ; gindex<amount ; gstart+=gsize, gindex++) {
-        printf("gstart=%d\n", gstart);
 
-        Group* g = (Group*)malloc(sizeof(Group));
-        // prefill group dimensions
-        g->wstart = index_map_to_x(index, gstart);
-        g->wend   = index_map_to_x(index, gstart + gsize);
-        g->is_empty = true;
+        Group* g = group_create(index, gstart, gsize);
 
-        // if group index is below 0 this means that there is no data for this group
-        if (gstart < 0) {
-            groups[gindex] = g;
-            continue;
+
+        // connect linked list
+        if (*ghead == NULL) {
+            *ghead = g;
+            *gtail = g;
+        } else {
+            group_append(g, gtail);
         }
 
-        for (int i=0 ; i<gsize ; i++) {
-            Bin* b = bins[gstart+i];
-            
-            //if (b->is_empty) {
-            //    continue;
-            //}
+        // if group index is below 0 this means that there is no data for this group
+        if (gstart < 0)
+            continue;
 
+        for (int i=0 ; i<gsize ; i++) {
+            // trying to access a bin outside index boundaries, should not be reachable
+            // because index should auto extend to fit data
+            if (gstart+i > index->isize-1)
+                return NULL;
+
+            Bin* b = bins[gstart+i];
             Line* l = b->lines[lineid];
 
-            if (l->is_empty) {
-                printf("line is empty!\n");
+            if (l->is_empty)
                 continue;
-            }
+
             if (g->is_empty) {
                 g->is_empty = false;
                 g->open = l->open;
@@ -175,29 +218,30 @@ Group** index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
             if (l->low < g->low)
                 g->low = l->low;
         }
-        groups[gindex] = g;
     }
-    return groups;
+    free(gtail);
+    return *ghead;
 }
 
-void groups_print(Group** groups, uint32_t amount)
+void groups_print(Group* g)
 {
+    int32_t c = 0;
     printf("\n%5s %6s %5s %5s %5s %5s %5s\n", "INDEX", "WSTART", "WEND",  "OPEN", "HIGH", "LOW", "CLOSE");
 
-    for (int i=0 ; i<amount ; i++) {
-        Group* g = *(groups+i);
-
+    while (g != NULL) {
         if (g->is_empty) {
-            printf("%5d %6s %5s %5s %5s %5s %5s\n", i, "empty", "empty", "empty", "empty", "empty", "empty");
+            printf("%5d %6s %5s %5s %5s %5s %5s\n", c, "empty", "empty", "empty", "empty", "empty", "empty");
             continue;
         }
-        printf("%5d %6d %5d %5d %5d %5d %5d\n", i, g->wstart, g->wend, g->open, g->high, g->low, g->close);
+        printf("%5d %6d %5d %5d %5d %5d %5d\n", c, g->wstart, g->wend, g->open, g->high, g->low, g->close);
+        g = g->next;
+        c++;
     }
 }
 
 void index_print(Index* index)
 {
-    for (int i=0 ; i<index->imax ; i++) {
+    for (int i=0 ; i<index->isize ; i++) {
         Bin* b = index->bins[i];
         Line* l = b->lines[0];
 
@@ -213,13 +257,6 @@ void index_print(Index* index)
                                               l->low,
                                               l->close);
     }
-}
-
-Group* group_create()
-{
-    Group* g = (Group*)malloc(sizeof(Group));
-    g->is_empty = true;
-    return g;
 }
 
 Point* point_create(int32_t x, int32_t open, int32_t high, int32_t low, int32_t close)
@@ -264,5 +301,4 @@ int8_t line_add_point(Line* l, Point* p)
         l->low = p->low;
 
     return 1;
-
 }
