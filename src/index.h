@@ -23,7 +23,7 @@ struct Point {
     int32_t close;
 };
 
-/* A Group is a slice of the bins array in Index.
+/* A Group is a slice of the bins array in Index, for one line.
  * It represents a column on the display
  * Groups should be cached
  */
@@ -51,8 +51,11 @@ struct Line {
     bool is_empty;
 
     // x limits so we can keep track of open and close values
+    // The actual window values are stored in Bin
     int32_t xmin;
     int32_t xmax;
+    //int32_t wstart;
+    //int32_t wend;
 
     // amount of datapoints in line
     int32_t npoints;
@@ -67,7 +70,9 @@ struct Bin {
     int32_t wstart;
     int32_t wend;
 
+    // holds the line containers that hold the averages for this bin per line
     Line** lines;
+
     bool is_empty;
 };
 
@@ -94,23 +99,29 @@ struct Index {
     Point** phead;
 
     // current data limits represented by index
-    int32_t dmin;
+    int32_t dmin;   // this offset is important for calculating array index
     int32_t dmax;
 
     // current index size
     int32_t imax;
 
+    // amount of lines this index represents
+    uint8_t nlines;
+
     // index of last non-empty bin, this is used to quickly find
     // end of data when creating groups
     int32_t last_data;
+
+    // is true after first index build
+    bool is_initialized;
 
 };
 
 // build an index of groups with a x xindow
 // In the groups are sets of datapoints that fall within this window
 // the sets are grouped by line name
-Index* index_create(int32_t grow_amount);
-int8_t index_build(Index* index, int32_t dmin, uint32_t spread, int8_t amount_lines);
+Index* index_create(int32_t grow_amount, int32_t spread, uint8_t nlines);
+int8_t index_build(Index* index, int32_t dmin);
 int32_t index_map_to_index(Index* index, int32_t x);
 
 // inserts point in appropriate line in group, creates new if data falls out of current index range

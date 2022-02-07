@@ -7,16 +7,14 @@
 #include "utils.h"
 
 #define INDEX_GROW_AMOUNT 1000
-#define INDEX_START_KEY 50
-#define INDEX_SPREAD 5
-#define AMOUNT_LINES 2
+#define INDEX_SPREAD 2
+#define NLINES 2
 
-#define GROUP_SIZE 5
-
-#define GROUPS 30
+#define GROUP_SIZE 3
+#define GROUPS 5
 
 // TODO extend index when out of bounds
-// TODO get groups x amount of groups from last known data
+// DONE get groups x amount of groups from last known data
 // TODO create points linked list
 // TODO create CSV file reader
 // TODO add xwin dimension to group
@@ -29,10 +27,9 @@ enum lines {
 int main(int argc, char **argkv)
 {
 
-    Index* index = index_create(INDEX_GROW_AMOUNT);
-    index_build(index, INDEX_START_KEY, INDEX_SPREAD, AMOUNT_LINES);
+    Index* index = index_create(INDEX_GROW_AMOUNT, INDEX_SPREAD, NLINES);
 
-    for (int32_t i=102 ; i<500 ; i++) {
+    for (int32_t i=100 ; i<142 ; i++) {
 
         uint32_t open  = get_rand(0, 2000);
         uint32_t high  = get_rand(0, 2000);
