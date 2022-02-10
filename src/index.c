@@ -19,20 +19,19 @@ Index* index_create(int32_t grow_amount, int32_t spread, uint8_t nlines)
 
     index->ilast = 0;
 
-    index->dmin = 0;
-    index->dmax = 0;
+    //index->dmin = 0;
+    //index->dmax = 0;
 
     index->is_initialized = false;
     return index;
 }
 
-int8_t index_build(Index* index, int32_t dmin)
+int8_t index_build(Index* index)
 {
     /* (re)build index, create bins
      * */
-    printf("Building index.... dmin=%d\n", dmin);
+    printf("Building index....\n");
 
-    index->dmin = dmin;
     index->is_initialized = true;
 
     // init bins
@@ -41,7 +40,7 @@ int8_t index_build(Index* index, int32_t dmin)
 
         *b = (Bin*)malloc(sizeof(Bin));
 
-        (*b)->wstart = (i*index->spread) + dmin;
+        (*b)->wstart = (i*index->spread) + index->dmin;
         (*b)->wend = (*b)->wstart + index->spread -1;
 
         (*b)->is_empty = true;
@@ -99,15 +98,28 @@ void group_append(Group* g, Group** tail)
     prev->next = g;
 }
 
+void index_set_data_limits(Index* index, Point* p)
+{
+    // find data limits and update index->dmin and index->dmax
+    if (p->high > index->dmax)
+        index->dmax = p->high;
+    if (p->low < index->dmin)
+        index->dmin = p->low;
+}
+
 int8_t index_insert(Index* index, uint8_t lineid, Point* p)
 {
     /* Insert point into index, create Bin if necessary
      */
     // first insert determines the index start
-    if (! index->is_initialized)
-        index_build(index, p->x);
+    if (! index->is_initialized) {
+        // set initial position of data limits
+        index->dmin = p->low;
+        index->dmax = p->high;
+        index_build(index);
+    }
 
-    // connect point in linked list
+    // connect point in linked list, this is used to regenerate index when spread changes
     if (*(index->phead) == NULL) {
         *(index->phead) = p;
         *(index->ptail) = p;
@@ -127,9 +139,8 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* p)
         return -1;
     }
 
-    // set data limit if bigger X
-    if (p->x > index->dmax)
-        index->dmax = p->x;
+    // update data limits
+    index_set_data_limits(index, p);
 
     // keep track of last non-empty bin.
     if (i > index->ilast)
@@ -145,22 +156,25 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* p)
     return 1;
 }
 
-Group* group_create(Index* index, int32_t gstart, uint32_t gsize)
-{
-    Group* g = (Group*)malloc(sizeof(Group));
-    g->wstart = index_map_to_x(index, gstart);
-    g->wend   = index_map_to_x(index, gstart + gsize-1);
-    g->is_empty = true;
-    return g;
-}
-
 int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount)
 {
     /* calculate bin index of first group */
     int32_t last_group_i  = index->ilast - (index->ilast % gsize);
     int32_t first_group_i = last_group_i - (amount * gsize);
     first_group_i += gsize;
+    printf("first group i: %d\n", first_group_i);
+    printf("last group i:  %d\n", last_group_i);
     return first_group_i;
+}
+
+Group* group_create(Index* index, int32_t gstart, uint32_t gsize)
+{
+    Group* g = (Group*)malloc(sizeof(Group));
+    g->wstart = index_map_to_x(index, gstart);
+    g->wend   = index_map_to_x(index, gstart + gsize) -1;
+    g->is_empty = true;
+    g->next = NULL;
+    return g;
 }
 
 Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount)
@@ -179,7 +193,7 @@ Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t 
 
     for (int32_t gindex=0 ; gindex<amount ; gstart+=gsize, gindex++) {
 
-        Group* g = group_create(index, gsize, amount);
+        Group* g = group_create(index, gstart, gsize);
 
         // connect linked list
         if (*ghead == NULL) {
@@ -202,14 +216,17 @@ Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t 
             Bin* b = bins[gstart+i];
             Line* l = b->lines[lineid];
 
-            if (l->is_empty)
+            if (l->is_empty) {
+                printf("is empty\n");
+
                 continue;
+            }
 
             if (g->is_empty) {
                 g->is_empty = false;
-                g->open = l->open;
-                g->high = l->high;
-                g->low = l->low;
+                g->open  = l->open;
+                g->high  = l->high;
+                g->low   = l->low;
                 g->close = l->close;
                 continue;
 
@@ -231,14 +248,13 @@ Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t 
 void groups_print(Group* g)
 {
     int32_t c = 0;
-    printf("\n%5s %6s %5s %5s %5s %5s %5s\n", "INDEX", "WSTART", "WEND",  "OPEN", "HIGH", "LOW", "CLOSE");
+    printf("\n%5s %6s %5s %9s %9s %9s %9s\n", "INDEX", "WSTART", "WEND",  "OPEN", "HIGH", "LOW", "CLOSE");
 
     while (g != NULL) {
-        if (g->is_empty) {
-            printf("%5d %6s %5s %5s %5s %5s %5s\n", c, "empty", "empty", "empty", "empty", "empty", "empty");
-            continue;
-        }
-        printf("%5d %6d %5d %5d %5d %5d %5d\n", c, g->wstart, g->wend, g->open, g->high, g->low, g->close);
+        if (g->is_empty)
+            printf("%5d %6d %5d %9s %9s %9s %9s\n", c, g->wstart, g->wend, "empty", "empty", "empty", "empty");
+        else
+            printf("%5d %6d %5d %9f %9f %9f %9f\n", c, g->wstart, g->wend, g->open, g->high, g->low, g->close);
         g = g->next;
         c++;
     }
@@ -253,7 +269,7 @@ void index_print(Index* index)
         if (b->is_empty)
             continue;
 
-        printf("BIN %3d: %d:%d %d => %d %d %d %d\n", i,
+        printf("BIN %3d: %d:%d %d => %9f %9f %9f %9f\n", i,
                                               b->wstart,
                                               b->wend,
                                               l->npoints,
@@ -264,9 +280,9 @@ void index_print(Index* index)
     }
 }
 
-Point* point_create(int32_t x, int32_t open, int32_t high, int32_t low, int32_t close)
+Point* point_create(int32_t x, double open, double high, double low, double close)
 {
-    printf("NEW POINT: %3d = %d %d %d %d\n", x, open, high, low, close);
+    printf("NEW POINT: %3d = %9f %9f %9f %9f\n", x, open, high, low, close);
     Point* p = (Point*)malloc(sizeof(Point));
     p->x = x;
     p->open = open;
