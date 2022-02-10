@@ -13,6 +13,10 @@
 #define CS_BODY "█"
 #define CS_WICK "┃"
 
+#define RED   "\033[0;31m"
+#define GREEN "\033[0;32m"
+#define RESET "\033[0m"
+
 // data dimensions must have a middle point so should be an odd number
 #define MATRIX_WIDTH  1001
 #define MATRIX_HEIGHT 1001
@@ -31,8 +35,8 @@ struct Cell {
     int32_t y;
 
     char* chr;
-    uint8_t bgcolor;
-    uint8_t fgcolor;
+    char* bgcol;
+    char* fgcol;
 
     // keep changed cells in linked list for easy updating
     Cell* prev;
