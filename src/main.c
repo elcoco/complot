@@ -13,8 +13,8 @@
 #define NLINES 2
 
 #define GROUP_SIZE 2
-#define GROUPS 40 // = xsize
-#define YSIZE 40
+#define GROUPS 70 // = xsize
+#define YSIZE 60
 
 // TODO extend index when out of bounds
 // DONE get groups x amount of groups from last known data
@@ -170,23 +170,45 @@ int main(int argc, char **argkv)
     Group* g = index_get_grouped(index, LINE1, GROUP_SIZE, GROUPS);
     groups_print(g);
 
-    printf("dimensions: %f %f\n", index->dmin, index->dmax);
+
 
     ViewPort* vp = vp_init(GROUPS, YSIZE); // x, y
 
     // x index
     int ix = 0;
 
+    Group* gptr = g;
+    double dmin = gptr->low;
+    double dmax = gptr->high;
+
+    // find data min max for group slice
+    while (gptr != NULL) {
+        if (! gptr->is_empty) {
+            if (gptr->high > dmax)
+                dmax = gptr->high;
+            if (gptr->low < dmin)
+                dmin = gptr->low;
+        }
+        gptr = gptr->next;
+    }
+
+
+    printf("INDEX dimensions: %f %f\n", index->dmin, index->dmax);
+    printf("GROUP dimensions: %f %f\n", dmin, dmax);
+
+
+    // draw candlesticks
     while (g != NULL) {
 
         if (! g->is_empty)
-            vp->vp_draw_candlestick(vp, g, ix, index->dmin, index->dmax);
+            
+            vp_draw_candlestick(vp, g, ix, dmin, dmax);
 
         g = g->next;
         ix++;
     }
 
-    vp->vp_print(vp);
+    vp_print(vp);
 
     //points_print(*(index->phead));
     //read_csv("/home/eco/dev/ccomplot/csv/XMRBTC_1m.csv");

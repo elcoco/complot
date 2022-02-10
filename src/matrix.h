@@ -61,12 +61,15 @@ struct ViewPort {
     int32_t dymin;
     int32_t dymax;
 
-    void(*vp_print)(ViewPort* self);
-    void(*vp_free)(ViewPort* self);
-    //int8_t(*vp_insert)(ViewPort* self, Cell* c);
-    Cell*(*vp_get_cell)(ViewPort* self, uint32_t x, uint32_t y);
-    void(*vp_draw_candlestick)(ViewPort* self, Group* g, uint32_t ix, double dmin, double dmax);
+    //void(*vp_print)(ViewPort* vp);
+    //void(*vp_free)(ViewPort* vp);
+    //Cell*(*vp_get_cell)(ViewPort* vp, uint32_t x, uint32_t y);
+    //void(*vp_draw_candlestick)(ViewPort* vp, Group* g, uint32_t ix, double dmin, double dmax);
 };
+
+void vp_print(ViewPort* vp);
+Cell* vp_get_cell(ViewPort* vp, uint32_t x, uint32_t y);
+void vp_draw_candlestick(ViewPort* vp, Group* g, uint32_t ix, double dmin, double dmax);
 
 ViewPort* vp_init(uint32_t xsize, uint32_t ysize);
 Cell* cell_init();
