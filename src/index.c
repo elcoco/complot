@@ -162,8 +162,8 @@ int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount)
     int32_t last_group_i  = index->ilast - (index->ilast % gsize);
     int32_t first_group_i = last_group_i - (amount * gsize);
     first_group_i += gsize;
-    printf("first group i: %d\n", first_group_i);
-    printf("last group i:  %d\n", last_group_i);
+    //printf("first group i: %d\n", first_group_i);
+    //printf("last group i:  %d\n", last_group_i);
     return first_group_i;
 }
 
@@ -177,19 +177,23 @@ Group* group_create(Index* index, int32_t gstart, uint32_t gsize)
     return g;
 }
 
-Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount)
+Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
 {
     /* Create groups, get data from last data */
     Bin** bins = index->bins;
 
     // calculate at which bin index the first group starts
-    int32_t gstart = index_get_gstart(index, gsize, amount);
+    int32_t gstart = index_get_gstart(index, gsize, amount) + x_offset;
 
     // setup linked list
     Group** ghead = (Group**)malloc(sizeof(Group*));
     Group** gtail = (Group**)malloc(sizeof(Group*));
     *gtail = NULL;
     *ghead = NULL;
+
+    // create groups container
+    Groups* groups = (Groups*)malloc(sizeof(Groups));
+    groups->is_empty = true;
 
     for (int32_t gindex=0 ; gindex<amount ; gstart+=gsize, gindex++) {
 
@@ -206,6 +210,8 @@ Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t 
         // if group index is below 0 this means that there is no data for this group
         if (gstart < 0)
             continue;
+        if (gstart >= index->isize-1)
+            continue;
 
         for (int i=0 ; i<gsize ; i++) {
             // trying to access a bin outside index boundaries, should not be reachable
@@ -218,7 +224,6 @@ Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t 
 
             if (l->is_empty) {
                 printf("is empty\n");
-
                 continue;
             }
 
@@ -229,7 +234,6 @@ Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t 
                 g->low   = l->low;
                 g->close = l->close;
                 continue;
-
             } else {
                 g->close = l->close;
             }
@@ -240,9 +244,25 @@ Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t 
             if (l->low < g->low)
                 g->low = l->low;
         }
+
+        // set initial data dimensions in groups container
+        if (groups->is_empty && !g->is_empty) {
+            groups->is_empty = false;
+            groups->dmin = g->low;
+            groups->dmax = g->high;
+        }
+        // set data dimensions in groups container
+        else if (!groups->is_empty && !g->is_empty) {
+            if (g->high > groups->dmax)
+                groups->dmax = g->high;
+            if (g->low < groups->dmin)
+                groups->dmin = g->low;
+        }
     }
     free(gtail);
-    return *ghead;
+
+    groups->group = *ghead;
+    return groups;
 }
 
 void groups_print(Group* g)
@@ -282,7 +302,7 @@ void index_print(Index* index)
 
 Point* point_create(int32_t x, double open, double high, double low, double close)
 {
-    printf("NEW POINT: %3d = %9f %9f %9f %9f\n", x, open, high, low, close);
+    //printf("NEW POINT: %3d = %9f %9f %9f %9f\n", x, open, high, low, close);
     Point* p = (Point*)malloc(sizeof(Point));
     p->x = x;
     p->open = open;

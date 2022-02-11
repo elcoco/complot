@@ -9,6 +9,7 @@
 
 
 typedef struct Group Group;
+typedef struct Groups Groups;
 typedef struct Bin Bin;
 typedef struct Index Index;
 typedef struct Point Point;
@@ -42,6 +43,14 @@ struct Group {
 
     // iter groups using linked list
     Group* next;
+};
+
+/* container returned from index_get_grouped() */
+struct Groups {
+    Group* group;
+    double dmin;
+    double dmax;
+    bool is_empty; // indicate if groups has any data in it or just empty groups
 };
 
 /* Container to put points in that can be stored inside the Group struct.
@@ -138,7 +147,7 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* point);
 void index_print(Index* index);
 
 // get last amount of grouped bins with size gsize
-Group* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount);
+Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
 
 Point* point_create(int32_t x, double open, double high, double low, double close);
 int8_t point_destroy(Point* point);

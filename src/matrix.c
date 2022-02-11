@@ -10,44 +10,68 @@ void vp_print(ViewPort* vp)
     }
 }
 
-void vp_draw_candlestick(ViewPort* vp, Group* g, uint32_t ix, double dmin, double dmax)
+void vp_draw_candlestick(ViewPort* vp, uint32_t ix, uint32_t iopen, uint32_t ihigh, uint32_t ilow, uint32_t iclose)
 {
-    // map value from data range to terminal rows range
-    int32_t iopen  = map(g->open,  dmin, dmax, 0, vp->ysize-1);
-    int32_t ihigh  = map(g->high,  dmin, dmax, 0, vp->ysize-1);
-    int32_t ilow   = map(g->low,   dmin, dmax, 0, vp->ysize-1);
-    int32_t iclose = map(g->close, dmin, dmax, 0, vp->ysize-1);
-
-    // draw wick
-
+    /* draw one candlestick in viewport */
     // GREEN
     if (iopen < iclose) {
         for (int y=ilow ; y<=ihigh ; y++) {
             Cell* cell = vp_get_cell(vp, ix, y);
             strcpy(cell->chr, CS_WICK);
-            strcpy(cell->fgcol, GREEN);
+            cell->fgcol = GREEN;
         }
 
         for (int y=iopen ; y<=iclose ; y++) {
             Cell* cell = vp_get_cell(vp, ix, y);
             strcpy(cell->chr, CS_BODY);
-            strcpy(cell->fgcol, GREEN);
+            cell->fgcol = GREEN;
         }
-
 
     // RED
     } else {
         for (int y=ilow ; y<=ihigh ; y++) {
             Cell* cell = vp_get_cell(vp, ix, y);
             strcpy(cell->chr, CS_WICK);
-            strcpy(cell->fgcol, RED);
+            cell->fgcol = RED;
         }
         for (int y=iopen ; y>=iclose ; y--) {
             Cell* cell = vp_get_cell(vp, ix, y);
             strcpy(cell->chr, CS_BODY);
-            strcpy(cell->fgcol, RED);
+            cell->fgcol = RED;
         }
+    }
+}
 
+void vp_clear_cells(ViewPort* vp)
+{
+    for (int y=vp->ysize-1 ; y>=0 ; y--) {
+        for (int x=0 ; x<vp->xsize ; x++) {
+            Cell* c = vp->cells[x][y];
+            c->chr = " ";
+            c->fgcol = WHITE;
+        }
+    }
+}
+
+void vp_draw_candlesticks(ViewPort* vp, Groups* groups)
+{
+    /* itter groups and draw them in viewport */
+    Group* g = groups->group;
+    uint32_t ix = 0;
+
+    while (g != NULL) {
+        if (! g->is_empty) {
+
+            // map data point from data range to terminal rows range
+            uint32_t iopen  = map(g->open,  groups->dmin, groups->dmax, 0, vp->ysize-1);
+            uint32_t ihigh  = map(g->high,  groups->dmin, groups->dmax, 0, vp->ysize-1);
+            uint32_t ilow   = map(g->low,   groups->dmin, groups->dmax, 0, vp->ysize-1);
+            uint32_t iclose = map(g->close, groups->dmin, groups->dmax, 0, vp->ysize-1);
+
+            vp_draw_candlestick(vp, ix, iopen, ihigh, ilow, iclose);
+        }
+        g = g->next;
+        ix++;
     }
 }
 
@@ -73,8 +97,8 @@ ViewPort* vp_init(uint32_t xsize, uint32_t ysize)
 
         for (y=0 ; y<vp->ysize ; y++) {
             Cell* cell = malloc(sizeof(Cell));
-            cell->chr = strdup(".");
-            cell->fgcol = strdup("");
+            cell->chr = strdup(EMPTY);
+            cell->fgcol = WHITE;
             cell->x = x;
             cell->y = y;
             vp->cells[x][y] = cell;

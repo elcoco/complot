@@ -12,9 +12,13 @@
 
 #define CS_BODY "█"
 #define CS_WICK "┃"
+#define EMPTY   "."
 
-#define RED   "\033[0;31m"
-#define GREEN "\033[0;32m"
+#define RED   1
+#define GREEN 2
+#define WHITE 7
+//#define RED   "\033[0;31m"
+//#define GREEN "\033[0;32m"
 #define RESET "\033[0m"
 
 // data dimensions must have a middle point so should be an odd number
@@ -35,8 +39,8 @@ struct Cell {
     int32_t y;
 
     char* chr;
-    char* bgcol;
-    char* fgcol;
+    uint16_t bgcol;
+    uint16_t fgcol;
 
     // keep changed cells in linked list for easy updating
     Cell* prev;
@@ -73,7 +77,9 @@ struct ViewPort {
 
 void vp_print(ViewPort* vp);
 Cell* vp_get_cell(ViewPort* vp, uint32_t x, uint32_t y);
-void vp_draw_candlestick(ViewPort* vp, Group* g, uint32_t ix, double dmin, double dmax);
+void vp_draw_candlestick(ViewPort* vp, uint32_t ix, uint32_t iopen, uint32_t ihigh, uint32_t ilow, uint32_t close);
+void vp_draw_candlesticks(ViewPort* vp, Groups* groups);
+void vp_clear_cells(ViewPort* vp);
 
 ViewPort* vp_init(uint32_t xsize, uint32_t ysize);
 Cell* cell_init();
