@@ -53,6 +53,7 @@ void show_matrix(ViewPort* vp)
         for (int x=0 ; x<vp->xsize ; x++) {
             Cell* c = cells[x][y];
 
+
             attrset(COLOR_PAIR(c->fgcol));
 
             // curses starts top-left
@@ -65,20 +66,40 @@ void show_matrix(ViewPort* vp)
     return;
 }
 
+int set_status(uint32_t lineno, char* fmt, ...)
+{
+    char buf[1000];
+    va_list ptr;
+    int ret;
+
+    va_start(ptr, fmt);
+    ret = vsprintf(buf, fmt, ptr);
+    va_end(ptr);
+
+    move(LINES-(1+lineno), 0);
+    clrtoeol();
+
+    attrset(COLOR_PAIR(CRED));
+    mvaddstr(LINES-(1+lineno), 0, buf);
+    attroff(COLOR_PAIR(CRED));
+
+    return(ret);
+}
+
 void init_colors()
 {
     use_default_colors();
 
     if(has_colors()) {
         if(start_color() == OK) {
-            init_pair(1, COLOR_RED,     -1);
-            init_pair(2, COLOR_GREEN,   -1);
-            init_pair(3, COLOR_YELLOW,  -1);
-            init_pair(4, COLOR_BLUE,    -1);
-            init_pair(5, COLOR_MAGENTA, -1);
-            init_pair(6, COLOR_CYAN,    -1);
-            init_pair(7, COLOR_WHITE,   -1);
-            init_pair(8, COLOR_BLACK,   -1);
+            init_pair(CRED,     COLOR_RED,     -1);
+            init_pair(CGREEN,   COLOR_GREEN,   -1);
+            init_pair(CYELLOW,  COLOR_YELLOW,  -1);
+            init_pair(CBLUE,    COLOR_BLUE,    -1);
+            init_pair(CMAGENTA, COLOR_MAGENTA, -1);
+            init_pair(CCYAN,    COLOR_CYAN,    -1);
+            init_pair(CWHITE,   COLOR_WHITE,   -1);
+            init_pair(CBLACK,   COLOR_BLACK,   -1);
 
         } else {
             addstr("Cannot start colours\n");

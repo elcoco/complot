@@ -48,8 +48,15 @@ struct Group {
 /* container returned from index_get_grouped() */
 struct Groups {
     Group* group;
+
+    // data limits for all data in index
     double dmin;
     double dmax;
+
+    // data limits for this group
+    double gmin;
+    double gmax;
+
     bool is_empty; // indicate if groups has any data in it or just empty groups
 };
 
@@ -122,6 +129,9 @@ struct Index {
 
     // amount of lines this index represents
     uint8_t nlines;
+
+    // amount of points in index
+    uint32_t npoints;
 
     // index of last non-empty bin, this is used to quickly find
     // end of data when creating groups

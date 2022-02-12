@@ -12,6 +12,7 @@ void vp_print(ViewPort* vp)
 
 void vp_draw_candlestick(ViewPort* vp, uint32_t ix, uint32_t iopen, uint32_t ihigh, uint32_t ilow, uint32_t iclose)
 {
+    //set_status(1, "%d %d %d %d %d", ix, iopen, ihigh, ilow, iclose);
     /* draw one candlestick in viewport */
     // GREEN
     if (iopen < iclose) {
@@ -35,20 +36,13 @@ void vp_draw_candlestick(ViewPort* vp, uint32_t ix, uint32_t iopen, uint32_t ihi
             cell->fgcol = RED;
         }
         for (int y=iopen ; y>=iclose ; y--) {
+            // TODO why tf is y -1, should not be possible to go below 0
+            set_status(1, "access cell: %d -> %d : %d, %d", iopen, iclose, y, ix);
+            refresh();
+            usleep(1000);
             Cell* cell = vp_get_cell(vp, ix, y);
             strcpy(cell->chr, CS_BODY);
             cell->fgcol = RED;
-        }
-    }
-}
-
-void vp_clear_cells(ViewPort* vp)
-{
-    for (int y=vp->ysize-1 ; y>=0 ; y--) {
-        for (int x=0 ; x<vp->xsize ; x++) {
-            Cell* c = vp->cells[x][y];
-            c->chr = " ";
-            c->fgcol = WHITE;
         }
     }
 }
@@ -63,10 +57,10 @@ void vp_draw_candlesticks(ViewPort* vp, Groups* groups)
         if (! g->is_empty) {
 
             // map data point from data range to terminal rows range
-            uint32_t iopen  = map(g->open,  groups->dmin, groups->dmax, 0, vp->ysize-1);
-            uint32_t ihigh  = map(g->high,  groups->dmin, groups->dmax, 0, vp->ysize-1);
-            uint32_t ilow   = map(g->low,   groups->dmin, groups->dmax, 0, vp->ysize-1);
-            uint32_t iclose = map(g->close, groups->dmin, groups->dmax, 0, vp->ysize-1);
+            uint32_t iopen  = map(g->open,  groups->gmin, groups->gmax, 0, vp->ysize-1);
+            uint32_t ihigh  = map(g->high,  groups->gmin, groups->gmax, 0, vp->ysize-1);
+            uint32_t ilow   = map(g->low,   groups->gmin, groups->gmax, 0, vp->ysize-1);
+            uint32_t iclose = map(g->close, groups->gmin, groups->gmax, 0, vp->ysize-1);
 
             vp_draw_candlestick(vp, ix, iopen, ihigh, ilow, iclose);
         }

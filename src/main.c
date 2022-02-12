@@ -21,8 +21,11 @@
 
 #define SLEEP_MS 1000000
 
-#define DEFAULT_PAN_STEPS 5
-#define DEFAULT_PAN_BIG_STEPS 20
+#define DEFAULT_PAN_STEPS 1
+#define DEFAULT_PAN_BIG_STEPS 5
+
+// amount of status lines
+#define STATUS_LINES 2
 
 // TODO extend index when out of bounds
 // DONE get groups x amount of groups from last known data
@@ -34,6 +37,7 @@
 // TODO keep track of data min and max. we need this info when drawing candlesticks
 // DONE segfault when GROUP_SIZE = 1 or 2
 // TODO now index data limits are used, but group data limits allows for auto scale
+// TODO dataleak for Points, Viewport and groups
 
 #define BUF_SIZE 1000
 #define DELIM_STR ","
@@ -174,12 +178,9 @@ bool check_user_input(void* arg)
     counter++;
 
     if (c != ERR) {
-        mvprintw(3,1, "got input!!! %d<<", c);
-
         switch (c) {
             case 'q':
                 s->is_stopped = true;
-                mvprintw(2,1, "stopped!!! %d", s->is_stopped);
                 break;
             case 'h':
                 s->panx-=DEFAULT_PAN_STEPS;
@@ -238,24 +239,38 @@ bool check_user_input(void* arg)
     return false;
 }
 
+void update(State* s, Index* index)
+{
+    Groups* groups = index_get_grouped(index, LINE1, GROUP_SIZE, COLS, s->panx, s->pany);
+    ViewPort* vp = vp_init(COLS, LINES-STATUS_LINES);
+    vp_draw_candlesticks(vp, groups);
+    show_matrix(vp);
+
+    set_status(0, "paused: %d | panx: %d | pany: %d | points: %d", s->is_paused, s->panx, s->pany, index->npoints);
+}
+
 void loop(State* s, Index* index)
 {
+    // do initial update
+    update(s, index);
 
     while (!s->is_stopped && !sigint_caught) {
-        Groups* groups = index_get_grouped(index, LINE1, GROUP_SIZE, COLS, s->panx, s->pany);
-        //vp_clear_cells(vp);
-        ViewPort* vp = vp_init(COLS, LINES); // x, y
-        vp_draw_candlesticks(vp, groups);
-        show_matrix(vp);
 
-        non_blocking_sleep(SLEEP_MS, &check_user_input, s);
+        // update on user input
+        if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
+            update(s, index);
+        }
+
+        if (! s->is_paused) {
+            // TODO do reading from stdin here and update screen
+        }
     }
 
 }
 
 int main(int argc, char **argv)
 {
-    // for UTF8 in curses
+    // for UTF8 in curses, messes with atof() see: read_stdin()
     setlocale(LC_ALL, "");
 
     //// catch sigint (CTRL-C)
@@ -268,23 +283,16 @@ int main(int argc, char **argv)
     State s;
     set_defaults(&s);
 
+    // holds all data and normalizes into bins
     Index* index = index_create(INDEX_GROW_AMOUNT, INDEX_SPREAD, NLINES);
 
     read_stdin(index, 0,2,3,4,5);
 
-    init_ui();                  // setup curses ui
-
-    //Groups* groups = index_get_grouped(index, LINE1, GROUP_SIZE, COLS);
-
-
-    //index_print(index);
+    //Groups* groups = index_get_grouped(index, LINE1, GROUP_SIZE, 50, s.panx, s.pany);
     //groups_print(groups->group);
-    //printf("INDEX dimensions: %f %f\n", index->dmin, index->dmax);
-    //printf("GROUP dimensions: %f %f\n", groups->dmin, groups->dmax);
+    //return 1;
 
-    //vp_draw_candlesticks(vp, groups);
-
-    //vp_print(vp);
+    init_ui();                  // setup curses ui
 
     loop(&s, index);
 

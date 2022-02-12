@@ -10,9 +10,15 @@
 
 #define CHECK_INTERVAL 1000
 
-#define CRED 1
-#define CGREEN 2
-#define CWHITE 7
+#define CRED     1
+#define CGREEN   2
+#define CYELLOW  3
+#define CBLUE    4
+#define CMAGENTA 5
+#define CCYAN    6
+#define CWHITE   7
+#define CBLACK   8
+
 
 
 int init_ui();
@@ -20,5 +26,6 @@ void cleanup_ui();
 void show_matrix(ViewPort* vp);
 void init_colors();
 bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg);
+int set_status(uint32_t lineno, char* fmt, ...);
 
 #endif

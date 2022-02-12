@@ -153,6 +153,8 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* p)
     Line* l = b->lines[lineid];
     line_add_point(l, p);
 
+    index->npoints++;
+
     return 1;
 }
 
@@ -183,7 +185,7 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
     Bin** bins = index->bins;
 
     // calculate at which bin index the first group starts
-    int32_t gstart = index_get_gstart(index, gsize, amount) + x_offset;
+    int32_t gstart = index_get_gstart(index, gsize, amount) + (x_offset*gsize);
 
     // setup linked list
     Group** ghead = (Group**)malloc(sizeof(Group*));
@@ -194,6 +196,8 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
     // create groups container
     Groups* groups = (Groups*)malloc(sizeof(Groups));
     groups->is_empty = true;
+    groups->dmin = index->dmin;
+    groups->dmax = index->dmax;
 
     for (int32_t gindex=0 ; gindex<amount ; gstart+=gsize, gindex++) {
 
@@ -248,15 +252,15 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
         // set initial data dimensions in groups container
         if (groups->is_empty && !g->is_empty) {
             groups->is_empty = false;
-            groups->dmin = g->low;
-            groups->dmax = g->high;
+            groups->gmin = g->low;
+            groups->gmax = g->high;
         }
         // set data dimensions in groups container
         else if (!groups->is_empty && !g->is_empty) {
-            if (g->high > groups->dmax)
-                groups->dmax = g->high;
-            if (g->low < groups->dmin)
-                groups->dmin = g->low;
+            if (g->high > groups->gmax)
+                groups->gmax = g->high;
+            if (g->low < groups->gmin)
+                groups->gmin = g->low;
         }
     }
     free(gtail);
