@@ -1,45 +1,52 @@
 #include "matrix.h"
 
+uint32_t global_y = 0;
+
 void vp_print(ViewPort* vp)
 {
     for (int y=vp->ysize-1 ; y>=0 ; y--) {
         for (int x=0 ; x<vp->xsize ; x++) {
-            printf("%s%s%s",vp->cells[x][y]->fgcol, vp->cells[x][y]->chr, RESET);
+            printf("%d%s%s",vp->cells[x][y]->fgcol, vp->cells[x][y]->chr, RESET);
         }
         printf("\n");
     }
 }
 
-void vp_draw_candlestick(ViewPort* vp, uint32_t ix, uint32_t iopen, uint32_t ihigh, uint32_t ilow, uint32_t iclose)
+//void vp_draw_candlestick(ViewPort* vp, uint32_t ix, uint32_t iopen, uint32_t ihigh, uint32_t ilow, uint32_t iclose)
+void vp_draw_candlestick(ViewPort* vp, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose)
 {
     //set_status(1, "%d %d %d %d %d", ix, iopen, ihigh, ilow, iclose);
     /* draw one candlestick in viewport */
     // GREEN
     if (iopen < iclose) {
         for (int y=ilow ; y<=ihigh ; y++) {
+            if (y < 0 || y > vp->ysize-1)
+                continue;
             Cell* cell = vp_get_cell(vp, ix, y);
             strcpy(cell->chr, CS_WICK);
             cell->fgcol = GREEN;
         }
-
         for (int y=iopen ; y<=iclose ; y++) {
+            if (y < 0 || y > vp->ysize-1)
+                continue;
             Cell* cell = vp_get_cell(vp, ix, y);
             strcpy(cell->chr, CS_BODY);
             cell->fgcol = GREEN;
         }
 
     // RED
-    } else {
+    }
+    else {
         for (int y=ilow ; y<=ihigh ; y++) {
+            if (y < 0 || y > vp->ysize-1)
+                continue;
             Cell* cell = vp_get_cell(vp, ix, y);
             strcpy(cell->chr, CS_WICK);
             cell->fgcol = RED;
         }
-        for (int y=iopen ; y>=iclose ; y--) {
-            // TODO why tf is y -1, should not be possible to go below 0
-            set_status(1, "access cell: %d -> %d : %d, %d", iopen, iclose, y, ix);
-            refresh();
-            usleep(1000);
+        for (int y=iclose ; y<=iopen ; y++) {
+            if (y < 0 || y > vp->ysize-1)
+                continue;
             Cell* cell = vp_get_cell(vp, ix, y);
             strcpy(cell->chr, CS_BODY);
             cell->fgcol = RED;
@@ -47,7 +54,7 @@ void vp_draw_candlestick(ViewPort* vp, uint32_t ix, uint32_t iopen, uint32_t ihi
     }
 }
 
-void vp_draw_candlesticks(ViewPort* vp, Groups* groups)
+void vp_draw_candlesticks(ViewPort* vp, Groups* groups, int32_t yoffset)
 {
     /* itter groups and draw them in viewport */
     Group* g = groups->group;
@@ -57,10 +64,11 @@ void vp_draw_candlesticks(ViewPort* vp, Groups* groups)
         if (! g->is_empty) {
 
             // map data point from data range to terminal rows range
-            uint32_t iopen  = map(g->open,  groups->gmin, groups->gmax, 0, vp->ysize-1);
-            uint32_t ihigh  = map(g->high,  groups->gmin, groups->gmax, 0, vp->ysize-1);
-            uint32_t ilow   = map(g->low,   groups->gmin, groups->gmax, 0, vp->ysize-1);
-            uint32_t iclose = map(g->close, groups->gmin, groups->gmax, 0, vp->ysize-1);
+            uint32_t iopen  = map(g->open,  groups->gmin, groups->gmax, 0, vp->ysize-1) + yoffset;
+            uint32_t ihigh  = map(g->high,  groups->gmin, groups->gmax, 0, vp->ysize-1) + yoffset;
+            uint32_t ilow   = map(g->low,   groups->gmin, groups->gmax, 0, vp->ysize-1) + yoffset;
+            uint32_t iclose = map(g->close, groups->gmin, groups->gmax, 0, vp->ysize-1) + yoffset;
+
 
             vp_draw_candlestick(vp, ix, iopen, ihigh, ilow, iclose);
         }
@@ -98,12 +106,5 @@ ViewPort* vp_init(uint32_t xsize, uint32_t ysize)
             vp->cells[x][y] = cell;
         }
     }
-
-    // func pointers
-    //vp->vp_print = vp_print;
-    //vp->vp_free = vp_free;
-    //vp->vp_get_cell = vp_get_cell;
-    //vp->vp_draw_candlestick = vp_draw_candlestick;
-
     return vp;
 }

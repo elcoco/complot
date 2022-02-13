@@ -21,7 +21,7 @@
 
 #define SLEEP_MS 1000000
 
-#define DEFAULT_PAN_STEPS 1
+#define DEFAULT_PAN_STEPS 3
 #define DEFAULT_PAN_BIG_STEPS 5
 
 // amount of status lines
@@ -38,6 +38,7 @@
 // DONE segfault when GROUP_SIZE = 1 or 2
 // TODO now index data limits are used, but group data limits allows for auto scale
 // TODO dataleak for Points, Viewport and groups
+// TODO option disable autoscale
 
 #define BUF_SIZE 1000
 #define DELIM_STR ","
@@ -150,11 +151,12 @@ int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t 
                 return -1;
 
         } else {
-            printf("too long!!! %d: %s\n", strlen(buf), buf);
+            printf("too long!!! %lu: %s\n", strlen(buf), buf);
         }
 
         ix++;
     }
+    return 1;
 }
 
 void set_defaults(State* s)
@@ -243,7 +245,7 @@ void update(State* s, Index* index)
 {
     Groups* groups = index_get_grouped(index, LINE1, GROUP_SIZE, COLS, s->panx, s->pany);
     ViewPort* vp = vp_init(COLS, LINES-STATUS_LINES);
-    vp_draw_candlesticks(vp, groups);
+    vp_draw_candlesticks(vp, groups, s->pany);
     show_matrix(vp);
 
     set_status(0, "paused: %d | panx: %d | pany: %d | points: %d", s->is_paused, s->panx, s->pany, index->npoints);

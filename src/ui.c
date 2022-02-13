@@ -24,6 +24,7 @@ int init_ui()
     keypad(stdscr, TRUE);   // Enables keypad mode also necessary for mouse clicks
     mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL); // Don't mask any mouse events
     printf("\033[?1003h\n"); // Makes the terminal report mouse movement events
+    return 1;
 }
 
 void cleanup_ui()

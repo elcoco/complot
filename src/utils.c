@@ -17,5 +17,8 @@ uint32_t map(double value, double in_min, double in_max, uint32_t out_min, uint3
     //usleep(10);
     //refresh();
     //printf("input: %f %f %f %d %d = %f\n", value, in_min, in_max, out_min, out_max, (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
-    return floor((value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
+    uint32_t i = round((value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
+    //i = (i<out_min) ? out_min : i;
+    //i = (i>out_max) ? out_max : i;
+    return i;
 }
