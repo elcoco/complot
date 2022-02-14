@@ -88,6 +88,7 @@ int set_status(uint32_t lineno, char* fmt, ...)
     return(ret);
 }
 
+
 void init_colors()
 {
     use_default_colors();

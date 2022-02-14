@@ -79,6 +79,27 @@ void vp_draw_candlesticks(ViewPort* vp, Groups* groups, double dmin, double dmax
     }
 }
 
+void vp_draw_raxis(ViewPort* vp, double dmin, double dmax, int32_t pany)
+{
+    // calculate stepsize between tickers
+    double step = (dmax - dmin) / vp->ysize;
+
+    // calculate first column of axis
+    uint32_t xstart = vp->xsize - vp->raxis_size -1;
+
+    int32_t i = vp->ysize-1;
+
+    for (uint32_t iy=0 ; iy<vp->ysize ; iy++, i--) {
+
+        char t[20] = {'\0'};
+        sprintf(t, "%1.7f", dmin + ((i-pany)*step));
+        mvprintw(iy, xstart, "%s", t);
+        refresh();
+    }
+}
+
+
+
 Cell* vp_get_cell(ViewPort* vp, uint32_t x, uint32_t y)
 {
     return vp->cells[x][y];
@@ -86,10 +107,13 @@ Cell* vp_get_cell(ViewPort* vp, uint32_t x, uint32_t y)
 
 ViewPort* vp_init(uint32_t xsize, uint32_t ysize)
 {
-    ViewPort* vp = malloc(sizeof(ViewPort*));
+    ViewPort* vp = malloc(sizeof(ViewPort));
 
     vp->xsize = xsize;
     vp->ysize = ysize;
+
+    //vp->status_size = 2;
+    vp->raxis_size = 8;
 
     int x, y;
 

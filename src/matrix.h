@@ -25,6 +25,8 @@
 #define MATRIX_WIDTH  1001
 #define MATRIX_HEIGHT 1001
 
+#define RAXIS_SIZE 5
+
 //const int matrix_x = (MATRIX_WIDTH % 2 == 0)  ? MATRIX_WIDTH + 1 : MATRIX_WIDTH;
 //const int matrix_y = (MATRIX_HEIGHT % 2 == 0) ? MATRIX_HEIGHT + 1 : MATRIX_HEIGHT;
 
@@ -54,6 +56,10 @@ struct ViewPort {
     int xsize;
     int ysize;
 
+    // cols and rows of plot area
+    int pxsize;
+    int pysize;
+
     // 2d array representing data on screen
     // every index has a cell struct
     // if there are more than one cells (linked list) it means
@@ -65,14 +71,17 @@ struct ViewPort {
     int xend;
     int yend;
 
-    // limits of data on y axis. New points need to be mapped to index on screen
-    int32_t dymin;
-    int32_t dymax;
-
     //void(*vp_print)(ViewPort* vp);
     //void(*vp_free)(ViewPort* vp);
     //Cell*(*vp_get_cell)(ViewPort* vp, uint32_t x, uint32_t y);
     //void(*vp_draw_candlestick)(ViewPort* vp, Group* g, uint32_t ix, double dmin, double dmax);
+
+    // width of axis
+    int raxis_size;
+    //uint32_t laxis_size;
+
+    // no of lines in status bar
+    uint32_t status_size;
 };
 
 void vp_print(ViewPort* vp);
@@ -80,8 +89,11 @@ Cell* vp_get_cell(ViewPort* vp, uint32_t x, uint32_t y);
 void vp_draw_candlestick(ViewPort* vp, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
 void vp_draw_candlesticks(ViewPort* vp, Groups* groups, double dmin, double dmax, int32_t yoffset);
 void vp_clear_cells(ViewPort* vp);
+void vp_draw_raxis(ViewPort* vp, double dmin, double dmax, int32_t pany);
+
 
 ViewPort* vp_init(uint32_t xsize, uint32_t ysize);
 Cell* cell_init();
+
 
 #endif

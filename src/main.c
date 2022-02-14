@@ -295,6 +295,8 @@ void update(State* s, Index* index)
     ViewPort* vp = vp_init(COLS, LINES-STATUS_LINES);
     vp_draw_candlesticks(vp, groups, s->dmin, s->dmax, s->pany);
     show_matrix(vp);
+    vp_draw_raxis(vp, s->dmin, s->dmax, s->pany);
+
 
     set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d", s->is_paused, s->panx, s->pany, index->npoints, s->gsize);
     groups_destroy(groups);
@@ -316,7 +318,6 @@ void loop(State* s, Index* index)
             // TODO do reading from stdin here and update screen
         }
     }
-
 }
 
 int main(int argc, char **argv)

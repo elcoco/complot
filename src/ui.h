@@ -28,4 +28,5 @@ void init_colors();
 bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg);
 int set_status(uint32_t lineno, char* fmt, ...);
 
+
 #endif
