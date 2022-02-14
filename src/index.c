@@ -36,27 +36,49 @@ int8_t index_build(Index* index)
 
     // init bins
     Bin** b = index->bins;
-    for (int i=0 ; i<index->isize ; i++,b++) {
-
-        *b = (Bin*)malloc(sizeof(Bin));
-
-        (*b)->wstart = (i*index->spread) + index->dmin;
-        (*b)->wend = (*b)->wstart + index->spread -1;
-
-        (*b)->is_empty = true;
-
-
-        // init line container
-        (*b)->lines = (Line**)malloc(index->nlines*sizeof(Line*));
-
-        // init line conainers
-        Line** l = (*b)->lines;
-        for (int i=0 ; i<index->nlines ; i++,l++) {
-            *l = (Line*)malloc(sizeof(Line));
-            (*l)->is_empty = true;
-        }
-    }
+    for (int i=0 ; i<index->isize ; i++,b++)
+        *b = bin_create(index, i);
     return 1;
+}
+
+
+int8_t index_extend(Index* index)
+{
+    printf("Extending index\n");
+    index->isize += index->grow_amount;
+
+    if ((index->bins = realloc(index->bins, index->isize * sizeof(Bin*))) == NULL) {
+        printf("Error while extending index\n");
+        return -1;
+    }
+
+    for (int i=index->isize-index->grow_amount ; i<index->isize ; i++)
+        *(index->bins+i) = bin_create(index, i);
+
+    return 1;
+
+}
+
+Bin* bin_create(Index* index, uint32_t i)
+{
+    Bin* b = (Bin*)malloc(sizeof(Bin));
+
+    b->wstart = (i*index->spread) + index->dmin;
+    b->wend = b->wstart + index->spread -1;
+
+    b->is_empty = true;
+
+
+    // init line container
+    b->lines = (Line**)malloc(index->nlines*sizeof(Line*));
+
+    // init line conainers
+    Line** l = b->lines;
+    for (int i=0 ; i<index->nlines ; i++,l++) {
+        *l = (Line*)malloc(sizeof(Line));
+        (*l)->is_empty = true;
+    }
+    return b;
 }
 
 int32_t index_map_to_index(Index* index, int32_t x)
@@ -133,7 +155,7 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* p)
     // check if index is too small for data
     if (i > index->isize-1) {
         printf("Out of bounds, grow to right!: %d > %d \n", i, index->isize-1);
-        return -1;
+        index_extend(index);
     } else if (i < 0) {
         printf("Out of bounds, grow to left!: %d < 0 \n", i);
         return -1;
@@ -214,22 +236,21 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
         // if group index is below 0 this means that there is no data for this group
         if (gstart < 0)
             continue;
+
+        // if group is beyond data
         if (gstart >= index->isize-1)
             continue;
 
         for (int i=0 ; i<gsize ; i++) {
-            // trying to access a bin outside index boundaries, should not be reachable
-            // because index should auto extend to fit data
+            // trying to access a bin outside index boundaries
             if (gstart+i > index->isize-1)
-                return NULL;
+                break;
 
             Bin* b = bins[gstart+i];
             Line* l = b->lines[lineid];
 
-            if (l->is_empty) {
-                printf("is empty\n");
+            if (l->is_empty)
                 continue;
-            }
 
             if (g->is_empty) {
                 g->is_empty = false;

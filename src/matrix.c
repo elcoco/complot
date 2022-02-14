@@ -54,7 +54,7 @@ void vp_draw_candlestick(ViewPort* vp, uint32_t ix, int32_t iopen, int32_t ihigh
     }
 }
 
-void vp_draw_candlesticks(ViewPort* vp, Groups* groups, int32_t yoffset)
+void vp_draw_candlesticks(ViewPort* vp, Groups* groups, double dmin, double dmax, int32_t yoffset)
 {
     /* itter groups and draw them in viewport */
     Group* g = groups->group;
@@ -64,10 +64,10 @@ void vp_draw_candlesticks(ViewPort* vp, Groups* groups, int32_t yoffset)
         if (! g->is_empty) {
 
             // map data point from data range to terminal rows range
-            uint32_t iopen  = map(g->open,  groups->gmin, groups->gmax, 0, vp->ysize-1) + yoffset;
-            uint32_t ihigh  = map(g->high,  groups->gmin, groups->gmax, 0, vp->ysize-1) + yoffset;
-            uint32_t ilow   = map(g->low,   groups->gmin, groups->gmax, 0, vp->ysize-1) + yoffset;
-            uint32_t iclose = map(g->close, groups->gmin, groups->gmax, 0, vp->ysize-1) + yoffset;
+            uint32_t iopen  = map(g->open,  dmin, dmax, 0, vp->ysize-1) + yoffset;
+            uint32_t ihigh  = map(g->high,  dmin, dmax, 0, vp->ysize-1) + yoffset;
+            uint32_t ilow   = map(g->low,   dmin, dmax, 0, vp->ysize-1) + yoffset;
+            uint32_t iclose = map(g->close, dmin, dmax, 0, vp->ysize-1) + yoffset;
 
 
             vp_draw_candlestick(vp, ix, iopen, ihigh, ilow, iclose);

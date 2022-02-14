@@ -19,6 +19,14 @@ typedef struct {
 
     int panx;
     int pany;
+
+    bool set_autorange;
+
+    // data dimensions, used for zooming and autorange etc...
+    double dmin;
+    double dmax;
+    bool fit_all;
+    int32_t gsize;
 } State;
 
 

@@ -83,6 +83,7 @@ int set_status(uint32_t lineno, char* fmt, ...)
     attrset(COLOR_PAIR(CRED));
     mvaddstr(LINES-(1+lineno), 0, buf);
     attroff(COLOR_PAIR(CRED));
+    refresh();
 
     return(ret);
 }

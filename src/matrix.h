@@ -12,7 +12,7 @@
 
 #define CS_BODY "█"
 #define CS_WICK "┃"
-#define EMPTY   "."
+#define EMPTY   " "
 
 #define RED   1
 #define GREEN 2
@@ -78,7 +78,7 @@ struct ViewPort {
 void vp_print(ViewPort* vp);
 Cell* vp_get_cell(ViewPort* vp, uint32_t x, uint32_t y);
 void vp_draw_candlestick(ViewPort* vp, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
-void vp_draw_candlesticks(ViewPort* vp, Groups* groups, int32_t yoffset);
+void vp_draw_candlesticks(ViewPort* vp, Groups* groups, double dmin, double dmax, int32_t yoffset);
 void vp_clear_cells(ViewPort* vp);
 
 ViewPort* vp_init(uint32_t xsize, uint32_t ysize);

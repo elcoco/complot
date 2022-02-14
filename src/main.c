@@ -15,7 +15,7 @@
 #define INDEX_SPREAD 8
 #define NLINES 2
 
-#define GROUP_SIZE 2
+#define DEFAULT_GROUP_SIZE 2
 #define GROUPS 70 // = xsize
 #define YSIZE 60
 
@@ -166,6 +166,14 @@ void set_defaults(State* s)
     s->panx = 0;
     s->pany = 0;
     s->is_pan_changed = false;
+    s->set_autorange = false;
+    s->fit_all = false;
+
+    s->dmin = -1;
+    s->dmax = -1;
+
+    // amount of bins in a group
+    s->gsize = DEFAULT_GROUP_SIZE;
 }
 
 bool check_user_input(void* arg)
@@ -201,12 +209,15 @@ bool check_user_input(void* arg)
                 s->is_pan_changed = true;
                 break;
             case 'H':
-                s->panx-=DEFAULT_PAN_BIG_STEPS;
-                s->is_pan_changed = true;
+                if (s->gsize > 1)
+                    s->gsize--;
+                //s->panx-=DEFAULT_PAN_BIG_STEPS;
+                //s->is_pan_changed = true;
                 break;
             case 'L':
-                s->panx+=DEFAULT_PAN_BIG_STEPS;
-                s->is_pan_changed = true;
+                //s->panx+=DEFAULT_PAN_BIG_STEPS;
+                //s->is_pan_changed = true;
+                s->gsize++;
                 break;
             case 'K':
                 s->pany-=DEFAULT_PAN_BIG_STEPS;
@@ -215,6 +226,29 @@ bool check_user_input(void* arg)
             case 'J':
                 s->pany+=DEFAULT_PAN_BIG_STEPS;
                 s->is_pan_changed = true;
+                break;
+            case 'R': // autorange
+                s->set_autorange = !s->set_autorange;
+                s->dmin = -1;
+                s->dmax = -1;
+                break;
+            case 'r': // reset
+                s->panx = 0;
+                s->pany = 0;
+                s->dmin = -1;
+                s->dmax = -1;
+                break;
+            case 'a': // fit all
+                s->panx = 0;
+                s->pany = 0;
+                s->set_autorange = !s->fit_all;
+                s->fit_all = !s->fit_all;
+
+                if (!s->fit_all) {
+                    s->gsize = DEFAULT_GROUP_SIZE;
+                    s->dmin = -1;
+                    s->dmax = -1;
+                }
                 break;
             case ' ':
                 s->is_paused = !s->is_paused;
@@ -243,12 +277,26 @@ bool check_user_input(void* arg)
 
 void update(State* s, Index* index)
 {
-    Groups* groups = index_get_grouped(index, LINE1, GROUP_SIZE, COLS, s->panx, s->pany);
+    Groups* groups;
+
+    if (s->fit_all)
+        s->gsize = ceil(index->isize / COLS) +1;
+        
+    if ((groups = index_get_grouped(index, LINE1, s->gsize, COLS, s->panx, s->pany)) == NULL) {
+        set_status(1, "error");
+        return;
+    }
+
+    if (s->dmin < 0 || s->set_autorange) {
+        s->dmin = groups->gmin;
+        s->dmax = groups->gmax;
+    }
+
     ViewPort* vp = vp_init(COLS, LINES-STATUS_LINES);
-    vp_draw_candlesticks(vp, groups, s->pany);
+    vp_draw_candlesticks(vp, groups, s->dmin, s->dmax, s->pany);
     show_matrix(vp);
 
-    set_status(0, "paused: %d | panx: %d | pany: %d | points: %d", s->is_paused, s->panx, s->pany, index->npoints);
+    set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d", s->is_paused, s->panx, s->pany, index->npoints, s->gsize);
 }
 
 void loop(State* s, Index* index)

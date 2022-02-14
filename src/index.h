@@ -171,4 +171,6 @@ void points_print(Point* p);
 
 void point_append(Point* p, Point** tail);
 void group_append(Group* g, Group** tail);
+
+Bin* bin_create(Index* index, uint32_t i);
 #endif
