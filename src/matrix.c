@@ -73,6 +73,7 @@ void vp_draw_candlesticks(ViewPort* vp, Groups* groups, double dmin, double dmax
             uint32_t iclose = map(g->close, dmin, dmax, 0, vp->ysize-1) + yoffset;
 
             vp_draw_candlestick(vp, ix, iopen, ihigh, ilow, iclose);
+            set_status(1, "last: %f->%f", g->open, g->close);
         }
         g = g->next;
         ix++;
@@ -113,7 +114,7 @@ ViewPort* vp_init(uint32_t xsize, uint32_t ysize)
     vp->ysize = ysize;
 
     //vp->status_size = 2;
-    vp->raxis_size = 8;
+    vp->raxis_size = 10;
 
     int x, y;
 

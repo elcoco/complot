@@ -39,6 +39,10 @@
 // TODO now index data limits are used, but group data limits allows for auto scale
 // TODO dataleak for Points, Viewport and groups
 // TODO option disable autoscale
+//
+// TODO to highlight the last axis ticker we need to have access to
+//      the tail of the groups linked list. then iter until we find a non-empty node.
+// TODO find a way to decide on the precision of tickers on axis
 
 #define BUF_SIZE 1000
 #define DELIM_STR ","
@@ -180,7 +184,7 @@ bool check_user_input(void* arg)
 {
     // s struct is passed as an argument to a callback, cast it to the proper type
     State* s = arg;
-    MEVENT event;       // curses mouse event
+    //MEVENT event;       // curses mouse event
                         //
     /* check for user input, return 1 if there was input */
     int c = getch();
@@ -253,15 +257,15 @@ bool check_user_input(void* arg)
             case ' ':
                 s->is_paused = !s->is_paused;
                 break;
-            case KEY_MOUSE:
-                if (getmouse(&event) == OK) {
-                    if(event.bstate & BUTTON1_CLICKED) {
-                        // This works for left-click
-                        s->clicked_x = event.x;
-                        s->clicked_y = event.y;
-                    }
-                }
-                break;
+            //case KEY_MOUSE:
+            //    if (getmouse(&event) == OK) {
+            //        if(event.bstate & BUTTON1_CLICKED) {
+            //            // This works for left-click
+            //            s->clicked_x = event.x;
+            //            s->clicked_y = event.y;
+            //        }
+            //    }
+            //    break;
             default:
                 return false;
         }
