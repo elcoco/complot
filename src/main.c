@@ -297,6 +297,7 @@ void update(State* s, Index* index)
     show_matrix(vp);
 
     set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d", s->is_paused, s->panx, s->pany, index->npoints, s->gsize);
+    groups_destroy(groups);
 }
 
 void loop(State* s, Index* index)

@@ -18,6 +18,9 @@ void vp_draw_candlestick(ViewPort* vp, uint32_t ix, int32_t iopen, int32_t ihigh
     //set_status(1, "%d %d %d %d %d", ix, iopen, ihigh, ilow, iclose);
     /* draw one candlestick in viewport */
     // GREEN
+    //ilow = (ilow < 0) ? 0 : ilow;
+    //ihigh = (ihigh > vp->ysize-1) ? vp->ysize-1 : ihigh;
+
     if (iopen < iclose) {
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < 0 || y > vp->ysize-1)
@@ -68,7 +71,6 @@ void vp_draw_candlesticks(ViewPort* vp, Groups* groups, double dmin, double dmax
             uint32_t ihigh  = map(g->high,  dmin, dmax, 0, vp->ysize-1) + yoffset;
             uint32_t ilow   = map(g->low,   dmin, dmax, 0, vp->ysize-1) + yoffset;
             uint32_t iclose = map(g->close, dmin, dmax, 0, vp->ysize-1) + yoffset;
-
 
             vp_draw_candlestick(vp, ix, iopen, ihigh, ilow, iclose);
         }

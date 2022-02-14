@@ -61,13 +61,13 @@ int8_t index_extend(Index* index)
 
 Bin* bin_create(Index* index, uint32_t i)
 {
-    Bin* b = (Bin*)malloc(sizeof(Bin));
+    Bin* b = malloc(sizeof(Bin));
 
+    // set x window
     b->wstart = (i*index->spread) + index->dmin;
     b->wend = b->wstart + index->spread -1;
 
     b->is_empty = true;
-
 
     // init line container
     b->lines = (Line**)malloc(index->nlines*sizeof(Line*));
@@ -152,10 +152,11 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* p)
     // map data to array index
     int32_t i = index_map_to_index(index, p->x);
 
-    // check if index is too small for data
+    // check if index is too small to hold data
     if (i > index->isize-1) {
-        printf("Out of bounds, grow to right!: %d > %d \n", i, index->isize-1);
-        index_extend(index);
+        if (index_extend(index) < 0)
+            return -1;
+
     } else if (i < 0) {
         printf("Out of bounds, grow to left!: %d < 0 \n", i);
         return -1;
@@ -289,6 +290,17 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
     groups->group = *ghead;
     return groups;
 }
+
+void groups_destroy(Groups* groups)
+{
+    Group* g = groups->group;
+    while (g != NULL) {
+        free(g);
+        g = g->next;
+    }
+    free(groups);
+}
+
 
 void groups_print(Group* g)
 {

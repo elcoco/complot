@@ -167,6 +167,8 @@ int8_t line_add_point(Line* l, Point* p);
 Group* group_create(Index* index, int32_t gstart, uint32_t gsize);
 
 void groups_print(Group* g);
+void groups_destroy(Groups* groups);
+
 void points_print(Point* p);
 
 void point_append(Point* p, Point** tail);
