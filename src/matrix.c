@@ -201,7 +201,7 @@ ViewPort* vp_init(uint32_t xsize, uint32_t ysize)
     vp->xaxis_ystart = vp->status_size;
 
     vp->pxstart = vp->lyaxis_size;
-    vp->pystart = vp->status_size + vp->xaxis_ysize + 1;
+    vp->pystart = vp->status_size + vp->xaxis_ysize;
 
 
     int x, y;
