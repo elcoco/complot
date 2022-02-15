@@ -227,6 +227,8 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
 
         Group* g = group_create(index, gstart, gsize);
 
+        g->id = gstart / gsize;
+
         // connect linked list
         if (*ghead == NULL) {
             *ghead = g;

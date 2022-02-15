@@ -44,6 +44,9 @@ struct Group {
     // iter groups using linked list
     Group* next;
     Group* prev;
+
+    // group number, is used to draw xaxis tickers beneath candles
+    uint32_t id;
 };
 
 /* container returned from index_get_grouped() */

@@ -8,7 +8,7 @@
 
 #include "matrix.h"
 
-#define CHECK_INTERVAL 1000
+#define CHECK_INTERVAL 10000
 
 #define CRED     1
 #define CGREEN   2

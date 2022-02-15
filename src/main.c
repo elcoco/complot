@@ -44,10 +44,9 @@
 //      the tail of the groups linked list. then iter until we find a non-empty node.
 // TODO find a way to decide on the precision of tickers on axis
 // TODO check how new size for index is calculated
+// TODO x tickers should follow data not columns
 
 #define BUF_SIZE 1000
-#define DELIM_STR ","
-#define STDIN 0
 
 uint32_t counter = 0;
 
@@ -300,8 +299,9 @@ void update(State* s, Index* index)
     }
 
     vp_draw_candlesticks(vp, groups, s->dmin, s->dmax, s->pany);
-    vp_draw_raxis(vp, s);
+    vp_draw_ryaxis(vp, s);
     vp_draw_last_data(vp, s, (*index->ptail)->close);
+    vp_draw_xaxis(vp, s, groups);
     show_matrix(vp);
 
     set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d", s->is_paused, s->panx, s->pany, index->npoints, s->gsize);
