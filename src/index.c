@@ -1,9 +1,9 @@
 #include "index.h"
 
-Index* index_create(int32_t grow_amount, int32_t spread, uint8_t nlines)
+Index* index_create(uint8_t nlines)
 {
     Index* index = (Index*)malloc(sizeof(Index));
-    index->bins = (Bin**)malloc(grow_amount*sizeof(Bin*));
+    index->bins = (Bin**)malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
 
     index->phead = (Point**)malloc(sizeof(Point*));
     index->ptail = (Point**)malloc(sizeof(Point*));
@@ -11,10 +11,10 @@ Index* index_create(int32_t grow_amount, int32_t spread, uint8_t nlines)
     *(index->ptail) = NULL;
 
     // data distance inbetween aray indices
-    index->spread = spread;
+    index->spread = INDEX_DEFAULT_SPREAD;
 
-    index->grow_amount = grow_amount;
-    index->isize = grow_amount;
+    index->grow_amount = INDEX_DEFAULT_GROW_AMOUNT;
+    index->isize = INDEX_DEFAULT_GROW_AMOUNT;
     index->nlines = nlines;
 
     index->ilast = 0;
@@ -130,16 +130,46 @@ void index_set_data_limits(Index* index, Point* p)
         index->dmin = p->low;
 }
 
-int8_t index_insert(Index* index, uint8_t lineid, Point* p)
+
+void index_reindex(Index* index)
 {
-    /* Insert point into index, create Bin if necessary
-     */
-    // first insert determines the index start
+    printf("Reindexing index...\n");
+
+    // destroy old bins
+    Bin** b = index->bins;
+    for (int i=0 ; i<index->isize ; i++,b++)
+        free(*b);
+    free(index->bins);
+
+    // create new bins
+    index->bins = (Bin**)malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
+    index_build(index);
+
+    // TODO find new spread
+
+    Point* p = *index->phead;
+    while (p->next != NULL) {
+        index_insert(index, p);
+        p = p->next;
+    }
+
+}
+
+int8_t index_insert(Index* index, Point* p)
+{
+    /* Insert point into index, create Bin if necessary */
+
+    // first insert determines the index start x
     if (! index->is_initialized) {
-        // set initial position of data limits
         index->dmin = p->low;
         index->dmax = p->high;
         index_build(index);
+    }
+
+    // about to insert second point, we can calculate the spread now and reindex
+    if (index->npoints == 1) {
+        index->spread = p->x - (*index->phead)->x;
+        index_reindex(index);
     }
 
     // connect point in linked list, this is used to regenerate index when spread changes
@@ -159,14 +189,14 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* p)
             return -1;
 
     } else if (i < 0) {
-        printf("Out of bounds, grow to left!: %d < 0 \n", i);
+        printf("Out of bounds, grow to left not implemented...\n");
         return -1;
     }
 
     // update data limits
     index_set_data_limits(index, p);
 
-    // keep track of last non-empty bin.
+    // keep track of last non-empty bin index
     if (i > index->ilast)
         index->ilast = i;
 
@@ -174,7 +204,7 @@ int8_t index_insert(Index* index, uint8_t lineid, Point* p)
     Bin* b  = index->bins[i];
     b->is_empty = false;
 
-    Line* l = b->lines[lineid];
+    Line* l = b->lines[p->lineid];
     line_add_point(l, p);
 
     index->npoints++;
@@ -340,7 +370,7 @@ void index_print(Index* index)
     }
 }
 
-Point* point_create(int32_t x, double open, double high, double low, double close)
+Point* point_create(uint32_t lineid, int32_t x, double open, double high, double low, double close)
 {
     //printf("NEW POINT: %3d = %9f %9f %9f %9f\n", x, open, high, low, close);
     Point* p = (Point*)malloc(sizeof(Point));
@@ -349,6 +379,7 @@ Point* point_create(int32_t x, double open, double high, double low, double clos
     p->high = high;
     p->low = low;
     p->close = close;
+    p->lineid = lineid;
     return p;
 }
 

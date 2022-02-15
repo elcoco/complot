@@ -15,6 +15,9 @@ typedef struct Index Index;
 typedef struct Point Point;
 typedef struct Line Line;
 
+#define INDEX_DEFAULT_GROW_AMOUNT 2000
+#define INDEX_DEFAULT_SPREAD 5
+
 /* Point holds data for a one datapoint */
 struct Point {
     int32_t x;
@@ -24,6 +27,7 @@ struct Point {
     double close;
     Point* prev;
     Point* next;
+    uint32_t lineid;
 };
 
 /* A Group is a slice of the bins array in Index, for one line.
@@ -106,11 +110,11 @@ struct Bin {
 
 /* Index holds columns */
 struct Index {
-    // grow/extend index when we're trying to add an out of bound value
+    // grow/extend bins array when we're trying to add an out of bound value
     int32_t grow_amount;
 
     // space between index x values
-    int32_t spread;
+    double spread;
 
     // This is the actual index array
     // It holds grouped datapoints. Array indices are evenly spaced.
@@ -150,21 +154,22 @@ struct Index {
 // build an index of groups with a x xindow
 // In the groups are sets of datapoints that fall within this window
 // the sets are grouped by line name
-Index* index_create(int32_t grow_amount, int32_t spread, uint8_t nlines);
+Index* index_create(uint8_t nlines);
 int8_t index_build(Index* index);
 int32_t index_map_to_index(Index* index, int32_t x);
 int32_t index_map_to_x(Index* index, int32_t i);
 int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount);
+void index_reindex(Index* index);
 
 // inserts point in appropriate line in group, creates new if data falls out of current index range
 // line_id is the array index for line, is mapped by ENUM
-int8_t index_insert(Index* index, uint8_t lineid, Point* point);
+int8_t index_insert(Index* index, Point* point);
 void index_print(Index* index);
 
 // get last amount of grouped bins with size gsize
 Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
 
-Point* point_create(int32_t x, double open, double high, double low, double close);
+Point* point_create(uint32_t lineid, int32_t x, double open, double high, double low, double close);
 int8_t point_destroy(Point* point);
 
 int8_t line_add_point(Line* l, Point* p);

@@ -1,5 +1,11 @@
 #include "utils.h"
 
+void die(char* msg)
+{
+    printf("ERROR: %s\n", msg);
+    exit(0);
+}
+
 float get_avg(float avg, uint16_t i, float value)
 {
     return (avg * i + value) / (i+1);

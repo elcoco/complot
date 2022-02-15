@@ -11,40 +11,31 @@
 #include "matrix.h"
 #include "ui.h"
 
-#define INDEX_GROW_AMOUNT 1000
-#define INDEX_SPREAD 8
 #define NLINES 2
 
-#define DEFAULT_GROUP_SIZE 2
-#define GROUPS 70 // = xsize
-#define YSIZE 60
+#define DEFAULT_GROUP_SIZE 1
 
 #define SLEEP_MS 1000000
 
 #define DEFAULT_PAN_STEPS 3
 #define DEFAULT_PAN_BIG_STEPS 5
 
-// amount of status lines
-#define STATUS_LINES 2
-
-// TODO extend index when out of bounds
+// DONE extend index when out of bounds
 // DONE get groups x amount of groups from last known data
 // DONE create points linked list
-// TODO create CSV file reader
+// DONE create CSV file reader
 // DONE add xwin dimension to group
-// TODO draw candlesticks
-// TODO return groups as linked list
-// TODO keep track of data min and max. we need this info when drawing candlesticks
+// DONE draw candlesticks
+// DONE return groups as linked list
+// DONE keep track of data min and max. we need this info when drawing candlesticks
 // DONE segfault when GROUP_SIZE = 1 or 2
-// TODO now index data limits are used, but group data limits allows for auto scale
-// TODO dataleak for Points, Viewport and groups
-// TODO option disable autoscale
+// DONE now index data limits are used, but group data limits allows for auto scale
+// DONE dataleak for Points, Viewport and groups
+// DONE option disable autoscale
 //
-// TODO to highlight the last axis ticker we need to have access to
-//      the tail of the groups linked list. then iter until we find a non-empty node.
 // TODO find a way to decide on the precision of tickers on axis
-// TODO check how new size for index is calculated
-// TODO x tickers should follow data not columns
+// DONE x tickers should follow data not columns
+// TODO reindex on second datapoint and calculate spread dynamically
 
 #define BUF_SIZE 1000
 
@@ -62,6 +53,7 @@ void on_sigint(int signum)
 {
     sigint_caught = 1;
 }
+
 bool fast_forward(char** c, char* search_lst, char* expected_lst, char* ignore_lst, char* buf)
 {
     /* fast forward until a char from search_lst is found
@@ -102,24 +94,18 @@ bool fast_forward(char** c, char* search_lst, char* expected_lst, char* ignore_l
     return true;
 }
 
-void die(char* msg)
-{
-    printf("ERROR: %s\n", msg);
-    exit(0);
-}
-
-//int read_stdin3(char* fmt)
 int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t ilow, uint8_t iclose)
 {
     char buf[BUF_SIZE] = {'\0'};
     char tmpbuf[BUF_SIZE] = {'\0'};
+    uint32_t xsteps = 5;
 
     // x incrementer, must be a converted datetime but for now this will do
     uint32_t ix = 0;
 
     while (fgets(buf, sizeof(buf), stdin) != NULL) {
         if (ix == 0) {
-            ix++;
+            ix+=xsteps;
             continue;
         }
 
@@ -150,15 +136,15 @@ int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t 
                 tmpbuf[0] = '\0';
             }
 
-            Point* p = point_create(ix, open, high, low, close);
-            if (index_insert(index, LINE1, p) < 0)
+            Point* p = point_create(LINE1, ix, open, high, low, close);
+            if (index_insert(index, p) < 0)
                 return -1;
 
         } else {
             printf("too long!!! %lu: %s\n", strlen(buf), buf);
         }
 
-        ix++;
+        ix+=xsteps;
     }
     return 1;
 }
@@ -304,7 +290,7 @@ void update(State* s, Index* index)
     vp_draw_xaxis(vp, s, groups);
     show_matrix(vp);
 
-    set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d", s->is_paused, s->panx, s->pany, index->npoints, s->gsize);
+    set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
     groups_destroy(groups);
 }
 
@@ -342,13 +328,9 @@ int main(int argc, char **argv)
     set_defaults(&s);
 
     // holds all data and normalizes into bins
-    Index* index = index_create(INDEX_GROW_AMOUNT, INDEX_SPREAD, NLINES);
+    Index* index = index_create(NLINES);
 
     read_stdin(index, 0,2,3,4,5);
-
-    //Groups* groups = index_get_grouped(index, LINE1, GROUP_SIZE, 50, s.panx, s.pany);
-    //groups_print(groups->group);
-    //return 1;
 
     init_ui();                  // setup curses ui
 
