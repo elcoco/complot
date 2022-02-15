@@ -118,6 +118,7 @@ void group_append(Group* g, Group** tail)
     Group* prev = *tail;
     *tail = g;
     prev->next = g;
+    g->prev = prev;
 }
 
 void index_set_data_limits(Index* index, Point* p)
@@ -210,17 +211,17 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
     // calculate at which bin index the first group starts
     int32_t gstart = index_get_gstart(index, gsize, amount) + (x_offset*gsize);
 
-    // setup linked list
-    Group** ghead = (Group**)malloc(sizeof(Group*));
-    Group** gtail = (Group**)malloc(sizeof(Group*));
-    *gtail = NULL;
-    *ghead = NULL;
-
     // create groups container
     Groups* groups = (Groups*)malloc(sizeof(Groups));
     groups->is_empty = true;
     groups->dmin = index->dmin;
     groups->dmax = index->dmax;
+
+    // setup linked list
+    Group** ghead = (Group**)malloc(sizeof(Group*));
+    Group** gtail = (Group**)malloc(sizeof(Group*));
+    *gtail = NULL;
+    *ghead = NULL;
 
     for (int32_t gindex=0 ; gindex<amount ; gstart+=gsize, gindex++) {
 
@@ -285,9 +286,9 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
                 groups->gmin = g->low;
         }
     }
-    free(gtail);
 
     groups->group = *ghead;
+    groups->gtail = *gtail;
     return groups;
 }
 

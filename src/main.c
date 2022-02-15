@@ -43,6 +43,7 @@
 // TODO to highlight the last axis ticker we need to have access to
 //      the tail of the groups linked list. then iter until we find a non-empty node.
 // TODO find a way to decide on the precision of tickers on axis
+// TODO check how new size for index is calculated
 
 #define BUF_SIZE 1000
 #define DELIM_STR ","
@@ -281,12 +282,14 @@ bool check_user_input(void* arg)
 
 void update(State* s, Index* index)
 {
+    // TODO check if data or exit early
     Groups* groups;
+    ViewPort* vp = vp_init(COLS, LINES);
 
     if (s->fit_all)
-        s->gsize = ceil(index->isize / COLS) +1;
+        s->gsize = ceil(index->isize / vp->pxsize);
         
-    if ((groups = index_get_grouped(index, LINE1, s->gsize, COLS, s->panx, s->pany)) == NULL) {
+    if ((groups = index_get_grouped(index, LINE1, s->gsize, vp->pxsize, s->panx, s->pany)) == NULL) {
         set_status(1, "error");
         return;
     }
@@ -296,11 +299,10 @@ void update(State* s, Index* index)
         s->dmax = groups->gmax;
     }
 
-    ViewPort* vp = vp_init(COLS, LINES-STATUS_LINES);
     vp_draw_candlesticks(vp, groups, s->dmin, s->dmax, s->pany);
+    vp_draw_raxis(vp, s);
+    vp_draw_last_data(vp, s, (*index->ptail)->close);
     show_matrix(vp);
-    vp_draw_raxis(vp, s->dmin, s->dmax, s->pany);
-
 
     set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d", s->is_paused, s->panx, s->pany, index->npoints, s->gsize);
     groups_destroy(groups);

@@ -61,42 +61,83 @@ void vp_draw_candlesticks(ViewPort* vp, Groups* groups, double dmin, double dmax
 {
     /* itter groups and draw them in viewport */
     Group* g = groups->group;
-    uint32_t ix = 0;
+
+    // start at this xy indices
+    uint32_t ix = vp->pxstart;
+    uint32_t iy = vp->pystart;
 
     while (g != NULL) {
         if (! g->is_empty) {
 
             // map data point from data range to terminal rows range
-            uint32_t iopen  = map(g->open,  dmin, dmax, 0, vp->ysize-1) + yoffset;
-            uint32_t ihigh  = map(g->high,  dmin, dmax, 0, vp->ysize-1) + yoffset;
-            uint32_t ilow   = map(g->low,   dmin, dmax, 0, vp->ysize-1) + yoffset;
-            uint32_t iclose = map(g->close, dmin, dmax, 0, vp->ysize-1) + yoffset;
+            uint32_t iopen  = map(g->open,  dmin, dmax, iy, vp->ysize-1) + yoffset;
+            uint32_t ihigh  = map(g->high,  dmin, dmax, iy, vp->ysize-1) + yoffset;
+            uint32_t ilow   = map(g->low,   dmin, dmax, iy, vp->ysize-1) + yoffset;
+            uint32_t iclose = map(g->close, dmin, dmax, iy, vp->ysize-1) + yoffset;
 
             vp_draw_candlestick(vp, ix, iopen, ihigh, ilow, iclose);
-            set_status(1, "last: %f->%f", g->open, g->close);
         }
         g = g->next;
         ix++;
     }
 }
 
-void vp_draw_raxis(ViewPort* vp, double dmin, double dmax, int32_t pany)
+void vp_draw_raxis(ViewPort* vp, State* s)
 {
+    /* calculate axis values and draw them in matrix.
+     * Also highlight last value of last point (not group)
+     */
     // calculate stepsize between tickers
-    double step = (dmax - dmin) / vp->ysize;
+    double step = (s->dmax - s->dmin) / vp->pxsize;
 
     // calculate first column of axis
     uint32_t xstart = vp->xsize - vp->raxis_size -1;
 
-    int32_t i = vp->ysize-1;
+    for (int32_t iy=vp->pystart ; iy<vp->ysize ; iy++) {
 
-    for (uint32_t iy=0 ; iy<vp->ysize ; iy++, i--) {
+        char t[30] = {'\0'};
+        sprintf(t, "%1.7f", s->dmin + ((iy - s->pany)*step));
+        char* ptr = t;
 
-        char t[20] = {'\0'};
-        sprintf(t, "%1.7f", dmin + ((i-pany)*step));
-        mvprintw(iy, xstart, "%s", t);
-        refresh();
+        for (uint32_t ix=xstart ; ix<xstart+strlen(t) ; ix++, ptr++) {
+            if (ix >= vp->xsize)
+                break;
+            Cell* c = vp_get_cell(vp, ix, iy);
+            c->chr[0] = *ptr;
+            c->fgcol = WHITE;
+        }
     }
+    refresh();
+}
+
+void vp_draw_last_data(ViewPort* vp, State* s, double lasty)
+{
+    // calculate first column of axis
+    uint32_t xstart = vp->xsize - vp->raxis_size -1;
+
+    // calculate y index of last data
+    int32_t ilasty = map(lasty, s->dmin, s->dmax, vp->pystart, vp->ysize-1) + s->pany;
+
+    char t[20] = {'\0'};
+    sprintf(t, "%1.7f", lasty);
+    char* ptr = t;
+
+    if (ilasty < vp->pystart || ilasty >= vp->ysize)
+        return;
+
+    for (int32_t ix=xstart ; ix<xstart+strlen(t) ; ix++, ptr++) {
+        if (ix >= vp->xsize)
+            break;
+        Cell* c = vp_get_cell(vp, ix, ilasty);
+        c->chr[0] = *ptr;
+        c->fgcol = GREEN;
+    }
+    for (int32_t ix=vp->pxstart ; ix<vp->pxstart+vp->pxsize ; ix++, ptr++) {
+        Cell* c = vp_get_cell(vp, ix, ilasty);
+        if (c->chr[0] == ' ')
+            c->chr[0] = '.';
+    }
+    refresh();
 }
 
 
@@ -110,11 +151,22 @@ ViewPort* vp_init(uint32_t xsize, uint32_t ysize)
 {
     ViewPort* vp = malloc(sizeof(ViewPort));
 
+    vp->status_size = 2;
+
     vp->xsize = xsize;
     vp->ysize = ysize;
 
-    //vp->status_size = 2;
+    vp->laxis_size = 0;
     vp->raxis_size = 10;
+
+    vp->pxsize = xsize - vp->laxis_size - vp->raxis_size -2;
+    vp->pysize = ysize - vp->status_size;
+
+    vp->laxis_start = 0;
+    vp->raxis_start = vp->laxis_size + vp->pxsize + 2;
+
+    vp->pxstart = vp->laxis_size;
+    vp->pystart = vp->status_size;
 
     int x, y;
 

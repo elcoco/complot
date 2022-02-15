@@ -43,11 +43,13 @@ struct Group {
 
     // iter groups using linked list
     Group* next;
+    Group* prev;
 };
 
 /* container returned from index_get_grouped() */
 struct Groups {
     Group* group;
+    Group* gtail;
 
     // data limits for all data in index
     double dmin;

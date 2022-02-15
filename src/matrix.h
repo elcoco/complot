@@ -52,13 +52,17 @@ struct Cell {
 // Represents the nodes that are visible on screen
 // Holds a subset of Matrix->nodes,
 struct ViewPort {
-    // cols and rows sizes
+    // total area dimensions
     int xsize;
     int ysize;
 
-    // cols and rows of plot area
+    // plot area dimensions
     int pxsize;
     int pysize;
+
+    // coordinates of bottom left corner of plot area
+    int pxstart;
+    int pystart;
 
     // 2d array representing data on screen
     // every index has a cell struct
@@ -67,18 +71,12 @@ struct ViewPort {
     // In this case do something cool with color and chars
     Cell*** cells;
 
-    // bottom right coordinates
-    int xend;
-    int yend;
-
-    //void(*vp_print)(ViewPort* vp);
-    //void(*vp_free)(ViewPort* vp);
-    //Cell*(*vp_get_cell)(ViewPort* vp, uint32_t x, uint32_t y);
-    //void(*vp_draw_candlestick)(ViewPort* vp, Group* g, uint32_t ix, double dmin, double dmax);
-
     // width of axis
+    int laxis_size;
     int raxis_size;
-    //uint32_t laxis_size;
+
+    int laxis_start;
+    int raxis_start;
 
     // no of lines in status bar
     uint32_t status_size;
@@ -89,7 +87,8 @@ Cell* vp_get_cell(ViewPort* vp, uint32_t x, uint32_t y);
 void vp_draw_candlestick(ViewPort* vp, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
 void vp_draw_candlesticks(ViewPort* vp, Groups* groups, double dmin, double dmax, int32_t yoffset);
 void vp_clear_cells(ViewPort* vp);
-void vp_draw_raxis(ViewPort* vp, double dmin, double dmax, int32_t pany);
+void vp_draw_raxis(ViewPort* vp, State* s);
+void vp_draw_last_data(ViewPort* vp, State* s, double lasty);
 
 
 ViewPort* vp_init(uint32_t xsize, uint32_t ysize);
