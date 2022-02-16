@@ -36,8 +36,8 @@ struct Point {
  */
 struct Group {
     //Bin** bins;
-    int32_t wstart;
-    int32_t wend;
+    double wstart;
+    double wend;
 
     double open;
     double high;
@@ -156,8 +156,8 @@ struct Index {
 // the sets are grouped by line name
 Index* index_create(uint8_t nlines);
 int8_t index_build(Index* index);
-int32_t index_map_to_index(Index* index, int32_t x);
-int32_t index_map_to_x(Index* index, int32_t i);
+int32_t index_map_to_index(Index* index, double x);
+double index_map_to_x(Index* index, int32_t i);
 int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount);
 void index_reindex(Index* index);
 

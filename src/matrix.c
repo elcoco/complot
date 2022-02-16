@@ -154,8 +154,8 @@ void vp_draw_xaxis(ViewPort* vp, State* s, Groups* groups)
     while (g != NULL) {
         if (g->id % XTICK_SPACING == 0) {
 
-            char t[10] = {'\0'};
-            sprintf(t, "%d", g->wstart);
+            char t[30] = {'\0'};
+            sprintf(t, "%5.2f", g->wstart);
             char* tptr = t;
 
             for (uint32_t x=ix ; x<ix+strlen(t) ; x++, tptr++) {
@@ -166,11 +166,9 @@ void vp_draw_xaxis(ViewPort* vp, State* s, Groups* groups)
                 c->chr[0] = *tptr;
             }
         }
-
         g = g->next;
         ix++;
     }
-
 }
 
 

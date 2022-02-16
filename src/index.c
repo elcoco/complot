@@ -81,13 +81,13 @@ Bin* bin_create(Index* index, uint32_t i)
     return b;
 }
 
-int32_t index_map_to_index(Index* index, int32_t x)
+int32_t index_map_to_index(Index* index, double x)
 {
     /* Map data X value to an array index */
     return (x - index->dmin) / index->spread;
 }
 
-int32_t index_map_to_x(Index* index, int32_t i)
+double index_map_to_x(Index* index, int32_t i)
 {
     /* Map index to x value */
     return (i * index->spread) + index->dmin;
@@ -342,9 +342,9 @@ void groups_print(Group* g)
 
     while (g != NULL) {
         if (g->is_empty)
-            printf("%5d %6d %5d %9s %9s %9s %9s\n", c, g->wstart, g->wend, "empty", "empty", "empty", "empty");
+            printf("%5d %6f %5f %9s %9s %9s %9s\n", c, g->wstart, g->wend, "empty", "empty", "empty", "empty");
         else
-            printf("%5d %6d %5d %9f %9f %9f %9f\n", c, g->wstart, g->wend, g->open, g->high, g->low, g->close);
+            printf("%5d %6f %5f %9f %9f %9f %9f\n", c, g->wstart, g->wend, g->open, g->high, g->low, g->close);
         g = g->next;
         c++;
     }

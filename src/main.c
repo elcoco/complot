@@ -333,6 +333,12 @@ int main(int argc, char **argv)
 
     read_stdin(index, 0,2,3,4,5);
 
+
+    //Groups* groups;
+    //groups = index_get_grouped(index, LINE1, s.gsize, 50, 0, 0);
+    //groups_print(groups->group);
+    //return 0;
+
     init_ui();                  // setup curses ui
 
     loop(&s, index);
