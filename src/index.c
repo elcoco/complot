@@ -133,7 +133,8 @@ void index_set_data_limits(Index* index, Point* p)
 
 void index_reindex(Index* index)
 {
-    printf("Reindexing index...\n");
+    /* After updating spread, recreate all bins from points linked list. */
+    printf("Reindexing index with spread: %f\n", index->spread);
 
     // destroy old bins
     Bin** b = index->bins;
@@ -145,14 +146,11 @@ void index_reindex(Index* index)
     index->bins = (Bin**)malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
     index_build(index);
 
-    // TODO find new spread
-
     Point* p = *index->phead;
     while (p->next != NULL) {
         index_insert(index, p);
         p = p->next;
     }
-
 }
 
 int8_t index_insert(Index* index, Point* p)

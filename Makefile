@@ -13,8 +13,8 @@ $(shell mkdir -p $(BUILD_DIR))
 # target: dependencies
 # 	  action
 
-default: csv.o matrix.o ui.o utils.o index.o main.o
-	$(CC) $(BUILD_DIR)/csv.o $(BUILD_DIR)/matrix.o $(BUILD_DIR)/ui.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/index.o $(BUILD_DIR)/main.o $(CFLAGS) -o $(BIN_DIR)/complot
+default: json_parser.o perr.o csv.o matrix.o ui.o utils.o index.o main.o
+	$(CC) $(BUILD_DIR)/json_parser.o $(BUILD_DIR)/perr.o $(BUILD_DIR)/csv.o $(BUILD_DIR)/matrix.o $(BUILD_DIR)/ui.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/index.o $(BUILD_DIR)/main.o $(CFLAGS) -o $(BIN_DIR)/complot
 
 utils.o: $(SRC_DIR)/utils.c $(SRC_DIR)/utils.h
 	$(CC) -c $(SRC_DIR)/utils.c $(CFLAGS) -o $(BUILD_DIR)/utils.o
@@ -33,6 +33,12 @@ ui.o: $(SRC_DIR)/ui.c $(SRC_DIR)/ui.h
 
 index.o: $(SRC_DIR)/index.c $(SRC_DIR)/index.h
 	$(CC) -c $(SRC_DIR)/index.c $(CFLAGS) -o $(BUILD_DIR)/index.o
+
+perr.o: $(SRC_DIR)/json/perr.c $(SRC_DIR)/json/perr.h
+	$(CC) -c $(SRC_DIR)/json/perr.c $(CFLAGS) -o $(BUILD_DIR)/perr.o
+
+json_parser.o: $(SRC_DIR)/json/json_parser.c $(SRC_DIR)/json/json_parser.h $(SRC_DIR)/json/perr.h
+	$(CC) -c $(SRC_DIR)/json/json_parser.c $(CFLAGS) -o $(BUILD_DIR)/json_parser.o
 
 clean:
 	rm $(BUILD_DIR)/*.o

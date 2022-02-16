@@ -11,6 +11,9 @@
 #include "matrix.h"
 #include "ui.h"
 
+#include "json/json_parser.h"
+#include "json/perr.h"
+
 #define NLINES 2
 
 #define DEFAULT_GROUP_SIZE 1
@@ -113,7 +116,7 @@ int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t 
         if (buf[strlen(buf)-1] == '\n') {
             char* spos = buf;
             int c = 0;
-            double open, high, low, close;
+            double idt, open, high, low, close;
 
             while (fast_forward(&spos, ",\n", NULL, NULL, tmpbuf)) {
 
@@ -123,7 +126,9 @@ int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t 
                 setlocale(LC_NUMERIC,"C");
 
                 // NOTE atof failes on unicode!!!!
-                if (c == iopen)
+                if (c == idt)
+                    idt = atof(tmpbuf);
+                else if (c == iopen)
                     open = atof(tmpbuf);
                 else if (c == ihigh)
                     high = atof(tmpbuf);
@@ -313,6 +318,35 @@ void loop(State* s, Index* index)
     }
 }
 
+void old()
+{
+    JSONNode *root = parse_file("json/btcusd.json");
+    if (root == NULL) {
+        perr();
+        return -1;
+    }
+    JSONNode* json = root->child;
+
+    while (json != NULL) {
+        JSONNode* child = json->child;
+
+        while (child != NULL) {
+            if (child->dtype == FLOAT)
+                printf(">>> FLOAT: %f\n", *((float*)child->value));
+            else if (child->dtype == INT)
+                printf(">>> INT: %d\n", *((int*)child->value));
+
+            child = child->next;
+        }
+        printf("\n");
+
+
+        json = json->next;
+    }
+
+    root->print_all(root);
+}
+
 int main(int argc, char **argv)
 {
     // for UTF8 in curses, messes with atof() see: read_stdin()
@@ -332,7 +366,6 @@ int main(int argc, char **argv)
     Index* index = index_create(NLINES);
 
     read_stdin(index, 0,2,3,4,5);
-
 
     //Groups* groups;
     //groups = index_get_grouped(index, LINE1, s.gsize, 50, 0, 0);
