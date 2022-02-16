@@ -35,7 +35,8 @@
 //
 // TODO find a way to decide on the precision of tickers on axis
 // DONE x tickers should follow data not columns
-// TODO reindex on second datapoint and calculate spread dynamically
+// DONE reindex on second datapoint and calculate spread dynamically
+// TODO on reindex first point is added to linked list again
 
 #define BUF_SIZE 1000
 
