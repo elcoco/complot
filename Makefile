@@ -13,8 +13,8 @@ $(shell mkdir -p $(BUILD_DIR))
 # target: dependencies
 # 	  action
 
-default: json_parser.o perr.o csv.o matrix.o ui.o utils.o index.o main.o
-	$(CC) $(BUILD_DIR)/json_parser.o $(BUILD_DIR)/perr.o $(BUILD_DIR)/csv.o $(BUILD_DIR)/matrix.o $(BUILD_DIR)/ui.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/index.o $(BUILD_DIR)/main.o $(CFLAGS) -o $(BIN_DIR)/complot
+default: json_parser.o perr.o csv.o plot.o ui.o utils.o index.o main.o
+	$(CC) $(BUILD_DIR)/json_parser.o $(BUILD_DIR)/perr.o $(BUILD_DIR)/csv.o $(BUILD_DIR)/plot.o $(BUILD_DIR)/ui.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/index.o $(BUILD_DIR)/main.o $(CFLAGS) -o $(BIN_DIR)/complot
 
 utils.o: $(SRC_DIR)/utils.c $(SRC_DIR)/utils.h
 	$(CC) -c $(SRC_DIR)/utils.c $(CFLAGS) -o $(BUILD_DIR)/utils.o
@@ -22,8 +22,8 @@ utils.o: $(SRC_DIR)/utils.c $(SRC_DIR)/utils.h
 csv.o: $(SRC_DIR)/csv.c $(SRC_DIR)/csv.h
 	$(CC) -c $(SRC_DIR)/csv.c $(CFLAGS) -o $(BUILD_DIR)/csv.o
 
-matrix.o: $(SRC_DIR)/matrix.c $(SRC_DIR)/matrix.h
-	$(CC) -c $(SRC_DIR)/matrix.c $(CFLAGS) -o $(BUILD_DIR)/matrix.o
+plot.o: $(SRC_DIR)/plot.c $(SRC_DIR)/plot.h
+	$(CC) -c $(SRC_DIR)/plot.c $(CFLAGS) -o $(BUILD_DIR)/plot.o
 
 main.o: $(SRC_DIR)/main.c 
 	$(CC) -c $(SRC_DIR)/main.c $(CFLAGS) -o $(BUILD_DIR)/main.o

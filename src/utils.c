@@ -23,7 +23,7 @@ uint32_t map(double value, double in_min, double in_max, uint32_t out_min, uint3
 
 uint32_t count_digits(uint32_t n)
 {
-    return floor(log10(n) + 1);
+    return (n==0) ? 1 : floor(log10(n) + 1);
 }
 
 uint32_t find_nfrac(double f)

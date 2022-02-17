@@ -8,7 +8,7 @@
 
 #include "index.h"
 #include "utils.h"
-#include "matrix.h"
+#include "plot.h"
 #include "ui.h"
 
 #include "json/json_parser.h"
@@ -41,7 +41,7 @@
 // DONE reindex on second datapoint and calculate spread dynamically
 // TODO on reindex first point is added to linked list again
 // TODO create update function in index
-// TODO rename component to plot oid
+// DONE rename component to plot oid
 // TODO write better makefile
 
 #define BUF_SIZE 1000
@@ -278,14 +278,13 @@ void update(State* s, Index* index)
 {
     // TODO check if data or exit early
     Groups* groups;
-    ViewPort* vp = vp_init(COLS, LINES);
+    Plot* pl = pl_init(COLS, LINES);
 
-    vp_draw_ryaxis(vp, s);
 
-    if (s->fit_all)
-        s->gsize = ceil(index->isize / vp->pxsize);
+    //if (s->fit_all)
+    //    s->gsize = ceil(index->isize / pl->pxsize);
         
-    if ((groups = index_get_grouped(index, LINE1, s->gsize, vp->pxsize, s->panx, s->pany)) == NULL) {
+    if ((groups = index_get_grouped(index, LINE1, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         set_status(1, "error");
         return;
     }
@@ -295,12 +294,11 @@ void update(State* s, Index* index)
         s->dmax = groups->gmax;
     }
 
-    vp_draw_candlesticks(vp, groups, s->dmin, s->dmax, s->pany);
-    vp_draw_last_data(vp, s, (*index->ptail)->close);
-    vp_draw_xaxis(vp, s, groups);
-    show_matrix(vp);
+    pl_draw(pl, index, groups, s);
 
+    show_plot(pl);
     set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
+    //set_status(1, "ry: %d[%d.%d]", pl->ryaxis_size, pl->ryaxis_nwhole, pl->ryaxis_nfrac);
     groups_destroy(groups);
 }
 

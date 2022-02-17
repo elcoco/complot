@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <unistd.h>     // usleep
 
-#include "matrix.h"
+#include "plot.h"
 
 #define CHECK_INTERVAL 10000
 
@@ -23,7 +23,7 @@
 
 int init_ui();
 void cleanup_ui();
-void show_matrix(ViewPort* vp);
+void show_plot(Plot* pl);
 void init_colors();
 bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg);
 int set_status(uint32_t lineno, char* fmt, ...);

@@ -45,20 +45,20 @@ int get_color(int age)
     return col;
 }
 
-void show_matrix(ViewPort* vp)
+void show_plot(Plot* pl)
 {
     /* Put data from viewport into curses matrix */
-    Cell*** cells = vp->cells;
+    Cell*** cells = pl->cells;
 
-    for (int y=0 ; y<vp->ysize ; y++) {
-        for (int x=0 ; x<vp->xsize ; x++) {
+    for (int y=0 ; y<pl->ysize ; y++) {
+        for (int x=0 ; x<pl->xsize ; x++) {
             Cell* c = cells[x][y];
 
 
             attrset(COLOR_PAIR(c->fgcol));
 
             // curses starts top-left
-            mvaddstr(vp->ysize-1-y, x, c->chr);
+            mvaddstr(pl->ysize-1-y, x, c->chr);
 
             attroff(COLOR_PAIR(c->fgcol));
         }
