@@ -99,7 +99,7 @@ void pl_draw_last_data(Plot* pl, double dmin, double dmax, double pany, double l
 
     char buf[50] = {'\0'};
     get_tickerstr(buf, lasty, pl->ryaxis_size, pl->ryaxis_nwhole, pl->ryaxis_nfrac);
-    char* ptr = buf;
+    char* pbuf = buf;
 
     // if last data is out of range, stick to top/bottom
     if (ilasty < pl->pystart)
@@ -107,15 +107,15 @@ void pl_draw_last_data(Plot* pl, double dmin, double dmax, double pany, double l
     if (ilasty >= pl->ysize)
         ilasty = pl->ysize-1;
 
-    for (int32_t ix=xstart ; ix<xstart+strlen(buf) ; ix++, ptr++) {
+    for (int32_t ix=xstart ; ix<xstart+strlen(buf) ; ix++, pbuf++) {
         if (ix >= pl->xsize)
             break;
         Cell* c = pl_get_cell(pl, ix, ilasty);
-        c->chr[0] = *ptr;
+        c->chr[0] = *pbuf;
         c->fgcol = GREEN;
     }
     // draw line
-    for (int32_t ix=pl->pxstart ; ix<pl->pxstart+pl->pxsize ; ix++, ptr++) {
+    for (int32_t ix=pl->pxstart ; ix<pl->pxstart+pl->pxsize ; ix++, pbuf++) {
         Cell* c = pl_get_cell(pl, ix, ilasty);
         if (c->chr[0] == ' ') {
             strcpy(c->chr, LINE_CHR);
@@ -133,14 +133,14 @@ void pl_draw_xaxis(Plot* pl, Group* g)
 
             char t[30] = {'\0'};
             sprintf(t, "%5.2f", g->wstart);
-            char* tptr = t;
+            char* pt = t;
 
-            for (uint32_t x=ix ; x<ix+strlen(t) ; x++, tptr++) {
+            for (uint32_t x=ix ; x<ix+strlen(t) ; x++, pt++) {
                 if (x >= pl->xaxis_xstart+pl->xaxis_xsize)
                     break;
 
                 Cell* c = pl_get_cell(pl, x, pl->xaxis_ystart);
-                c->chr[0] = *tptr;
+                c->chr[0] = *pt;
             }
         }
         g = g->next;
