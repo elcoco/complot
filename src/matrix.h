@@ -80,6 +80,9 @@ struct ViewPort {
     int lyaxis_size;
     int ryaxis_size;
 
+    int ryaxis_nfrac;       // digits after decimal point
+    int ryaxis_nwhole;      // digits before decimal point
+
     int lyaxis_start;
     int ryaxis_start;
 
@@ -101,9 +104,7 @@ void vp_draw_ryaxis(ViewPort* vp, State* s);
 void vp_draw_last_data(ViewPort* vp, State* s, double lasty);
 void vp_draw_xaxis(ViewPort* vp, State* s, Groups* groups);
 
-
 ViewPort* vp_init(uint32_t xsize, uint32_t ysize);
 Cell* cell_init();
-
 
 #endif

@@ -1,6 +1,5 @@
 #include "matrix.h"
 
-uint32_t global_y = 0;
 
 void vp_print(ViewPort* vp)
 {
@@ -82,7 +81,7 @@ void vp_draw_candlesticks(ViewPort* vp, Groups* groups, double dmin, double dmax
     }
 }
 
-void vp_draw_ryaxis(ViewPort* vp, State* s)
+void vp_draw_ryaxis_old(ViewPort* vp, State* s)
 {
     /* calculate axis values and draw them in matrix.
      * Also highlight last value of last point (not group)
@@ -96,7 +95,7 @@ void vp_draw_ryaxis(ViewPort* vp, State* s)
     for (int32_t iy=vp->pystart ; iy<vp->ysize ; iy++) {
 
         char t[30] = {'\0'};
-        sprintf(t, "%1.7f", s->dmin + ((iy - s->pany)*step));
+        sprintf(t, "%.7f", s->dmin + ((iy - s->pany)*step));
         char* ptr = t;
 
         for (uint32_t ix=xstart ; ix<xstart+strlen(t) ; ix++, ptr++) {
@@ -106,6 +105,53 @@ void vp_draw_ryaxis(ViewPort* vp, State* s)
             c->chr[0] = *ptr;
             c->fgcol = WHITE;
         }
+    }
+}
+
+void get_tickerstr(char* buf, double ticker, uint32_t nfrac)
+{
+    /* create ticker with specific amount of decimals and copy to string */
+    sprintf(buf, "%d.", abs(ticker));
+    char sfrac[50] = {'\0'};
+    sprintf(sfrac, "%g", ticker - abs(ticker));
+    strncat(buf, sfrac+2, nfrac);
+}
+
+void vp_draw_ryaxis(ViewPort* vp, State* s)
+{
+    /* calculate axis values and draw them in matrix.
+     * Also highlight last value of last point (not group)
+     */
+    // calculate stepsize between tickers
+    double step = (s->dmax - s->dmin) / vp->pxsize;
+
+    // digits behind the comma
+    uint32_t nfrac = find_nfrac((s->dmax - s->dmin)/vp->pxsize);
+    uint32_t nwhole = find_nwhole(s->dmax);
+    vp->ryaxis_size = nfrac+nwhole+1;
+
+    vp_set_dimensions(vp);
+
+    // calculate first column of axis
+    uint32_t xstart = vp->xsize - vp->ryaxis_size -1;
+
+    // TODO create funtion that resets all dimensions of components
+    //
+    for (int32_t iy=vp->pystart ; iy<vp->ysize ; iy++) {
+
+        uint32_t ix;
+        char buf[50] = {'\0'};
+        double ticker = s->dmin + ((iy - s->pany)*step);
+        get_tickerstr(buf, ticker, nfrac);
+        char* pbuf = buf;
+
+        for (ix=xstart ; ix<xstart+strlen(buf) ; ix++, pbuf++) {
+            Cell* c = vp_get_cell(vp, ix, iy);
+            //c->chr[0] = '*';
+            c->chr[0] = *pbuf;
+            c->fgcol = WHITE;
+        }
+
     }
 }
 
@@ -171,28 +217,16 @@ void vp_draw_xaxis(ViewPort* vp, State* s, Groups* groups)
     }
 }
 
-
-
 Cell* vp_get_cell(ViewPort* vp, uint32_t x, uint32_t y)
 {
     return vp->cells[x][y];
 }
 
-ViewPort* vp_init(uint32_t xsize, uint32_t ysize)
+void vp_set_dimensions(ViewPort* vp)
 {
-    ViewPort* vp = malloc(sizeof(ViewPort));
-
-
-    vp->xsize = xsize;
-    vp->ysize = ysize;
-
-    vp->status_size = 1;
-    vp->lyaxis_size = 0;
-    vp->ryaxis_size = 10;
-    vp->xaxis_ysize = 1;
-
-    vp->pysize = ysize - vp->status_size - vp->xaxis_ysize;
-    vp->pxsize = xsize - vp->lyaxis_size - vp->ryaxis_size - 2;
+    /* calculate all dimensions and start indices */
+    vp->pysize = vp->ysize - vp->status_size - vp->xaxis_ysize;
+    vp->pxsize = vp->xsize - vp->lyaxis_size - vp->ryaxis_size - 2;
 
     vp->xaxis_xsize = vp->pxsize;
     vp->xaxis_xstart = vp->lyaxis_size;
@@ -200,7 +234,21 @@ ViewPort* vp_init(uint32_t xsize, uint32_t ysize)
 
     vp->pxstart = vp->lyaxis_size;
     vp->pystart = vp->status_size + vp->xaxis_ysize;
+}
 
+ViewPort* vp_init(uint32_t xsize, uint32_t ysize)
+{
+    ViewPort* vp = malloc(sizeof(ViewPort));
+
+    vp->xsize = xsize;
+    vp->ysize = ysize;
+
+    vp->status_size = 2;
+    vp->lyaxis_size = 0;
+    vp->ryaxis_size = 15;
+    vp->xaxis_ysize = 1;
+
+    vp_set_dimensions(vp);
 
     int x, y;
 

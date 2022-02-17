@@ -40,6 +40,9 @@
 // DONE x tickers should follow data not columns
 // DONE reindex on second datapoint and calculate spread dynamically
 // TODO on reindex first point is added to linked list again
+// TODO create update function in index
+// TODO rename component to plot oid
+// TODO write better makefile
 
 #define BUF_SIZE 1000
 
@@ -277,6 +280,8 @@ void update(State* s, Index* index)
     Groups* groups;
     ViewPort* vp = vp_init(COLS, LINES);
 
+    vp_draw_ryaxis(vp, s);
+
     if (s->fit_all)
         s->gsize = ceil(index->isize / vp->pxsize);
         
@@ -291,7 +296,6 @@ void update(State* s, Index* index)
     }
 
     vp_draw_candlesticks(vp, groups, s->dmin, s->dmax, s->pany);
-    vp_draw_ryaxis(vp, s);
     vp_draw_last_data(vp, s, (*index->ptail)->close);
     vp_draw_xaxis(vp, s, groups);
     show_matrix(vp);
@@ -318,7 +322,7 @@ void loop(State* s, Index* index)
     }
 }
 
-void old()
+int8_t old()
 {
     JSONNode *root = parse_file("json/btcusd.json");
     if (root == NULL) {
@@ -345,6 +349,7 @@ void old()
     }
 
     root->print_all(root);
+    return 1;
 }
 
 int main(int argc, char **argv)
@@ -367,9 +372,13 @@ int main(int argc, char **argv)
 
     read_stdin(index, 0,2,3,4,5);
 
-    //Groups* groups;
-    //groups = index_get_grouped(index, LINE1, s.gsize, 50, 0, 0);
-    //groups_print(groups->group);
+    int ngroups = 88;
+    Groups* groups;
+    groups = index_get_grouped(index, LINE1, 8, ngroups, 0, 0);
+    groups_print(groups->group);
+    printf("frac:  %d\n", find_nfrac(123.1233000));
+    printf("whole: %d\n", find_nwhole(123.12345));
+    printf("digits: %d\n", count_digits(1234.12));
     //return 0;
 
     init_ui();                  // setup curses ui

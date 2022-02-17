@@ -44,6 +44,7 @@ int8_t index_build(Index* index)
 
 int8_t index_extend(Index* index)
 {
+    /* Grow bins array */
     printf("Extending index\n");
     index->isize += index->grow_amount;
 
@@ -56,16 +57,18 @@ int8_t index_extend(Index* index)
         *(index->bins+i) = bin_create(index, i);
 
     return 1;
-
 }
 
 Bin* bin_create(Index* index, uint32_t i)
 {
+    /* Create and allocate new Bin struct that has a fixed X window.
+     * It holds points that fall within this window.
+     * This makes taking slices/grouping of data super fast.  */
     Bin* b = malloc(sizeof(Bin));
 
     // set x window
     b->wstart = (i*index->spread) + index->dmin;
-    b->wend = b->wstart + index->spread -1;
+    b->wend = b->wstart + index->spread;
 
     b->is_empty = true;
 
@@ -342,7 +345,7 @@ void groups_print(Group* g)
         if (g->is_empty)
             printf("%5d %6f %5f %9s %9s %9s %9s\n", c, g->wstart, g->wend, "empty", "empty", "empty", "empty");
         else
-            printf("%5d %6f %5f %9f %9f %9f %9f\n", c, g->wstart, g->wend, g->open, g->high, g->low, g->close);
+            printf("%5d %6f %5f %9.9f %9.9f %9.9f %9.9f\n", c, g->wstart, g->wend, g->open, g->high, g->low, g->close);
         g = g->next;
         c++;
     }
