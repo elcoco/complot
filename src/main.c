@@ -18,7 +18,7 @@
 
 #define NLINES 2
 
-#define SLEEP_MS 1000
+#define SLEEP_MS 100*1000
 
 #define DEFAULT_GROUP_SIZE 1
 #define DEFAULT_PAN_STEPS 3
@@ -48,6 +48,7 @@ pthread_mutex_t lock;
 // TODO create update function in index
 // DONE rename component to plot oid
 // TODO write better makefile
+// TODO x should also be double
 
 
 int sigint_caught = 0;
@@ -174,8 +175,6 @@ bool check_user_input(void* arg)
 
 void update(State* s, Index* index)
 {
-    pthread_mutex_lock(&lock);
-
     // check if data or exit early
     if (index->npoints == 0) {
         set_status(0, "No data...");
@@ -186,12 +185,15 @@ void update(State* s, Index* index)
     Groups* groups;
     Plot* pl = pl_init(COLS, LINES);
 
+    pthread_mutex_lock(&lock);
 
     //if (s->fit_all)
     //    s->gsize = ceil(index->isize / pl->pxsize);
     if ((groups = index_get_grouped(index, LINE1, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         set_status(1, "error");
         refresh();
+        pl_destroy(pl);
+        pthread_mutex_unlock(&lock);
         return;
     }
 
@@ -202,10 +204,12 @@ void update(State* s, Index* index)
 
     pl_draw(pl, index, groups, s);
 
-    show_plot(pl);
+    ui_show_plot(pl);
     set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
-    groups_destroy(groups);
 
+    // cleanup
+    groups_destroy(groups);
+    pl_destroy(pl);
     pthread_mutex_unlock(&lock);
 }
 
@@ -221,6 +225,8 @@ void loop(State* s, Index* index)
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
             update(s, index);
         }
+
+        //return;
 
     }
 }
@@ -246,30 +252,21 @@ int main(int argc, char **argv)
 
     // index holds all data normalized into bins
     Index* index;
-    if ((index = index_create(NLINES)) == NULL)
+    if ((index = index_init(NLINES)) == NULL)
         return 0;
 
+    // start data aggregation thread
     Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     pthread_t threadid;
     pthread_create(&threadid, NULL, read_file_thread, &args);
-    
-    //usleep(1000000);
 
-    //int ngroups = 88;
-    //Groups* groups;
-    //groups = index_get_grouped(index, LINE1, 8, ngroups, 0, 0);
-    //groups_print(groups->group);
-    //printf("frac:  %d\n", find_nfrac(123.1233000));
-    //printf("whole: %d\n", find_nwhole(123.12345));
-    //printf("digits: %d\n", count_digits(1234.12));
-    //return 0;
-
-    init_ui();                  // setup curses ui
+    init_ui();
 
     loop(&s, index);
 
     args.is_stopped = true;
     pthread_join(threadid, NULL);
+    index_destroy(index);
     cleanup_ui();
     return 0;
 }

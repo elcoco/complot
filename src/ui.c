@@ -12,7 +12,6 @@ int init_ui()
     }
     ui_window = initscr();
 
-
     if (ui_window == NULL)
         return 0;
 
@@ -45,7 +44,7 @@ int get_color(int age)
     return col;
 }
 
-void show_plot(Plot* pl)
+void ui_show_plot(Plot* pl)
 {
     /* Put data from viewport into curses matrix */
     Cell*** cells = pl->cells;

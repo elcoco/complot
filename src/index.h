@@ -155,14 +155,15 @@ struct Index {
 // build an index of groups with a x xindow
 // In the groups are sets of datapoints that fall within this window
 // the sets are grouped by line name
-Index*  index_create(uint8_t nlines);
+Index*  index_init(uint8_t nlines);
+void    index_destroy(Index* index);
 int8_t  index_build(Index* index);
 int32_t index_map_to_index(Index* index, double x);
 double  index_map_to_x(Index* index, int32_t i);
 int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount);
 void    index_reindex(Index* index);
 void    index_print(Index* index);
-bool index_has_new_data(Index* index);
+bool    index_has_new_data(Index* index);
 
 // inserts point in appropriate line in group, creates new if data falls out of current index range
 // line_id is the array index for line, is mapped by ENUM
@@ -172,8 +173,7 @@ int8_t index_insert(Index* index, Point* point);
 Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
 
 void   points_print(Point* p);
-Point* point_create(uint32_t lineid, int32_t x, double open, double high, double low, double close);
-int8_t point_destroy(Point* point);
+Point* point_create(Index* index, uint32_t lineid, int32_t x, double open, double high, double low, double close);
 void   point_append(Point* p, Point** tail);
 
 int8_t line_add_point(Line* l, Point* p);
@@ -184,4 +184,5 @@ void   groups_destroy(Groups* groups);
 void   group_append(Group* g, Group** tail);
 
 Bin* bin_create(Index* index, uint32_t i);
+void bin_destroy(Bin* b, Index* index);
 #endif

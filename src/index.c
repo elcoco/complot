@@ -1,7 +1,7 @@
 #include "index.h"
 
 
-Index* index_create(uint8_t nlines)
+Index* index_init(uint8_t nlines)
 {
     Index* index = (Index*)malloc(sizeof(Index));
     index->bins = (Bin**)malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
@@ -29,6 +29,25 @@ Index* index_create(uint8_t nlines)
     return index;
 }
 
+void index_destroy(Index* index)
+{
+    for (int i=0 ; i<index->isize ; i++)
+        bin_destroy(*(index->bins+i), index);
+    free(index->bins);
+
+    Point* p = *(index->phead);
+    Point* pprev;
+    while (p != NULL) {
+        pprev = p;
+        p = p->next;
+        free(pprev);
+    }
+
+    free(index->phead);
+    free(index->ptail);
+    free(index);
+}
+
 int8_t index_build(Index* index)
 {
     /* (re)build index, create bins
@@ -43,7 +62,6 @@ int8_t index_build(Index* index)
         *b = bin_create(index, i);
     return 1;
 }
-
 
 int8_t index_extend(Index* index)
 {
@@ -85,6 +103,15 @@ Bin* bin_create(Index* index, uint32_t i)
         (*l)->is_empty = true;
     }
     return b;
+}
+
+void bin_destroy(Bin* b, Index* index)
+{
+    Line** l = b->lines;
+    for (int i=0 ; i<index->nlines ; i++,l++)
+        free(*l);
+    free(b->lines);
+    free(b);
 }
 
 int32_t index_map_to_index(Index* index, double x)
@@ -136,16 +163,14 @@ void index_set_data_limits(Index* index, Point* p)
         index->dmin = p->low;
 }
 
-
 void index_reindex(Index* index)
 {
     /* After updating spread, recreate all bins from points linked list. */
     printf("Reindexing index with spread: %f\n", index->spread);
 
     // destroy old bins
-    Bin** b = index->bins;
-    for (int i=0 ; i<index->isize ; i++,b++)
-        free(*b);
+    for (int i=0 ; i<index->isize ; i++)
+        bin_destroy(*(index->bins+i), index);
     free(index->bins);
 
     // create new bins
@@ -153,28 +178,23 @@ void index_reindex(Index* index)
     index_build(index);
 
     Point* p = *index->phead;
-    while (p->next != NULL) {
+    while (p != NULL) {
         index_insert(index, p);
         p = p->next;
     }
 }
 
-int8_t index_insert(Index* index, Point* p)
+Point* point_create(Index* index, uint32_t lineid, int32_t x, double open, double high, double low, double close)
 {
-    /* Insert point into index, create Bin if necessary */
+    Point* p = (Point*)malloc(sizeof(Point));
+    p->x = x;
+    p->open = open;
+    p->high = high;
+    p->low = low;
+    p->close = close;
+    p->lineid = lineid;
 
-    // first insert determines the index start x
-    if (! index->is_initialized) {
-        index->dmin = p->low;
-        index->dmax = p->high;
-        index_build(index);
-    }
-
-    // about to insert second point, we can calculate the spread now and reindex
-    if (index->npoints == 1) {
-        index->spread = p->x - (*index->phead)->x;
-        index_reindex(index);
-    }
+    index->npoints++;
 
     // connect point in linked list, this is used to regenerate index when spread changes
     if (*(index->phead) == NULL) {
@@ -184,15 +204,36 @@ int8_t index_insert(Index* index, Point* p)
         point_append(p, index->ptail);
     }
 
-    // map data to array index
-    int32_t i = index_map_to_index(index, p->x);
+    // about to insert second point, we can calculate the spread now and reindex
+    if (index->npoints == 2) {
+        index->spread = p->x - (*index->phead)->x;
+        index_reindex(index);
+    }
 
-    // check if index is too small to hold data
-    if (i > index->isize-1) {
+    index_insert(index, p);
+    return p;
+}
+
+int8_t index_insert(Index* index, Point* p)
+{
+    /* Insert point into index, extend bins array if necessary */
+
+    // first insert determines the index start x
+    if (! index->is_initialized) {
+        index->dmin = p->low;
+        index->dmax = p->high;
+        index_build(index);
+    }
+
+    // map data to array index
+    int32_t ix = index_map_to_index(index, p->x);
+
+    // check if index is too smoll to hold data
+    if (ix > index->isize-1) {
         if (index_extend(index) < 0)
             return -1;
 
-    } else if (i < 0) {
+    } else if (ix < 0) {
         printf("Out of bounds, grow to left not implemented...\n");
         return -1;
     }
@@ -201,19 +242,16 @@ int8_t index_insert(Index* index, Point* p)
     index_set_data_limits(index, p);
 
     // keep track of last non-empty bin index
-    if (i > index->ilast)
-        index->ilast = i;
+    if (ix > index->ilast)
+        index->ilast = ix;
 
     // at this point, we know bin exists
-    Bin* b  = index->bins[i];
+    Bin* b  = index->bins[ix];
     b->is_empty = false;
 
     Line* l = b->lines[p->lineid];
     line_add_point(l, p);
 
-    index->npoints++;
-
-    // set new data flag
     index->has_new_data = true;
 
     return 1;
@@ -328,7 +366,23 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
 
     groups->group = *ghead;
     groups->gtail = *gtail;
+    free(ghead);
+    free(gtail);
     return groups;
+}
+
+void groups_destroy(Groups* groups)
+{
+    Group* g = groups->group;
+    Group* prev;
+    while (g != NULL) {
+        prev = g;
+        g = g->next;
+        free(prev);
+    }
+    //free(groups->ghead);
+    //free(groups->gtail);
+    free(groups);
 }
 
 bool index_has_new_data(Index* index)
@@ -336,16 +390,6 @@ bool index_has_new_data(Index* index)
     bool state = index->has_new_data;
     index->has_new_data = false;
     return state;
-}
-
-void groups_destroy(Groups* groups)
-{
-    Group* g = groups->group;
-    while (g != NULL) {
-        free(g);
-        g = g->next;
-    }
-    free(groups);
 }
 
 
@@ -382,19 +426,6 @@ void index_print(Index* index)
                                               l->low,
                                               l->close);
     }
-}
-
-Point* point_create(uint32_t lineid, int32_t x, double open, double high, double low, double close)
-{
-    //printf("NEW POINT: %3d = %9f %9f %9f %9f\n", x, open, high, low, close);
-    Point* p = (Point*)malloc(sizeof(Point));
-    p->x = x;
-    p->open = open;
-    p->high = high;
-    p->low = low;
-    p->close = close;
-    p->lineid = lineid;
-    return p;
 }
 
 int8_t line_add_point(Line* l, Point* p)

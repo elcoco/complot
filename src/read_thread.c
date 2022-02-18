@@ -21,7 +21,7 @@ void* read_file_thread(void* args)
         if (buf[strlen(buf)-1] == '\n') {
             char* spos = buf;
             int c = 0;
-            double dt, open, high, low, close;
+            double open, high, low, close;
 
             while (fast_forward(&spos, ",\n", NULL, NULL, tmpbuf)) {
 
@@ -31,9 +31,7 @@ void* read_file_thread(void* args)
                 setlocale(LC_NUMERIC,"C");
 
                 // NOTE atof failes on unicode!!!!
-                if (c == a->idt)
-                    dt = atof(tmpbuf);
-                else if (c == a->iopen)
+                if (c == a->iopen)
                     open = atof(tmpbuf);
                 else if (c == a->ihigh)
                     high = atof(tmpbuf);
@@ -47,11 +45,11 @@ void* read_file_thread(void* args)
                 tmpbuf[0] = '\0';
             }
 
-            Point* p = point_create(LINE1, ix, open, high, low, close);
-
             pthread_mutex_lock(a->lock);
-            if (index_insert(a->index, p) < 0)
-                printf("Failed to insert point\n");
+            point_create(a->index, LINE1, ix, open, high, low, close);
+
+            //if (index_insert(a->index, p) < 0)
+            //    printf("Failed to insert point\n");
             pthread_mutex_unlock(a->lock);
 
 
@@ -62,10 +60,12 @@ void* read_file_thread(void* args)
 
         ix+=xsteps;
 
-        usleep(100000);
+        usleep(10000);
     }
+    return NULL;
 }
 
+/*
 void* read_stdin_thread(void* args)
 {
     Args* a = args;
@@ -131,6 +131,7 @@ void* read_stdin_thread(void* args)
         usleep(10000000);
     }
 }
+*/
 
 
 bool fast_forward(char** c, char* search_lst, char* expected_lst, char* ignore_lst, char* buf)

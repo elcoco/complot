@@ -29,7 +29,7 @@ struct Args {
     bool is_stopped;
 };
 
-void* read_stdin_thread(void* args);
+//void* read_stdin_thread(void* args);
 void* read_file_thread(void* args);
 bool fast_forward(char** c, char* search_lst, char* expected_lst, char* ignore_lst, char* buf);
 

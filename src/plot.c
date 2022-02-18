@@ -165,7 +165,7 @@ Plot* pl_init(uint32_t xsize, uint32_t ysize)
     pl->ryaxis_size = 15;
     pl->xaxis_ysize = 1;
 
-    int x, y;
+    uint32_t x, y;
 
     // TODO do this in one malloc call: pl->cells = malloc(sizeof(Cell*[pl->xsize][pl->ysize]));
     pl->cells = malloc(pl->xsize * sizeof(Cell**));
@@ -173,16 +173,32 @@ Plot* pl_init(uint32_t xsize, uint32_t ysize)
     for (x=0 ; x<pl->xsize ; x++) {
         pl->cells[x] = malloc(pl->ysize * sizeof(Cell*));
 
-        for (y=0 ; y<pl->ysize ; y++) {
-            Cell* cell = malloc(sizeof(Cell));
-            cell->chr = strdup(EMPTY);
-            cell->fgcol = WHITE;
-            cell->x = x;
-            cell->y = y;
-            pl->cells[x][y] = cell;
-        }
+        for (y=0 ; y<pl->ysize ; y++)
+            pl->cells[x][y] = pl_cell_init(x, y);
     }
     return pl;
+}
+
+Cell* pl_cell_init(uint32_t x, uint32_t y)
+{
+    Cell* c = malloc(sizeof(Cell));
+    strcpy(c->chr, EMPTY);
+    c->fgcol = WHITE;
+    c->x = x;
+    c->y = y;
+    return c;
+}
+
+void pl_destroy(Plot* pl)
+{
+    for (int x=0 ; x<pl->xsize ; x++) {
+        for (int y=0 ; y<pl->ysize ; y++)
+            free(pl->cells[x][y]);
+
+        free(pl->cells[x]);
+    }
+    free(pl->cells);
+    free(pl);
 }
 
 void pl_draw_ryaxis(Plot* pl, double dmin, double dmax, int32_t yoffset)
@@ -259,9 +275,9 @@ void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, u
     strncat(tmp, sfrac+2, nfrac);
 
     for (int i=0; i<ntotal-strlen(tmp) ; i++)
-        strncat(buf, " ", 1);
+        strcat(buf, " ");
 
     strncat(buf, tmp, strlen(tmp));
-    set_status(1, "ry: %d[%d.%d] %d %d >>%s<<", ntotal, nwhole, nfrac, strlen(tmp), ntotal-strlen(tmp), buf);
+    //set_status(1, "ry: %d[%d.%d] %d %d >>%s<<", ntotal, nwhole, nfrac, strlen(tmp), ntotal-strlen(tmp), buf);
 }
 

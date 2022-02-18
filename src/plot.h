@@ -41,7 +41,7 @@ struct Cell {
     int32_t x;
     int32_t y;
 
-    char* chr;
+    char chr[5];
     uint16_t bgcol;
     uint16_t fgcol;
 
@@ -103,7 +103,8 @@ void pl_set_dimensions(Plot* pl, double dmin, double dmax);
 void pl_draw(Plot* pl, Index* index, Groups* groups, State* s);
 
 Plot* pl_init(uint32_t xsize, uint32_t ysize);
-Cell* cell_init();
+void pl_destroy(Plot* pl);
+Cell* pl_cell_init(uint32_t x, uint32_t y);
 
 void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac);
 
