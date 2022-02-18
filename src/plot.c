@@ -207,18 +207,19 @@ void pl_draw_ryaxis(Plot* pl, double dmin, double dmax, int32_t yoffset)
      * Also highlight last value of last point (not group)
      */
     // calculate stepsize between tickers
-    double step = (dmax - dmin) / pl->pxsize;
+    double step = (dmax - dmin) / pl->pysize;
 
     // calculate first column of axis
     uint32_t xstart = pl->ryaxis_start;
+    int32_t y=0;
 
     // TODO create funtion that resets all dimensions of components
     //
-    for (int32_t iy=pl->pystart ; iy<pl->ysize ; iy++) {
+    for (int32_t iy=pl->pystart ; iy<pl->ysize ; iy++, y++) {
 
         uint32_t ix;
         char buf[50] = {'\0'};
-        double ticker = dmin + ((iy - yoffset)*step);
+        double ticker = dmin + ((y - yoffset)*step);
         get_tickerstr(buf, ticker, pl->ryaxis_size, pl->ryaxis_nwhole, pl->ryaxis_nfrac);
         char* pbuf = buf;
 

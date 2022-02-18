@@ -117,13 +117,14 @@ void bin_destroy(Bin* b, Index* index)
 int32_t index_map_to_index(Index* index, double x)
 {
     /* Map data X value to an array index */
-    return (x - index->dmin) / index->spread;
+    //printf("(%f - %f) / %d = %d\n", x, index->xmin, index->spread, (x - index->xmin) / index->spread);
+    return (x - index->xmin) / index->spread;
 }
 
 double index_map_to_x(Index* index, int32_t i)
 {
     /* Map index to x value */
-    return (i * index->spread) + index->dmin;
+    return (i * index->spread) + index->xmin;
 }
 
 void points_print(Point* p)
@@ -223,6 +224,7 @@ int8_t index_insert(Index* index, Point* p)
         index->dmin = p->low;
         index->dmax = p->high;
         index_build(index);
+        index->xmin = p->x;
     }
 
     // map data to array index
@@ -234,7 +236,7 @@ int8_t index_insert(Index* index, Point* p)
             return -1;
 
     } else if (ix < 0) {
-        printf("Out of bounds, grow to left not implemented...\n");
+        printf("Out of bounds, grow to left not implemented... %d, %f, %f\n", ix, p->x, p->open);
         return -1;
     }
 
@@ -417,7 +419,7 @@ void index_print(Index* index)
         if (b->is_empty)
             continue;
 
-        printf("BIN %3d: %d:%d %d => %9f %9f %9f %9f\n", i,
+        printf("BIN %3d: %f:%f %d => %9f %9f %9f %9f\n", i,
                                               b->wstart,
                                               b->wend,
                                               l->npoints,

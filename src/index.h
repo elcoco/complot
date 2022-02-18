@@ -83,10 +83,8 @@ struct Line {
 
     // x limits so we can keep track of open and close values
     // The actual window values are stored in Bin
-    int32_t xmin;
-    int32_t xmax;
-    //int32_t wstart;
-    //int32_t wend;
+    double xmin;
+    double xmax;
 
     // amount of datapoints in line
     int32_t npoints;
@@ -98,8 +96,8 @@ struct Line {
  */
 struct Bin {
     // window start and end X values for this bin
-    int32_t wstart;
-    int32_t wend;
+    double wstart;
+    double wend;
 
     // holds the line containers that hold the averages for this bin per line
     Line** lines;
@@ -150,6 +148,9 @@ struct Index {
 
     // needs to be checked using: index_has_new_data()
     bool has_new_data;
+
+    // lowest x value, used as offset to map x values to array indices
+    double xmin;
 };
 
 // build an index of groups with a x xindow

@@ -9,8 +9,9 @@ void* read_file_thread(void* args)
     uint32_t xsteps = 5;
 
     // x incrementer, must be a converted datetime but for now this will do
-    uint32_t ix = 0;
-    FILE* fp = fopen("csv/XMRBTC_1m.csv", "r");
+    double ix = 0;
+    FILE* fp = fopen("csv/btcusd.csv", "r");
+    //FILE* fp = fopen("csv/XMRBTC_1m.csv", "r");
 
     while (fgets(buf, sizeof(buf), fp) != NULL && !a->is_stopped) {
         if (ix == 0) {
@@ -47,6 +48,7 @@ void* read_file_thread(void* args)
 
             pthread_mutex_lock(a->lock);
             point_create(a->index, LINE1, ix, open, high, low, close);
+            //printf("point created: %f %f %f %f %f\n", ix, open, high, low, close);
 
             //if (index_insert(a->index, p) < 0)
             //    printf("Failed to insert point\n");

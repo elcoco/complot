@@ -48,7 +48,7 @@ pthread_mutex_t lock;
 // DONE create update function in index
 // DONE rename component to plot oid
 // TODO write better makefile
-// TODO x should also be double
+// DONE x should also be double
 
 
 int sigint_caught = 0;
@@ -256,7 +256,8 @@ int main(int argc, char **argv)
         return 0;
 
     // start data aggregation thread
-    Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
+    Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=1, .ihigh=2, .ilow=3, .iclose=4};
+    //Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     pthread_t threadid;
     pthread_create(&threadid, NULL, read_file_thread, &args);
 
