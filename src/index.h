@@ -147,6 +147,8 @@ struct Index {
     // is true after first index build
     bool is_initialized;
 
+    // needs to be checked using: index_has_data()
+    bool has_data;
 };
 
 // build an index of groups with a x xindow
@@ -158,7 +160,8 @@ int32_t index_map_to_index(Index* index, double x);
 double  index_map_to_x(Index* index, int32_t i);
 int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount);
 void    index_reindex(Index* index);
-void   index_print(Index* index);
+void    index_print(Index* index);
+bool    index_has_data(Index*);
 
 // inserts point in appropriate line in group, creates new if data falls out of current index range
 // line_id is the array index for line, is mapped by ENUM

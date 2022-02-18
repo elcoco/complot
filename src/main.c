@@ -45,8 +45,6 @@
 // TODO write better makefile
 
 
-uint32_t counter = 0;
-
 int sigint_caught = 0;
 
 
@@ -80,8 +78,6 @@ bool check_user_input(void* arg)
                         //
     /* check for user input, return 1 if there was input */
     int c = getch();
-
-    counter++;
 
     if (c != ERR) {
         switch (c) {
@@ -212,6 +208,9 @@ void loop(State* s, Index* index)
         }
 
         if (! s->is_paused) {
+            if (index_has_data()) {
+                set_status(1, "update!");
+            }
             // TODO do reading from stdin here and update screen
             //read_stdin(5, index, 0,2,3,4,5);
             //update(s, index);

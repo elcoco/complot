@@ -18,6 +18,7 @@ Index* index_create(uint8_t nlines)
     index->nlines = nlines;
 
     index->ilast = 0;
+    index->has_data = false;
 
     //index->dmin = 0;
     //index->dmax = 0;
@@ -210,6 +211,9 @@ int8_t index_insert(Index* index, Point* p)
 
     index->npoints++;
 
+    // set new data flag
+    index->has_data = true;
+
     return 1;
 }
 
@@ -323,6 +327,13 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
     groups->group = *ghead;
     groups->gtail = *gtail;
     return groups;
+}
+
+bool index_has_data(Index*)
+{
+    bool state = index->has_data;
+    index->has_data = false;
+    return state;
 }
 
 void groups_destroy(Groups* groups)
