@@ -251,7 +251,6 @@ void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, u
     // TODO null terminate characters in cell
     //
     /* create ticker with specific amount of decimals and copy to string */
-    char* pbuf = buf;
     char tmp[50] = {'\0'};
     char sfrac[50] = {'\0'};
 

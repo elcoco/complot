@@ -13,14 +13,17 @@ $(shell mkdir -p $(BUILD_DIR))
 # target: dependencies
 # 	  action
 
-default: json_parser.o perr.o csv.o plot.o ui.o utils.o index.o main.o
-	$(CC) $(BUILD_DIR)/json_parser.o $(BUILD_DIR)/perr.o $(BUILD_DIR)/csv.o $(BUILD_DIR)/plot.o $(BUILD_DIR)/ui.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/index.o $(BUILD_DIR)/main.o $(CFLAGS) -o $(BIN_DIR)/complot
+default: read_thread.o json_parser.o perr.o csv.o plot.o ui.o utils.o index.o main.o
+	$(CC) $(BUILD_DIR)/read_thread.o $(BUILD_DIR)/json_parser.o $(BUILD_DIR)/perr.o $(BUILD_DIR)/csv.o $(BUILD_DIR)/plot.o $(BUILD_DIR)/ui.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/index.o $(BUILD_DIR)/main.o $(CFLAGS) -o $(BIN_DIR)/complot
 
 utils.o: $(SRC_DIR)/utils.c $(SRC_DIR)/utils.h
 	$(CC) -c $(SRC_DIR)/utils.c $(CFLAGS) -o $(BUILD_DIR)/utils.o
 
 csv.o: $(SRC_DIR)/csv.c $(SRC_DIR)/csv.h
 	$(CC) -c $(SRC_DIR)/csv.c $(CFLAGS) -o $(BUILD_DIR)/csv.o
+
+read_thread.o: $(SRC_DIR)/read_thread.c $(SRC_DIR)/read_thread.h
+	$(CC) -c $(SRC_DIR)/read_thread.c $(CFLAGS) -o $(BUILD_DIR)/read_thread.o
 
 plot.o: $(SRC_DIR)/plot.c $(SRC_DIR)/plot.h
 	$(CC) -c $(SRC_DIR)/plot.c $(CFLAGS) -o $(BUILD_DIR)/plot.o

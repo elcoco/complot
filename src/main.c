@@ -10,16 +10,16 @@
 #include "utils.h"
 #include "plot.h"
 #include "ui.h"
+#include "read_thread.h"
 
 #include "json/json_parser.h"
 #include "json/perr.h"
 
 #define NLINES 2
 
-#define DEFAULT_GROUP_SIZE 1
-
 #define SLEEP_MS 1000000
 
+#define DEFAULT_GROUP_SIZE 1
 #define DEFAULT_PAN_STEPS 3
 #define DEFAULT_PAN_BIG_STEPS 5
 
@@ -44,14 +44,8 @@
 // DONE rename component to plot oid
 // TODO write better makefile
 
-#define BUF_SIZE 1000
 
 uint32_t counter = 0;
-
-enum lines {
-    LINE1,
-    LINE2
-} lines;
 
 int sigint_caught = 0;
 
@@ -59,103 +53,6 @@ int sigint_caught = 0;
 void on_sigint(int signum)
 {
     sigint_caught = 1;
-}
-
-bool fast_forward(char** c, char* search_lst, char* expected_lst, char* ignore_lst, char* buf)
-{
-    /* fast forward until a char from search_lst is found
-     * Save all chars in buf until a char from search_lst is found
-     * Only save in buf when a char is found in expected_lst
-     *
-     * If buf == NULL,          don't save chars
-     * If expected_lst == NULL, allow all characters
-     */
-
-    // save skipped chars that are on expected_lst in buffer
-    char* ptr = buf;
-
-    // don't return these chars with buffer
-    ignore_lst = (ignore_lst) ? ignore_lst : "";
-
-    // exit at EOL
-    if (strlen(*c) == 0)
-        return false;
-
-    while (!strchr(search_lst, **c)) {
-
-        if (buf != NULL) {
-            if (!strchr(ignore_lst, **c) && expected_lst == NULL)
-                *ptr++ = **c;
-            else if (!strchr(ignore_lst, **c) && strchr(expected_lst, **c))
-                *ptr++ = **c;
-            else
-                return false;
-        }
-        (*c)++;
-    }
-
-    // terminate string
-    if (ptr != NULL)
-        *ptr = '\0';
-
-    return true;
-}
-
-int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t ilow, uint8_t iclose)
-{
-    char buf[BUF_SIZE] = {'\0'};
-    char tmpbuf[BUF_SIZE] = {'\0'};
-    uint32_t xsteps = 5;
-
-    // x incrementer, must be a converted datetime but for now this will do
-    uint32_t ix = 0;
-
-    while (fgets(buf, sizeof(buf), stdin) != NULL) {
-        if (ix == 0) {
-            ix+=xsteps;
-            continue;
-        }
-
-        if (buf[strlen(buf)-1] == '\n') {
-            char* spos = buf;
-            int c = 0;
-            double idt, open, high, low, close;
-
-            while (fast_forward(&spos, ",\n", NULL, NULL, tmpbuf)) {
-
-                // Reset local, using UTF-8 makes atof() wait for ',' instead of '.'
-                // as a float delimiter
-                // So to reset the previous: setlocale(LC_ALL, "");
-                setlocale(LC_NUMERIC,"C");
-
-                // NOTE atof failes on unicode!!!!
-                if (c == idt)
-                    idt = atof(tmpbuf);
-                else if (c == iopen)
-                    open = atof(tmpbuf);
-                else if (c == ihigh)
-                    high = atof(tmpbuf);
-                else if (c == ilow)
-                    low = atof(tmpbuf);
-                else if (c == iclose)
-                    close = atof(tmpbuf);
-
-                spos++;
-                c++;
-                tmpbuf[0] = '\0';
-            }
-
-            Point* p = point_create(LINE1, ix, open, high, low, close);
-            if (index_insert(index, p) < 0)
-                return -1;
-
-        } else {
-            printf("too long!!! %lu: %s\n", strlen(buf), buf);
-        }
-
-        ix+=xsteps;
-    }
-    return 1;
 }
 
 void set_defaults(State* s)
@@ -316,38 +213,11 @@ void loop(State* s, Index* index)
 
         if (! s->is_paused) {
             // TODO do reading from stdin here and update screen
+            //read_stdin(5, index, 0,2,3,4,5);
+            //update(s, index);
+            //usleep(1000);
         }
     }
-}
-
-int8_t old()
-{
-    JSONNode *root = parse_file("json/btcusd.json");
-    if (root == NULL) {
-        perr();
-        return -1;
-    }
-    JSONNode* json = root->child;
-
-    while (json != NULL) {
-        JSONNode* child = json->child;
-
-        while (child != NULL) {
-            if (child->dtype == FLOAT)
-                printf(">>> FLOAT: %f\n", *((float*)child->value));
-            else if (child->dtype == INT)
-                printf(">>> INT: %d\n", *((int*)child->value));
-
-            child = child->next;
-        }
-        printf("\n");
-
-
-        json = json->next;
-    }
-
-    root->print_all(root);
-    return 1;
 }
 
 int main(int argc, char **argv)
@@ -370,13 +240,13 @@ int main(int argc, char **argv)
 
     read_stdin(index, 0,2,3,4,5);
 
-    int ngroups = 88;
-    Groups* groups;
-    groups = index_get_grouped(index, LINE1, 8, ngroups, 0, 0);
-    groups_print(groups->group);
-    printf("frac:  %d\n", find_nfrac(123.1233000));
-    printf("whole: %d\n", find_nwhole(123.12345));
-    printf("digits: %d\n", count_digits(1234.12));
+    //int ngroups = 88;
+    //Groups* groups;
+    //groups = index_get_grouped(index, LINE1, 8, ngroups, 0, 0);
+    //groups_print(groups->group);
+    //printf("frac:  %d\n", find_nfrac(123.1233000));
+    //printf("whole: %d\n", find_nwhole(123.12345));
+    //printf("digits: %d\n", count_digits(1234.12));
     //return 0;
 
     init_ui();                  // setup curses ui
