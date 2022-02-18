@@ -5,6 +5,7 @@
 #include <unistd.h> // read
 #include <locale.h>     // for utf8 in curses
 #include <signal.h>     // catch SIGTERM
+#include <pthread.h>
 
 #include "index.h"
 #include "utils.h"
@@ -17,11 +18,15 @@
 
 #define NLINES 2
 
-#define SLEEP_MS 1000000
+#define SLEEP_MS 1000
 
 #define DEFAULT_GROUP_SIZE 1
 #define DEFAULT_PAN_STEPS 3
 #define DEFAULT_PAN_BIG_STEPS 5
+
+
+// thread lock
+pthread_mutex_t lock;
 
 // DONE extend index when out of bounds
 // DONE get groups x amount of groups from last known data
@@ -169,16 +174,24 @@ bool check_user_input(void* arg)
 
 void update(State* s, Index* index)
 {
-    // TODO check if data or exit early
+    pthread_mutex_lock(&lock);
+
+    // check if data or exit early
+    if (index->npoints == 0) {
+        set_status(0, "No data...");
+        refresh();
+        return;
+    }
+        
     Groups* groups;
     Plot* pl = pl_init(COLS, LINES);
 
 
     //if (s->fit_all)
     //    s->gsize = ceil(index->isize / pl->pxsize);
-        
     if ((groups = index_get_grouped(index, LINE1, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         set_status(1, "error");
+        refresh();
         return;
     }
 
@@ -191,31 +204,24 @@ void update(State* s, Index* index)
 
     show_plot(pl);
     set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
-    //set_status(1, "ry: %d[%d.%d]", pl->ryaxis_size, pl->ryaxis_nwhole, pl->ryaxis_nfrac);
     groups_destroy(groups);
+
+    pthread_mutex_unlock(&lock);
 }
 
 void loop(State* s, Index* index)
 {
-    // do initial update
-    update(s, index);
-
     while (!s->is_stopped && !sigint_caught) {
 
+        if (! s->is_paused) {
+            if (index_has_new_data(index))
+                update(s, index);
+        }
         // update on user input
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
             update(s, index);
         }
 
-        if (! s->is_paused) {
-            if (index_has_data()) {
-                set_status(1, "update!");
-            }
-            // TODO do reading from stdin here and update screen
-            //read_stdin(5, index, 0,2,3,4,5);
-            //update(s, index);
-            //usleep(1000);
-        }
     }
 }
 
@@ -230,14 +236,24 @@ int main(int argc, char **argv)
     action.sa_handler = on_sigint;
     sigaction(SIGINT, &action, NULL);
 
+    // init lock
+    if (pthread_mutex_init(&lock, NULL) != 0)
+        die("\nMutex init failed\n");
+
     // program state
     State s;
     set_defaults(&s);
 
-    // holds all data and normalizes into bins
-    Index* index = index_create(NLINES);
+    // index holds all data normalized into bins
+    Index* index;
+    if ((index = index_create(NLINES)) == NULL)
+        return 0;
 
-    read_stdin(index, 0,2,3,4,5);
+    Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
+    pthread_t threadid;
+    pthread_create(&threadid, NULL, read_file_thread, &args);
+    
+    //usleep(1000000);
 
     //int ngroups = 88;
     //Groups* groups;
@@ -252,6 +268,8 @@ int main(int argc, char **argv)
 
     loop(&s, index);
 
+    args.is_stopped = true;
+    pthread_join(threadid, NULL);
     cleanup_ui();
     return 0;
 }

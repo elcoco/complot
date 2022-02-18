@@ -6,7 +6,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <math.h>
+#include <pthread.h>
 
+
+#define INDEX_DEFAULT_GROW_AMOUNT 2000
+#define INDEX_DEFAULT_SPREAD 5
 
 typedef struct Group Group;
 typedef struct Groups Groups;
@@ -14,9 +18,6 @@ typedef struct Bin Bin;
 typedef struct Index Index;
 typedef struct Point Point;
 typedef struct Line Line;
-
-#define INDEX_DEFAULT_GROW_AMOUNT 2000
-#define INDEX_DEFAULT_SPREAD 5
 
 /* Point holds data for a one datapoint */
 struct Point {
@@ -147,8 +148,8 @@ struct Index {
     // is true after first index build
     bool is_initialized;
 
-    // needs to be checked using: index_has_data()
-    bool has_data;
+    // needs to be checked using: index_has_new_data()
+    bool has_new_data;
 };
 
 // build an index of groups with a x xindow
@@ -161,7 +162,7 @@ double  index_map_to_x(Index* index, int32_t i);
 int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount);
 void    index_reindex(Index* index);
 void    index_print(Index* index);
-bool    index_has_data(Index*);
+bool index_has_new_data(Index* index);
 
 // inserts point in appropriate line in group, creates new if data falls out of current index range
 // line_id is the array index for line, is mapped by ENUM

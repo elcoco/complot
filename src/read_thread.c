@@ -1,7 +1,75 @@
 #include "read_thread.h"
 
-int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t ilow, uint8_t iclose)
+void* read_file_thread(void* args)
 {
+    Args* a = args;
+
+    char buf[BUF_SIZE] = {'\0'};
+    char tmpbuf[BUF_SIZE] = {'\0'};
+    uint32_t xsteps = 5;
+
+    // x incrementer, must be a converted datetime but for now this will do
+    uint32_t ix = 0;
+    FILE* fp = fopen("csv/XMRBTC_1m.csv", "r");
+
+    while (fgets(buf, sizeof(buf), fp) != NULL && !a->is_stopped) {
+        if (ix == 0) {
+            ix+=xsteps;
+            continue;
+        }
+
+        if (buf[strlen(buf)-1] == '\n') {
+            char* spos = buf;
+            int c = 0;
+            double dt, open, high, low, close;
+
+            while (fast_forward(&spos, ",\n", NULL, NULL, tmpbuf)) {
+
+                // Reset local, using UTF-8 makes atof() wait for ',' instead of '.'
+                // as a float delimiter
+                // So to reset the previous: setlocale(LC_ALL, "");
+                setlocale(LC_NUMERIC,"C");
+
+                // NOTE atof failes on unicode!!!!
+                if (c == a->idt)
+                    dt = atof(tmpbuf);
+                else if (c == a->iopen)
+                    open = atof(tmpbuf);
+                else if (c == a->ihigh)
+                    high = atof(tmpbuf);
+                else if (c == a->ilow)
+                    low = atof(tmpbuf);
+                else if (c == a->iclose)
+                    close = atof(tmpbuf);
+
+                spos++;
+                c++;
+                tmpbuf[0] = '\0';
+            }
+
+            Point* p = point_create(LINE1, ix, open, high, low, close);
+
+            pthread_mutex_lock(a->lock);
+            if (index_insert(a->index, p) < 0)
+                printf("Failed to insert point\n");
+            pthread_mutex_unlock(a->lock);
+
+
+
+        } else {
+            printf("too long!!! %lu: %s\n", strlen(buf), buf);
+        }
+
+        ix+=xsteps;
+
+        usleep(100000);
+    }
+}
+
+void* read_stdin_thread(void* args)
+{
+    Args* a = args;
+
     char buf[BUF_SIZE] = {'\0'};
     char tmpbuf[BUF_SIZE] = {'\0'};
     uint32_t xsteps = 5;
@@ -18,7 +86,7 @@ int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t 
         if (buf[strlen(buf)-1] == '\n') {
             char* spos = buf;
             int c = 0;
-            double idt, open, high, low, close;
+            double dt, open, high, low, close;
 
             while (fast_forward(&spos, ",\n", NULL, NULL, tmpbuf)) {
 
@@ -28,15 +96,15 @@ int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t 
                 setlocale(LC_NUMERIC,"C");
 
                 // NOTE atof failes on unicode!!!!
-                if (c == idt)
-                    idt = atof(tmpbuf);
-                else if (c == iopen)
+                if (c == a->idt)
+                    dt = atof(tmpbuf);
+                else if (c == a->iopen)
                     open = atof(tmpbuf);
-                else if (c == ihigh)
+                else if (c == a->ihigh)
                     high = atof(tmpbuf);
-                else if (c == ilow)
+                else if (c == a->ilow)
                     low = atof(tmpbuf);
-                else if (c == iclose)
+                else if (c == a->iclose)
                     close = atof(tmpbuf);
 
                 spos++;
@@ -45,16 +113,23 @@ int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t 
             }
 
             Point* p = point_create(LINE1, ix, open, high, low, close);
-            if (index_insert(index, p) < 0)
-                return -1;
+
+            pthread_mutex_lock(a->lock);
+            if (index_insert(a->index, p) < 0)
+                printf("Failed to insert point\n");
+            pthread_mutex_unlock(a->lock);
+
+
 
         } else {
             printf("too long!!! %lu: %s\n", strlen(buf), buf);
         }
 
         ix+=xsteps;
+
+        printf("read data\n");
+        usleep(10000000);
     }
-    return 1;
 }
 
 

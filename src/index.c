@@ -1,5 +1,6 @@
 #include "index.h"
 
+
 Index* index_create(uint8_t nlines)
 {
     Index* index = (Index*)malloc(sizeof(Index));
@@ -18,12 +19,13 @@ Index* index_create(uint8_t nlines)
     index->nlines = nlines;
 
     index->ilast = 0;
-    index->has_data = false;
+    index->has_new_data = false;
 
     //index->dmin = 0;
     //index->dmax = 0;
 
     index->is_initialized = false;
+
     return index;
 }
 
@@ -212,7 +214,7 @@ int8_t index_insert(Index* index, Point* p)
     index->npoints++;
 
     // set new data flag
-    index->has_data = true;
+    index->has_new_data = true;
 
     return 1;
 }
@@ -329,10 +331,10 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
     return groups;
 }
 
-bool index_has_data(Index*)
+bool index_has_new_data(Index* index)
 {
-    bool state = index->has_data;
-    index->has_data = false;
+    bool state = index->has_new_data;
+    index->has_new_data = false;
     return state;
 }
 

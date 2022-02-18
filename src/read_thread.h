@@ -1,7 +1,6 @@
 #ifndef READ_THREAD_H
 #define READ_THREAD_H
 
-#include <pthread.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -18,8 +17,20 @@ enum lines {
     LINE2
 };
 
+typedef struct Args Args;
+struct Args {
+    Index* index;
+    uint8_t idt;
+    uint8_t iopen;
+    uint8_t ihigh;
+    uint8_t ilow;
+    uint8_t iclose;
+    pthread_mutex_t* lock;
+    bool is_stopped;
+};
 
-int read_stdin(Index* index, uint8_t idt, uint8_t iopen, uint8_t ihigh, uint8_t ilow, uint8_t iclose);
+void* read_stdin_thread(void* args);
+void* read_file_thread(void* args);
 bool fast_forward(char** c, char* search_lst, char* expected_lst, char* ignore_lst, char* buf);
 
 #endif

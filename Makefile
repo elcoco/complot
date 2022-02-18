@@ -1,7 +1,7 @@
 CC = gcc
 
 # lncursesw is used for UTF8 support
-CFLAGS = -g -Wall -lncursesw -lm
+CFLAGS = -g -Wall -lncursesw -lm -lpthread
 
 BUILD_DIR = build
 BIN_DIR = .
