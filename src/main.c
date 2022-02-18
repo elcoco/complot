@@ -189,6 +189,13 @@ void update(State* s, Index* index)
 
     //if (s->fit_all)
     //    s->gsize = ceil(index->isize / pl->pxsize);
+
+    // TODO we get more groups than we need so we need to skip a bunch later
+    //      this is super annoying and should be fixed.
+    //      The reason this is necessary is because when plot dimensions
+    //      are decided there is no information about y axis width.
+    //      Therefore we take the same amount of groups as there are columns
+    //      in the terminal.
     if ((groups = index_get_grouped(index, LINE1, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         set_status(1, "error");
         refresh();

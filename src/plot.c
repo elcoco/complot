@@ -128,6 +128,18 @@ void pl_draw_xaxis(Plot* pl, Group* g)
 {
     int32_t ix = pl->xaxis_xstart;
 
+    // TODO we get more groups than we need so we need to skip a bunch
+    //      this is super annoying and should be fixed.
+    //      The reason this is necessary is because when plot dimensions
+    //      are decided there is no information about y axis width.
+    //      Therefore we take the same amount of groups as there are columns
+    //      in the terminal.
+    uint32_t goffset = pl->xsize - pl->pxsize;
+    while (goffset != 0) {
+        g = g->next;
+        goffset--;
+    }
+
     while (g != NULL) {
         if (g->id % XTICK_SPACING == 0) {
 
