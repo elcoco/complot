@@ -21,7 +21,7 @@ typedef struct Line Line;
 
 /* Point holds data for a one datapoint */
 struct Point {
-    int32_t x;
+    double x;
     double open;
     double high;
     double low;
@@ -173,7 +173,7 @@ int8_t index_insert(Index* index, Point* point);
 Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
 
 void   points_print(Point* p);
-Point* point_create(Index* index, uint32_t lineid, int32_t x, double open, double high, double low, double close);
+Point* point_create(Index* index, uint32_t lineid, double x, double open, double high, double low, double close);
 void   point_append(Point* p, Point** tail);
 
 int8_t line_add_point(Line* l, Point* p);

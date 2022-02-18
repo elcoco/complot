@@ -44,8 +44,8 @@ pthread_mutex_t lock;
 // TODO find a way to decide on the precision of tickers on axis
 // DONE x tickers should follow data not columns
 // DONE reindex on second datapoint and calculate spread dynamically
-// TODO on reindex first point is added to linked list again
-// TODO create update function in index
+// DONE on reindex first point is added to linked list again
+// DONE create update function in index
 // DONE rename component to plot oid
 // TODO write better makefile
 // TODO x should also be double

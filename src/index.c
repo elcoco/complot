@@ -131,7 +131,7 @@ void points_print(Point* p)
     uint32_t i = 0;
 
     while (p != NULL) {
-        printf("[%d] %d\n", i, p->x);
+        printf("[%d] %f\n", i, p->x);
         p = p->next;
         i++;
     }
@@ -184,7 +184,7 @@ void index_reindex(Index* index)
     }
 }
 
-Point* point_create(Index* index, uint32_t lineid, int32_t x, double open, double high, double low, double close)
+Point* point_create(Index* index, uint32_t lineid, double x, double open, double high, double low, double close)
 {
     Point* p = (Point*)malloc(sizeof(Point));
     p->x = x;
