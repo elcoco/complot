@@ -143,10 +143,10 @@ void pl_draw_xaxis(Plot* pl, Group* g)
     while (g != NULL) {
         if (g->id % XTICK_SPACING == 0 && !g->is_empty) {
 
-            char dbuf[64] = {'\0'};
-            char tbuf[64] = {'\0'};
+            char dbuf[15] = {'\0'};
+            char tbuf[15] = {'\0'};
 
-            ts_to_dt(g->wstart, "%Y:%m:%d", dbuf, sizeof(dbuf));
+            ts_to_dt(g->wstart, "%Y-%m-%d", dbuf, sizeof(dbuf));
             ts_to_dt(g->wstart, "%H:%M:%S", tbuf, sizeof(tbuf));
 
             char* pdbuf = dbuf;
@@ -267,6 +267,7 @@ void pl_set_dimensions(Plot* pl, double dmin, double dmax)
 
     pl->ryaxis_nfrac  = find_nfrac((dmax - dmin)); // digits behind the comma
     //pl->ryaxis_nfrac  = find_nfrac((dmax - dmin)/pl->pysize); // digits behind the comma
+    //printf("nfrac: %d\n", pl->ryaxis_nfrac);
     pl->ryaxis_nwhole = find_nwhole(dmax); // digits before the comma
     pl->ryaxis_size   = pl->ryaxis_nwhole + 1 + pl->ryaxis_nfrac;
     pl->ryaxis_start  = pl->xsize - pl->ryaxis_size;

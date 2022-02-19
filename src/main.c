@@ -66,7 +66,7 @@ void set_defaults(State* s)
     s->panx = 0;
     s->pany = 0;
     s->is_pan_changed = false;
-    s->set_autorange = false;
+    s->set_autorange = true;
     s->fit_all = false;
 
     s->dmin = -1;
@@ -267,6 +267,14 @@ int main(int argc, char **argv)
     //Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     pthread_t threadid;
     pthread_create(&threadid, NULL, read_file_thread, &args);
+
+    //usleep(1000000);
+    //points_print(*(index->phead));
+    //Plot* pl = pl_init(COLS, LINES);
+    //Groups* groups = index_get_grouped(index, LINE1, 1, 50, 0, 0);
+    //groups_print(groups->group);
+    //points_print(*(index->phead));
+
 
     init_ui();
 

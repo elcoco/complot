@@ -132,7 +132,7 @@ void points_print(Point* p)
     uint32_t i = 0;
 
     while (p != NULL) {
-        printf("[%d] %f\n", i, p->x);
+        point_print(p);
         p = p->next;
         i++;
     }
@@ -176,13 +176,18 @@ void index_reindex(Index* index)
 
     // create new bins
     index->bins = (Bin**)malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
-    index_build(index);
+    index->is_initialized = false;
 
     Point* p = *index->phead;
     while (p != NULL) {
         index_insert(index, p);
         p = p->next;
     }
+}
+
+void point_print(Point* p)
+{
+    printf("%f => [%f, %f, %f, %f]\n", p->x, p->open, p->high, p->low, p->close);
 }
 
 Point* point_create(Index* index, uint32_t lineid, double x, double open, double high, double low, double close)
@@ -227,7 +232,7 @@ int8_t index_insert(Index* index, Point* p)
         index->xmin = p->x;
     }
 
-    // map data to array index
+    // map x to index->bins array index
     int32_t ix = index_map_to_index(index, p->x);
 
     // check if index is too smoll to hold data
@@ -274,9 +279,13 @@ Group* group_create(Index* index, int32_t gstart, uint32_t gsize)
 {
     Group* g = (Group*)malloc(sizeof(Group));
     g->wstart = index_map_to_x(index, gstart);
-    g->wend   = index_map_to_x(index, gstart + gsize) -1;
+    g->wend   = index_map_to_x(index, gstart + gsize);
     g->is_empty = true;
     g->next = NULL;
+
+    // Set unique constant id for this group.
+    // This is used to keep x tickers in the right spot.
+    g->id = gstart / gsize;
     return g;
 }
 
@@ -304,9 +313,7 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
 
         Group* g = group_create(index, gstart, gsize);
 
-        g->id = gstart / gsize;
-
-        // connect linked list
+        // connect new group to linked list
         if (*ghead == NULL) {
             *ghead = g;
             *gtail = g;
@@ -314,18 +321,14 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
             group_append(g, gtail);
         }
 
-        // if group index is below 0 this means that there is no data for this group
+        // Skip if group index is outside of data limits
         if (gstart < 0)
             continue;
-
-        // if group is beyond data
-        if (gstart >= index->isize-1)
+        else if (gstart >= index->isize-1)
             continue;
 
+        // set OHLC values from line in group
         for (int i=0 ; i<gsize ; i++) {
-            // trying to access a bin outside index boundaries
-            if (gstart+i > index->isize-1)
-                break;
 
             Bin* b = bins[gstart+i];
             Line* l = b->lines[lineid];
@@ -333,22 +336,23 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
             if (l->is_empty)
                 continue;
 
+            // set initial OHLC data from line in empty group
             if (g->is_empty) {
                 g->is_empty = false;
                 g->open  = l->open;
                 g->high  = l->high;
                 g->low   = l->low;
                 g->close = l->close;
-                continue;
+
             } else {
                 g->close = l->close;
+
+                if (l->high > g->high)
+                    g->high = l->high;
+
+                if (l->low < g->low)
+                    g->low = l->low;
             }
-
-            if (l->high > g->high)
-                g->high = l->high;
-
-            if (l->low < g->low)
-                g->low = l->low;
         }
 
         // set initial data dimensions in groups container
@@ -393,7 +397,6 @@ bool index_has_new_data(Index* index)
     index->has_new_data = false;
     return state;
 }
-
 
 void groups_print(Group* g)
 {
@@ -440,15 +443,16 @@ int8_t line_add_point(Line* l, Point* p)
         l->close = p->close;
         l->high = p->high;
         l->low = p->low;
-
         l->xmin = p->x;
         l->xmax = p->x;
         return 1;
     }
+    // update line x lower limits if p->x is older than oldest point in line
     if (p->x < l->xmin) {
         l->open = p->open;
         l->xmin = p->x;
     }
+    // update line x upper limits if p->x is newer than oldest point in line
     if (p->x > l->xmax) {
         l->close = p->close;
         l->xmax = p->x;

@@ -176,6 +176,7 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
 void   points_print(Point* p);
 Point* point_create(Index* index, uint32_t lineid, double x, double open, double high, double low, double close);
 void   point_append(Point* p, Point** tail);
+void   point_print(Point* p);
 
 int8_t line_add_point(Line* l, Point* p);
 

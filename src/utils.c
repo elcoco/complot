@@ -31,7 +31,7 @@ uint32_t find_nfrac(double f)
     /* return amount digits after decimal point */
     double frac = f - abs(f);
     char str[30];
-    return sprintf(str, "%g", frac) -2;
+    return sprintf(str, "%g", frac);
 }
 
 uint32_t find_nwhole(double f)
