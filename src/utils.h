@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
+#include <time.h>
 
 
 typedef struct {
@@ -37,7 +38,9 @@ uint32_t map(double value, double in_min, double in_max, uint32_t out_min, uint3
 
 uint32_t find_nfrac(double f);
 uint32_t find_nwhole(double f);
-uint32_t count_digits(uint32_t n);
+uint32_t count_digits(uint64_t n);
+
+char* ts_to_dt(time_t t, char* fmt, char* buf, uint8_t buflen);
 
 void die(char* msg);
 

@@ -22,7 +22,7 @@ void* read_file_thread(void* args)
         if (buf[strlen(buf)-1] == '\n') {
             char* spos = buf;
             int c = 0;
-            double open, high, low, close;
+            double dt, open, high, low, close;
 
             while (fast_forward(&spos, ",\n", NULL, NULL, tmpbuf)) {
 
@@ -40,6 +40,8 @@ void* read_file_thread(void* args)
                     low = atof(tmpbuf);
                 else if (c == a->iclose)
                     close = atof(tmpbuf);
+                else if (c == a->idt)
+                    dt = atof(tmpbuf);
 
                 spos++;
                 c++;
@@ -47,14 +49,8 @@ void* read_file_thread(void* args)
             }
 
             pthread_mutex_lock(a->lock);
-            point_create(a->index, LINE1, ix, open, high, low, close);
-            //printf("point created: %f %f %f %f %f\n", ix, open, high, low, close);
-
-            //if (index_insert(a->index, p) < 0)
-            //    printf("Failed to insert point\n");
+            point_create(a->index, LINE1, dt, open, high, low, close);
             pthread_mutex_unlock(a->lock);
-
-
 
         } else {
             printf("too long!!! %lu: %s\n", strlen(buf), buf);

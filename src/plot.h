@@ -30,7 +30,7 @@
 #define RAXIS_SIZE 5
 
 // chars inbetween tickers on x axis
-#define XTICK_SPACING 10
+#define XTICK_SPACING 15
 
 // Node struct represents a cell in the matrix
 typedef struct Cell Cell;

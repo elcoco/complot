@@ -5,9 +5,10 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
+#include <locale.h>     // for utf8 in curses
 
 #include "index.h"
-#include <locale.h>     // for utf8 in curses
 
 #define BUF_SIZE 1000
 

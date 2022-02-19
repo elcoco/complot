@@ -141,22 +141,69 @@ void pl_draw_xaxis(Plot* pl, Group* g)
     }
 
     while (g != NULL) {
-        if (g->id % XTICK_SPACING == 0) {
+        if (g->id % XTICK_SPACING == 0 && !g->is_empty) {
 
-            char t[30] = {'\0'};
-            sprintf(t, "%5.2f", g->wstart);
-            char* pt = t;
+            char dbuf[64] = {'\0'};
+            char tbuf[64] = {'\0'};
 
-            for (uint32_t x=ix ; x<ix+strlen(t) ; x++, pt++) {
+            ts_to_dt(g->wstart, "%Y:%m:%d", dbuf, sizeof(dbuf));
+            ts_to_dt(g->wstart, "%H:%M:%S", tbuf, sizeof(tbuf));
+
+            char* pdbuf = dbuf;
+            char* ptbuf = tbuf;
+
+            //char t[30] = {'\0'};
+            //sprintf(t, "%5.2f", g->wstart);
+
+            for (uint32_t x=ix ; x<ix+strlen(dbuf) ; x++, pdbuf++) {
                 if (x >= pl->xaxis_xstart+pl->xaxis_xsize)
                     break;
 
                 Cell* c = pl_get_cell(pl, x, pl->xaxis_ystart);
-                c->chr[0] = *pt;
+                c->chr[0] = *pdbuf;
             }
+
+            for (uint32_t x=ix ; x<ix+strlen(tbuf) ; x++, ptbuf++) {
+                if (x >= pl->xaxis_xstart+pl->xaxis_xsize)
+                    break;
+
+                Cell* c = pl_get_cell(pl, x, pl->xaxis_ystart+1);
+                c->chr[0] = *ptbuf;
+            }
+
         }
         g = g->next;
         ix++;
+    }
+}
+
+void pl_draw_ryaxis(Plot* pl, double dmin, double dmax, int32_t yoffset)
+{
+    /* calculate axis values and draw them in matrix.
+     * Also highlight last value of last point (not group)
+     */
+    // calculate stepsize between tickers
+    double step = (dmax - dmin) / pl->pysize;
+
+    // calculate first column of axis
+    uint32_t xstart = pl->ryaxis_start;
+    int32_t y=0;
+
+    // TODO create funtion that resets all dimensions of components
+    //
+    for (int32_t iy=pl->pystart ; iy<pl->ysize ; iy++, y++) {
+
+        uint32_t ix;
+        char buf[50] = {'\0'};
+        double ticker = dmin + ((y - yoffset)*step);
+        get_tickerstr(buf, ticker, pl->ryaxis_size, pl->ryaxis_nwhole, pl->ryaxis_nfrac);
+        char* pbuf = buf;
+
+        for (ix=xstart ; ix<xstart+strlen(buf) ; ix++, pbuf++) {
+            Cell* c = pl_get_cell(pl, ix, iy);
+            c->chr[0] = *pbuf;
+            c->fgcol = WHITE;
+        }
     }
 }
 
@@ -175,7 +222,7 @@ Plot* pl_init(uint32_t xsize, uint32_t ysize)
     pl->status_size = 2;
     pl->lyaxis_size = 0;
     pl->ryaxis_size = 15;
-    pl->xaxis_ysize = 1;
+    pl->xaxis_ysize = 2;
 
     uint32_t x, y;
 
@@ -211,36 +258,6 @@ void pl_destroy(Plot* pl)
     }
     free(pl->cells);
     free(pl);
-}
-
-void pl_draw_ryaxis(Plot* pl, double dmin, double dmax, int32_t yoffset)
-{
-    /* calculate axis values and draw them in matrix.
-     * Also highlight last value of last point (not group)
-     */
-    // calculate stepsize between tickers
-    double step = (dmax - dmin) / pl->pysize;
-
-    // calculate first column of axis
-    uint32_t xstart = pl->ryaxis_start;
-    int32_t y=0;
-
-    // TODO create funtion that resets all dimensions of components
-    //
-    for (int32_t iy=pl->pystart ; iy<pl->ysize ; iy++, y++) {
-
-        uint32_t ix;
-        char buf[50] = {'\0'};
-        double ticker = dmin + ((y - yoffset)*step);
-        get_tickerstr(buf, ticker, pl->ryaxis_size, pl->ryaxis_nwhole, pl->ryaxis_nfrac);
-        char* pbuf = buf;
-
-        for (ix=xstart ; ix<xstart+strlen(buf) ; ix++, pbuf++) {
-            Cell* c = pl_get_cell(pl, ix, iy);
-            c->chr[0] = *pbuf;
-            c->fgcol = WHITE;
-        }
-    }
 }
 
 void pl_set_dimensions(Plot* pl, double dmin, double dmax)
