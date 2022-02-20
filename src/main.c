@@ -97,18 +97,22 @@ bool check_user_input(void* arg)
             case 'h':
                 s->panx-=DEFAULT_PAN_STEPS;
                 s->is_pan_changed = true;
+                s->is_paused = true;
                 break;
             case 'l':
                 s->panx+=DEFAULT_PAN_STEPS;
                 s->is_pan_changed = true;
+                s->is_paused = true;
                 break;
             case 'k':
                 s->pany-=DEFAULT_PAN_STEPS;
                 s->is_pan_changed = true;
+                s->set_autorange = false;
                 break;
             case 'j':
                 s->pany+=DEFAULT_PAN_STEPS;
                 s->is_pan_changed = true;
+                s->set_autorange = false;
                 break;
             case 'H':
                 if (s->gsize > 1)
@@ -177,53 +181,38 @@ bool check_user_input(void* arg)
     return false;
 }
 
-void update(State* s, Index* index, Plot* pl, Line* l)
+int8_t update(State* s, Index* index, Plot* pl, Line* l)
 {
     // check if data or exit early
-    if (index->npoints == 0) {
-        set_status(0, "No data...");
-        refresh();
-        return;
-    }
+    if (index->npoints == 0)
+        return 0;
         
-    Groups* groups;
     pthread_mutex_lock(&lock);
 
-    //if (s->fit_all)
-    //    s->gsize = ceil(index->isize / pl->pxsize);
-
-    // TODO we get more groups than we need so we need to skip a bunch later
-    //      this is super annoying and should be fixed.
-    //      The reason this is necessary is because when plot dimensions
-    //      are decided there is no information about y axis width.
-    //      Therefore we take the same amount of groups as there are columns
-    //      in the terminal.
+    Groups* groups;
     if ((groups = index_get_grouped(index, l->lineid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
-        set_status(1, "error");
-        refresh();
-        plot_destroy(pl);
         pthread_mutex_unlock(&lock);
-        return;
+        return 0;
     }
 
     plot_clear(pl);
-    axis_set_data(pl->raxis, l, groups);
+    pl->laxis->autorange = s->set_autorange;
+    pl->raxis->autorange = s->set_autorange;
 
-    if (s->dmin < 0 || s->set_autorange) {
-        s->dmin = groups->gmin;
-        s->dmax = groups->gmax;
+    if (line_set_data(l, groups) < 0) {
+        pthread_mutex_unlock(&lock);
+        groups_destroy(groups);
+        return -1;
     }
-    pl->raxis->dmin = s->dmin;
-    pl->raxis->dmax = s->dmax;
 
     plot_draw(pl, groups, s);
-
     ui_show_plot(pl);
-    set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
+    set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %.1f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
 
     // cleanup
     groups_destroy(groups);
     pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 void loop(State* s, Index* index)
@@ -234,13 +223,14 @@ void loop(State* s, Index* index)
 
     while (!s->is_stopped && !sigint_caught) {
 
-        if (! s->is_paused) {
-            if (index_has_new_data(index))
-                update(s, index, pl, l1);
+        if (! s->is_paused && index_has_new_data(index)) {
+            if (update(s, index, pl, l1) < 0)
+                break;
         }
         // update on user input
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
-            update(s, index, pl, l1);
+            if (update(s, index, pl, l1) < 0)
+                break;
         }
     }
     line_destroy(l1);

@@ -48,7 +48,7 @@ struct Group {
     Group* next;
     Group* prev;
 
-    // group number, is used to draw xaxis tickers beneath candles
+    // group id, is used to let x tickers follow candles
     uint32_t id;
 };
 
@@ -66,7 +66,11 @@ struct Groups {
     double gmin;
     double gmax;
 
-    bool is_empty; // indicate if groups has any data in it or just empty groups
+    // indicate if groups has any data in it or just empty groups
+    bool is_empty; 
+                   
+    // last datapoint for this lineid
+    Point* plast;
 };
 
 /* Container to put points in that is stored in Bin struct.
@@ -163,6 +167,7 @@ double  index_map_to_x(Index* index, int32_t i);
 int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount);
 void    index_print(Index* index);
 bool    index_has_new_data(Index* index);
+Point*  index_get_last_point(Index* index, uint32_t lineid);
 
 // Reindex is done when the index spread changes, All bins are regenerated with a different window.
 void    index_reindex(Index* index);

@@ -43,7 +43,7 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
 {
     /* Draw all elements to internal matrix */
     // update plot dimensions from axis dimensions
-    plot_set_plot_dimensions(pl);
+    plot_set_dimensions(pl);
     axis_draw(pl->raxis, pl, s);
     axis_draw(pl->laxis, pl, s);
     plot_draw_xaxis(pl, groups->group);
@@ -121,12 +121,6 @@ void plot_draw_xaxis(Plot* pl, Group* g)
 {
     int32_t ix = pl->xaxis_xstart;
 
-    // TODO we get more groups than we need so we need to skip a bunch
-    //      this is super annoying and should be fixed.
-    //      The reason this is necessary is because when plot dimensions
-    //      are decided there is no information about y axis width.
-    //      Therefore we take the same amount of groups as there are columns
-    //      in the terminal.
     uint32_t goffset = pl->xsize - pl->pxsize;
     while (goffset != 0) {
         g = g->next;
@@ -139,17 +133,14 @@ void plot_draw_xaxis(Plot* pl, Group* g)
             char dbuf[15] = {'\0'};
             char tbuf[15] = {'\0'};
 
-            ts_to_dt(g->wstart, "%Y-%m-%d", dbuf, sizeof(dbuf));
-            ts_to_dt(g->wstart, "%H:%M:%S", tbuf, sizeof(tbuf));
-
             char* pdbuf = dbuf;
             char* ptbuf = tbuf;
 
-            //char t[30] = {'\0'};
-            //sprintf(t, "%5.2f", g->wstart);
+            ts_to_dt(g->wstart, "%Y-%m-%d", dbuf, sizeof(dbuf));
+            ts_to_dt(g->wstart, "%H:%M:%S", tbuf, sizeof(tbuf));
 
             for (uint32_t x=ix ; x<ix+strlen(dbuf) ; x++, pdbuf++) {
-                if (x >= pl->xaxis_xstart+pl->xaxis_xsize)
+                if (x >= pl->xsize)
                     break;
 
                 Cell* c = plot_get_cell(pl, x, pl->xaxis_ystart);
@@ -157,13 +148,12 @@ void plot_draw_xaxis(Plot* pl, Group* g)
             }
 
             for (uint32_t x=ix ; x<ix+strlen(tbuf) ; x++, ptbuf++) {
-                if (x >= pl->xaxis_xstart+pl->xaxis_xsize)
+                if (x >= pl->xsize)
                     break;
 
                 Cell* c = plot_get_cell(pl, x, pl->xaxis_ystart+1);
                 c->chr[0] = *ptbuf;
             }
-
         }
         g = g->next;
         ix++;
@@ -172,6 +162,7 @@ void plot_draw_xaxis(Plot* pl, Group* g)
 
 void  plot_clear(Plot* pl)
 {
+    /* Clear all cells in plot and all limits in axis */
     for (uint32_t x=0 ; x<pl->xsize ; x++) {
         for (uint32_t y=0 ; y<pl->ysize ; y++) {
             Cell* c = plot_get_cell(pl, x, y);
@@ -179,6 +170,10 @@ void  plot_clear(Plot* pl)
             c->fgcol = WHITE;
         }
     }
+
+    // clear axis limits
+    pl->laxis->is_empty = true;
+    pl->raxis->is_empty = true;
 }
 
 Cell* plot_get_cell(Plot* pl, uint32_t x, uint32_t y)
@@ -196,8 +191,9 @@ Cell* plot_cell_init(uint32_t x, uint32_t y)
     return c;
 }
 
-uint32_t plot_set_plot_dimensions(Plot* pl)
+uint32_t plot_set_dimensions(Plot* pl)
 {
+    /* Set dimensions for plot area and x axis */
     uint8_t spacer = 1;
     pl->pxsize = pl->xsize - pl->laxis->txsize - pl->raxis->txsize - spacer;
     pl->pxstart = pl->laxis->txsize;

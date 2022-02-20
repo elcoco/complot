@@ -39,17 +39,26 @@ struct Axis {
 
     // data dimensions
     // TODO rename to dymin/dymax
+
+    // Total axis data min/max
+    double tdmin;
+    double tdmax;
+
+    // View or visible axis data min/max
+    double vdmin;
+    double vdmax;
+
+    // Currently used axis limits for drawing tickers and candlesticks
     double dmin;
     double dmax;
-
-    // last y data
-    double dlast;
 
     // linked list of Line structs that should be drawn into this axis
     Line* line;
     Line** ltail;
 
     bool is_empty;
+
+    bool autorange;
 };
 
 Axis* axis_init(AxisSide side);
@@ -57,9 +66,7 @@ void  axis_destroy(Axis* a);
 void  axis_add_line(Axis* a, Line* l);
 void  axis_draw(Axis* a, Plot* pl, State* s);
 void  axis_draw_tickers(Axis* a, Plot* pl, int32_t yoffset);
-void axis_draw_last_data(Axis* a, Plot* pl, double pany, double lasty);
-
-void axis_set_data(Axis* a, Line* l, Groups* groups);
+void  axis_draw_last_data(Axis* a, Plot* pl, double pany, double lasty);
 
 void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac);
 

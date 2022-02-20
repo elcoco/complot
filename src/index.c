@@ -80,6 +80,18 @@ int8_t index_extend(Index* index)
     return 1;
 }
 
+Point* index_get_last_point(Index* index, uint32_t lineid)
+{
+    /* Get last datapoint for a specific lineid */
+    Point* p = *(index->ptail);
+    while (p != NULL) {
+        if (p->lineid == lineid)
+            return p;
+        p = p->prev;
+    }
+    return NULL;
+}
+
 Bin* bin_create(Index* index, uint32_t i)
 {
     /* Create and allocate new Bin struct that has a fixed X window.
@@ -302,6 +314,7 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
     groups->is_empty = true;
     groups->dmin = index->dmin;
     groups->dmax = index->dmax;
+    groups->plast = index_get_last_point(index, lineid);
 
     // setup linked list
     Group** ghead = (Group**)malloc(sizeof(Group*));

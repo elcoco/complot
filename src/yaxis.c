@@ -11,9 +11,14 @@ Axis* axis_init(AxisSide side)
     a->nwhole = 0;
     a->nfrac = 0;
 
+    a->tdmin = 0;
+    a->tdmax = 0;
+
+    a->vdmin = 0;
+    a->vdmax = 0;
+
     a->dmin = 0;
     a->dmax = 0;
-    a->dlast = 0;
 
     // line linked list
     a->line = NULL;
@@ -21,6 +26,7 @@ Axis* axis_init(AxisSide side)
     *(a->ltail) = NULL;
 
     a->is_empty = true;
+    a->autorange = true;
 
     return a;
 }
@@ -42,60 +48,41 @@ void axis_add_line(Axis* a, Line* l)
         *(a->ltail) = l;
         prev->next = l;
     }
-}
-
-void axis_set_data(Axis* a, Line* l, Groups* groups)
-{
-    // set line data in line
-    l->group = groups->group;
-
-    // set/update axis dimensions
-    if (a->is_empty) {
-        a->is_empty = false;
-        a->dmin = groups->gmin;
-        a->dmax = groups->gmax;
-    } else {
-        if (groups->dmin < a->dmin)
-            a->dmin = groups->dmin;
-        if (groups->dmax > a->dmax)
-            a->dmax = groups->dmax;
-    }
-    // digits before and after the dot
-    a->nwhole = find_nwhole(a->dmax); 
-    a->nfrac  = find_nfrac(a->dmax - a->dmin);
-    a->txsize  = a->nwhole + 1 + a->nfrac;
+    // add axis stuct to line struct
+    l->axis = a;
 }
 
 void axis_draw(Axis* a, Plot* pl, State* s)
 {
     /* Draw all lines in this axis into Plot */
-    // TODO yoffset is not passed, so y panning is not possible
-    // TODO dmin and dmax are taken from groups struct but to allow non-autoresize it should
-    //      be taken from State struct
-    // TODO implement left side drawing
+    if (a->autorange) {
+        a->dmin = a->vdmin;
+        a->dmax = a->vdmax;
+    } else {
+        a->dmin = a->tdmin;
+        a->dmax = a->tdmax;
+    }
 
     if (a->side == AXIS_LEFT)
         a->txstart = 0;
     else
         a->txstart = pl->xsize - a->txsize;
 
-    Line* l = a->line;
-    while (l != NULL) {
-        plot_draw_candlesticks(pl, l->group, a, s->pany); 
-        l = l->next;
-    }
-
     // draw y axis tickers
     if (a->side == AXIS_RIGHT) {
         axis_draw_tickers(a, pl, s->pany);
 
-        // TODO write actual last data
-        double dlast = 0.0055;
-        axis_draw_last_data(a, pl, s->pany, dlast);
+        Line* l = a->line;
+        while (l != NULL) {
+            plot_draw_candlesticks(pl, l->groups->group, a, s->pany); 
+
+            // Highlight last data in tickers
+            if (l->groups->plast != NULL)
+                axis_draw_last_data(a, pl, s->pany, l->groups->plast->close);
+
+            l = l->next;
+        }
     }
-
-
-    //plot_draw_last_data(pl, a, s->pany, (*index->ptail)->close);
 }
 
 void axis_draw_tickers(Axis* a, Plot* pl, int32_t yoffset)
@@ -142,8 +129,8 @@ void axis_draw_last_data(Axis* a, Plot* pl, double pany, double lasty)
     // if last data is out of range, stick to top/bottom
     if (ilasty < pl->pystart)
         ilasty = pl->pystart;
-    if (ilasty >= pl->pysize)
-        ilasty = pl->pysize-1;
+    if (ilasty >= pl->pystart + pl->pysize -1)
+        ilasty = pl->pystart + pl->pysize -1;
 
     for (int32_t ix=a->txstart ; ix<a->txstart+strlen(buf) ; ix++, pbuf++) {
         if (ix >= pl->xsize)
@@ -172,7 +159,7 @@ void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, u
     char sfrac[50] = {'\0'};
 
     sprintf(tmp, "%d.", abs(ticker));
-    sprintf(sfrac, "%g", ticker - abs(ticker));
+    sprintf(sfrac, "%.20f", ticker - abs(ticker));
     strncat(tmp, sfrac+2, nfrac);
 
     for (int i=0; i<ntotal-strlen(tmp) ; i++)

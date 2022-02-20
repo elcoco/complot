@@ -98,7 +98,7 @@ void  plot_draw_candlesticks(Plot* pl, Group* g, Axis* a, int32_t yoffset);
 void  plot_draw_candlestick(Plot* pl, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
 void  plot_draw_xaxis(Plot* pl, Group* g);
 void  plot_draw(Plot* pl, Groups* groups, State* s);
-uint32_t plot_set_plot_dimensions(Plot* pl);
+uint32_t plot_set_dimensions(Plot* pl);
 void  plot_clear(Plot* pl);
 
 #endif

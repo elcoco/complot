@@ -9,9 +9,16 @@
 
 #include "plot.h"
 #include "index.h"
+#include "yaxis.h"
 
 typedef struct Line Line;
+
+// forward declare from index.h
 typedef struct Group Group;
+typedef struct Groups Groups;
+
+// forward declare from yaxis.h
+typedef struct Axis Axis;
 
 /* Represents a line. Lineid is the index for lineid in the indexer */
 struct Line {
@@ -19,14 +26,15 @@ struct Line {
     char* name;
 
     // contains data for this line
-    Group* group;
+    Groups* groups;
 
     Line* next;
-
+    Axis* axis;
 };
 
 Line* line_init(char* name);
 void  line_destroy(Line* l);
 void  line_print_lines(Line* l);
+int8_t line_set_data(Line* l, Groups* groups);
 
 #endif
