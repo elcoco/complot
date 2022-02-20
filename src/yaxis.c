@@ -58,9 +58,6 @@ void axis_draw(Axis* a, Plot* pl, State* s)
     if (a->autorange) {
         a->dmin = a->vdmin;
         a->dmax = a->vdmax;
-    } else {
-        a->dmin = a->tdmin;
-        a->dmax = a->tdmax;
     }
 
     if (a->side == AXIS_LEFT)
@@ -163,7 +160,7 @@ void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, u
     strncat(tmp, sfrac+2, nfrac);
 
     for (int i=0; i<ntotal-strlen(tmp) ; i++)
-        strcat(buf, " ");
+        strcat(buf, "0");
 
     strncat(buf, tmp, strlen(tmp));
     //set_status(1, "ry: %d[%d.%d] %d %d >>%s<<", ntotal, nwhole, nfrac, strlen(tmp), ntotal-strlen(tmp), buf);

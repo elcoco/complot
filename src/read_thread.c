@@ -59,7 +59,7 @@ void* read_file_thread(void* args)
 
         ix+=xsteps;
 
-        usleep(1000);
+        usleep(100000);
     }
     return NULL;
 }

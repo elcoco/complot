@@ -51,6 +51,8 @@ pthread_mutex_t lock;
 // DONE rename pl_ function names to plot_
 // DONE don't recreate plot on every iteration, not pretty
 // TODO draw legend from axis
+// TODO when not using autoscale, it should not change axis scale
+// DONE nasty bug in index_get_grouped where we're trying to access a non existing group
 
 
 int sigint_caught = 0;

@@ -177,7 +177,7 @@ void    index_reindex(Index* index);
 int8_t index_insert(Index* index, Point* point);
 
 // get last amount of grouped bins with size gsize
-Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
+Groups* index_get_grouped(Index* index, uint32_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
 
 void   points_print(Point* p);
 Point* point_create(Index* index, uint32_t lineid, double x, double open, double high, double low, double close);
@@ -186,10 +186,13 @@ void   point_print(Point* p);
 
 int8_t line_add_point(LineBin* l, Point* p);
 
-Group* group_create(Index* index, int32_t gstart, uint32_t gsize);
-void   groups_print(Group* g);
-void   groups_destroy(Groups* groups);
+Group* group_create(Index* index, int32_t gstart, uint32_t gsize, Group** gtail);
 void   group_append(Group* g, Group** tail);
+
+Groups* groups_init(Index* index, uint32_t lineid);
+void    groups_print(Group* g);
+void    groups_destroy(Groups* groups);
+void    groups_update_limits(Groups* groups, Group* g);
 
 Bin* bin_create(Index* index, uint32_t i);
 void bin_destroy(Bin* b, Index* index);

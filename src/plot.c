@@ -173,7 +173,9 @@ void  plot_clear(Plot* pl)
 
     // clear axis limits
     pl->laxis->is_empty = true;
-    pl->raxis->is_empty = true;
+
+    if (pl->raxis->autorange)
+        pl->raxis->is_empty = true;
 }
 
 Cell* plot_get_cell(Plot* pl, uint32_t x, uint32_t y)

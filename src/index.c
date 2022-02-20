@@ -287,7 +287,7 @@ int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount)
     return first_group_i;
 }
 
-Group* group_create(Index* index, int32_t gstart, uint32_t gsize)
+Group* group_create(Index* index, int32_t gstart, uint32_t gsize, Group** gtail)
 {
     Group* g = (Group*)malloc(sizeof(Group));
     g->wstart = index_map_to_x(index, gstart);
@@ -298,50 +298,43 @@ Group* group_create(Index* index, int32_t gstart, uint32_t gsize)
     // Set unique constant id for this group.
     // This is used to keep x tickers in the right spot.
     g->id = gstart / gsize;
+
+    // connect new group to linked list
+    if (*gtail != NULL)
+        group_append(g, gtail);
+
     return g;
 }
 
-Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
+Groups* index_get_grouped(Index* index, uint32_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
 {
     /* Create groups, get data from last data */
-    Bin** bins = index->bins;
-
     // calculate at which bin index the first group starts
     int32_t gstart = index_get_gstart(index, gsize, amount) + (x_offset*gsize);
 
-    // create groups container
-    Groups* groups = (Groups*)malloc(sizeof(Groups));
-    groups->is_empty = true;
-    groups->dmin = index->dmin;
-    groups->dmax = index->dmax;
-    groups->plast = index_get_last_point(index, lineid);
+    Bin** bins = index->bins;
+    Groups* groups = groups_init(index, lineid);
 
     // setup linked list
-    Group** ghead = (Group**)malloc(sizeof(Group*));
-    Group** gtail = (Group**)malloc(sizeof(Group*));
-    *gtail = NULL;
-    *ghead = NULL;
+    Group* htmp = NULL;
+    Group* ttmp = NULL;
+    Group** ghead = &htmp;
+    Group** gtail = &ttmp;
 
-    for (int32_t gindex=0 ; gindex<amount ; gstart+=gsize, gindex++) {
+    for (int32_t gindex=0 ; gindex<amount ; gindex++, gstart+=gsize) {
+        Group* g = group_create(index, gstart, gsize, gtail);
 
-        Group* g = group_create(index, gstart, gsize);
-
-        // connect new group to linked list
         if (*ghead == NULL) {
             *ghead = g;
             *gtail = g;
-        } else {
-            group_append(g, gtail);
         }
-
-        // Skip if group index is outside of data limits
-        if (gstart < 0)
-            continue;
-        else if (gstart >= index->isize-1)
-            continue;
 
         // set OHLC values from line in group
         for (int i=0 ; i<gsize ; i++) {
+
+            // Check if we're trying to access a group beyond index boundaries
+            if (gstart < 0 || gstart+i >= index->isize-1)
+                break;
 
             Bin* b = bins[gstart+i];
             LineBin* lb = b->lines[lineid];
@@ -362,30 +355,43 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
 
                 if (lb->high > g->high)
                     g->high = lb->high;
-
                 if (lb->low < g->low)
                     g->low = lb->low;
             }
         }
-
-        // set initial data dimensions in groups container
-        if (groups->is_empty && !g->is_empty) {
-            groups->is_empty = false;
-            groups->gmin = g->low;
-            groups->gmax = g->high;
-        }
-        // set data dimensions in groups container
-        else if (!groups->is_empty && !g->is_empty) {
-            if (g->high > groups->gmax)
-                groups->gmax = g->high;
-            if (g->low < groups->gmin)
-                groups->gmin = g->low;
-        }
+        groups_update_limits(groups, g);
     }
-
     groups->group = *ghead;
-    free(ghead);
-    free(gtail);
+    return groups;
+}
+
+void groups_update_limits(Groups* groups, Group* g)
+{
+    /* Update Groups data limits from Group struct */
+
+    // set initial data dimensions in groups container
+    if (groups->is_empty && !g->is_empty) {
+        groups->is_empty = false;
+        groups->gmin = g->low;
+        groups->gmax = g->high;
+    }
+    // set data dimensions in groups container
+    else if (!groups->is_empty && !g->is_empty) {
+        if (g->high > groups->gmax)
+            groups->gmax = g->high;
+        if (g->low < groups->gmin)
+            groups->gmin = g->low;
+    }
+}
+
+Groups* groups_init(Index* index, uint32_t lineid)
+{
+    // create groups container
+    Groups* groups = (Groups*)malloc(sizeof(Groups));
+    groups->is_empty = true;
+    groups->dmin = index->dmin;
+    groups->dmax = index->dmax;
+    groups->plast = index_get_last_point(index, lineid);
     return groups;
 }
 
@@ -398,8 +404,6 @@ void groups_destroy(Groups* groups)
         g = g->next;
         free(prev);
     }
-    //free(groups->ghead);
-    //free(groups->gtail);
     free(groups);
 }
 

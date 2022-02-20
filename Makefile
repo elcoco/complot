@@ -13,4 +13,4 @@ all: $(OBJECTS)
 	$(CC) $^ $(CFLAGS) $(LIBS) -o $@ -o $(NAME)
 
 $(OBJ)/%.o: $(SRC)/%.c
-	$(CC) -I$(SRC) -c $< -o $@
+	$(CC) -I$(SRC) $(CFLAGS) $(LIBS) -c $< -o $@
