@@ -52,7 +52,7 @@ int8_t index_build(Index* index)
 {
     /* (re)build index, create bins
      * */
-    printf("Building index....\n");
+    //printf("Building index....\n");
 
     index->is_initialized = true;
 
@@ -66,7 +66,7 @@ int8_t index_build(Index* index)
 int8_t index_extend(Index* index)
 {
     /* Grow bins array */
-    printf("Extending index\n");
+    //printf("Extending index\n");
     index->isize += index->grow_amount;
 
     if ((index->bins = realloc(index->bins, index->isize * sizeof(Bin*))) == NULL) {
@@ -167,7 +167,7 @@ void index_set_data_limits(Index* index, Point* p)
 void index_reindex(Index* index)
 {
     /* After updating spread, recreate all bins from points linked list. */
-    printf("Reindexing index with spread: %f\n", index->spread);
+    //printf("Reindexing index with spread: %f\n", index->spread);
 
     // destroy old bins
     for (int i=0 ; i<index->isize ; i++)

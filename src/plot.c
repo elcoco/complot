@@ -11,15 +11,13 @@ Plot* plot_init(uint32_t xsize, uint32_t ysize)
     pl->status_size = 2;
     pl->xaxis_ysize = 2;
 
-    uint32_t x, y;
-
     // TODO do this in one malloc call: pl->cells = malloc(sizeof(Cell*[pl->xsize][pl->ysize]));
     pl->cells = malloc(pl->xsize * sizeof(Cell**));
 
-    for (x=0 ; x<pl->xsize ; x++) {
+    for (int x=0 ; x<pl->xsize ; x++) {
         pl->cells[x] = malloc(pl->ysize * sizeof(Cell*));
 
-        for (y=0 ; y<pl->ysize ; y++)
+        for (int y=0 ; y<pl->ysize ; y++)
             pl->cells[x][y] = plot_cell_init(x, y);
     }
 
@@ -33,7 +31,6 @@ void plot_destroy(Plot* pl)
     for (int x=0 ; x<pl->xsize ; x++) {
         for (int y=0 ; y<pl->ysize ; y++)
             free(pl->cells[x][y]);
-
         free(pl->cells[x]);
     }
     free(pl->cells);
@@ -51,15 +48,10 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
     axis_draw(pl->laxis, pl, s);
     plot_draw_xaxis(pl, groups->group);
 }
-//void plot_draw_candlestick(Plot* pl, uint32_t ix, uint32_t iopen, uint32_t ihigh, uint32_t ilow, uint32_t iclose)
+
 void plot_draw_candlestick(Plot* pl, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose)
 {
-    //set_status(1, "%d %d %d %d %d", ix, iopen, ihigh, ilow, iclose);
-    /* draw one candlestick in viewport */
     // GREEN
-    //ilow = (ilow < 0) ? 0 : ilow;
-    //ihigh = (ihigh > pl->ysize-1) ? pl->ysize-1 : ihigh;
-
     if (iopen < iclose) {
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < pl->pystart || y > pl->ysize-1)
@@ -75,7 +67,6 @@ void plot_draw_candlestick(Plot* pl, uint32_t ix, int32_t iopen, int32_t ihigh, 
             strcpy(cell->chr, CS_BODY);
             cell->fgcol = GREEN;
         }
-
     // RED
     }
     else {
@@ -103,6 +94,7 @@ void plot_draw_candlesticks(Plot* pl, Group* g, Axis* a, int32_t yoffset)
     uint32_t ix = pl->pxstart;
     uint32_t iy = pl->pystart;
     
+    // we have to get more groups from index than we actually need so we need to skip the groups that don't fit in plot
     uint32_t goffset = pl->xsize - pl->pxsize;
     while (goffset != 0) {
         g = g->next;
@@ -124,44 +116,6 @@ void plot_draw_candlesticks(Plot* pl, Group* g, Axis* a, int32_t yoffset)
         ix++;
     }
 }
-
-//void plot_draw_last_data(Plot* pl, double dmin, double dmax, double pany, double lasty)
-//{
-//    /* highlight last data in axis */
-//
-//    // calculate first column of axis
-//    //uint32_t xstart = pl->xsize - pl->ryaxis_size -1;
-//    uint32_t xstart = a->xstart;
-//
-//    // calculate y index of last data
-//    int32_t ilasty = map(lasty, dmin, dmax, pl->pystart, pl->ysize-1) + pany;
-//
-//    char buf[50] = {'\0'};
-//    get_tickerstr(buf, lasty, pl->ryaxis_size, pl->ryaxis_nwhole, pl->ryaxis_nfrac);
-//    char* pbuf = buf;
-//
-//    // if last data is out of range, stick to top/bottom
-//    if (ilasty < pl->pystart)
-//        ilasty = pl->pystart;
-//    if (ilasty >= pl->ysize)
-//        ilasty = pl->ysize-1;
-//
-//    for (int32_t ix=xstart ; ix<xstart+strlen(buf) ; ix++, pbuf++) {
-//        if (ix >= pl->xsize)
-//            break;
-//        Cell* c = plot_get_cell(pl, ix, ilasty);
-//        c->chr[0] = *pbuf;
-//        c->fgcol = GREEN;
-//    }
-//    // draw line
-//    for (int32_t ix=pl->pxstart ; ix<pl->pxstart+pl->pxsize ; ix++, pbuf++) {
-//        Cell* c = plot_get_cell(pl, ix, ilasty);
-//        if (c->chr[0] == ' ') {
-//            strcpy(c->chr, LINE_CHR);
-//            c->fgcol = MAGENTA;
-//        }
-//    }
-//}
 
 void plot_draw_xaxis(Plot* pl, Group* g)
 {
@@ -213,6 +167,17 @@ void plot_draw_xaxis(Plot* pl, Group* g)
         }
         g = g->next;
         ix++;
+    }
+}
+
+void  plot_clear(Plot* pl)
+{
+    for (uint32_t x=0 ; x<pl->xsize ; x++) {
+        for (uint32_t y=0 ; y<pl->ysize ; y++) {
+            Cell* c = plot_get_cell(pl, x, y);
+            strcpy(c->chr, EMPTY);
+            c->fgcol = WHITE;
+        }
     }
 }
 

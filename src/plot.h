@@ -14,7 +14,6 @@
 #define CS_BODY "█"
 #define CS_WICK "┃"
 #define EMPTY   " "
-#define LINE_CHR "─"
 
 #define RED   1
 #define GREEN 2
@@ -97,9 +96,9 @@ void  plot_destroy(Plot* pl);
 void  plot_print(Plot* pl);
 void  plot_draw_candlesticks(Plot* pl, Group* g, Axis* a, int32_t yoffset);
 void  plot_draw_candlestick(Plot* pl, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
-void  plot_draw_last_data(Plot* pl, double dmin, double dmax, double pany, double lasty);
 void  plot_draw_xaxis(Plot* pl, Group* g);
 void  plot_draw(Plot* pl, Groups* groups, State* s);
 uint32_t plot_set_plot_dimensions(Plot* pl);
+void  plot_clear(Plot* pl);
 
 #endif

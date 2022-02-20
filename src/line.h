@@ -22,6 +22,7 @@ struct Line {
     Group* group;
 
     Line* next;
+
 };
 
 Line* line_init(char* name);

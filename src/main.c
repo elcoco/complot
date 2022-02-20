@@ -177,7 +177,7 @@ bool check_user_input(void* arg)
     return false;
 }
 
-void update(State* s, Index* index, Plot* pl)
+void update(State* s, Index* index, Plot* pl, Line* l)
 {
     // check if data or exit early
     if (index->npoints == 0) {
@@ -198,7 +198,7 @@ void update(State* s, Index* index, Plot* pl)
     //      are decided there is no information about y axis width.
     //      Therefore we take the same amount of groups as there are columns
     //      in the terminal.
-    if ((groups = index_get_grouped(index, l1->lineid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
+    if ((groups = index_get_grouped(index, l->lineid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         set_status(1, "error");
         refresh();
         plot_destroy(pl);
@@ -206,7 +206,8 @@ void update(State* s, Index* index, Plot* pl)
         return;
     }
 
-    axis_set_data(pl->raxis, groups);
+    plot_clear(pl);
+    axis_set_data(pl->raxis, l, groups);
 
     if (s->dmin < 0 || s->set_autorange) {
         s->dmin = groups->gmin;
@@ -235,15 +236,12 @@ void loop(State* s, Index* index)
 
         if (! s->is_paused) {
             if (index_has_new_data(index))
-                update(s, index);
+                update(s, index, pl, l1);
         }
         // update on user input
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
-            update(s, index);
+            update(s, index, pl, l1);
         }
-
-        //return;
-
     }
     line_destroy(l1);
     plot_destroy(pl);
@@ -274,7 +272,8 @@ int main(int argc, char **argv)
         return 0;
 
     // start data aggregation thread
-    Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=1, .ihigh=2, .ilow=3, .iclose=4};
+    //Args args = {.path="csv/btcusd.csv", .index=index, .lock=&lock, .lineid=0, .is_stopped=false, .idt=0, .iopen=1, .ihigh=2, .ilow=3, .iclose=4};
+    Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=0, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     //Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     pthread_t threadid;
     pthread_create(&threadid, NULL, read_file_thread, &args);
@@ -282,9 +281,12 @@ int main(int argc, char **argv)
     //usleep(1000000);
     //points_print(*(index->phead));
     //Plot* pl = plot_init(COLS, LINES);
-    //Groups* groups = index_get_grouped(index, LINE1, 1, 50, 0, 0);
+    //Line* l = line_init("First line");
+    //axis_add_line(pl->raxis, l);
+    //Groups* groups = index_get_grouped(index, l->lineid, 1, 50, 0, 0);
     //groups_print(groups->group);
-    //points_print(*(index->phead));
+    ////points_print(*(index->phead));
+    //return;
 
 
     init_ui();

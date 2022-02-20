@@ -12,6 +12,8 @@
 #include "index.h"
 #include "line.h"
 
+#define LINE_CHR "─"
+
 typedef struct Axis Axis;
 
 // forward declare from plot.h
@@ -30,11 +32,6 @@ struct Axis {
     uint32_t txsize;
     uint32_t tysize;
     uint32_t txstart;
-
-    // candlesticks size in matrix
-    uint32_t pxsize;
-    uint32_t pysize;
-    uint32_t pxstart;
 
     // amount of digits before and after the dot
     uint32_t nwhole;
@@ -60,6 +57,9 @@ void  axis_destroy(Axis* a);
 void  axis_add_line(Axis* a, Line* l);
 void  axis_draw(Axis* a, Plot* pl, State* s);
 void  axis_draw_tickers(Axis* a, Plot* pl, int32_t yoffset);
+void axis_draw_last_data(Axis* a, Plot* pl, double pany, double lasty);
+
+void axis_set_data(Axis* a, Line* l, Groups* groups);
 
 void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac);
 

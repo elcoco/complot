@@ -13,11 +13,6 @@
 #define BUF_SIZE 1000
 
 
-enum lines {
-    LINE1,
-    LINE2
-};
-
 typedef struct Args Args;
 struct Args {
     Index* index;
@@ -28,6 +23,8 @@ struct Args {
     uint8_t iclose;
     pthread_mutex_t* lock;
     bool is_stopped;
+    uint32_t lineid;
+    char path[500];
 };
 
 //void* read_stdin_thread(void* args);

@@ -1,6 +1,5 @@
 #include "yaxis.h"
 
-// TODO linked list in plot_axis_init and plot_init is not destroyed
 Axis* axis_init(AxisSide side)
 {
     Axis* a = malloc(sizeof(Axis));
@@ -8,11 +7,6 @@ Axis* axis_init(AxisSide side)
     a->txsize = 0;
     a->tysize = 0;
     a->txstart = 0;
-
-    // candlesticks start here
-    a->pxsize = 0;
-    a->pysize = 0;
-    a->pxstart = 0;
 
     a->nwhole = 0;
     a->nfrac = 0;
@@ -33,11 +27,6 @@ Axis* axis_init(AxisSide side)
 
 void  axis_destroy(Axis* a)
 {
-    //Line* l = a->line;
-    //while (l != NULL) {
-    //    line_destroy(l);
-    //    free(tmp);
-    //}
     free(a->ltail);
     free(a);
 }
@@ -55,7 +44,7 @@ void axis_add_line(Axis* a, Line* l)
     }
 }
 
-void axis_set_data(Axis* a, Line* l)
+void axis_set_data(Axis* a, Line* l, Groups* groups)
 {
     // set line data in line
     l->group = groups->group;
@@ -97,8 +86,14 @@ void axis_draw(Axis* a, Plot* pl, State* s)
     }
 
     // draw y axis tickers
-    if (a->side == AXIS_RIGHT)
+    if (a->side == AXIS_RIGHT) {
         axis_draw_tickers(a, pl, s->pany);
+
+        // TODO write actual last data
+        double dlast = 0.0055;
+        axis_draw_last_data(a, pl, s->pany, dlast);
+    }
+
 
     //plot_draw_last_data(pl, a, s->pany, (*index->ptail)->close);
 }
@@ -129,6 +124,44 @@ void axis_draw_tickers(Axis* a, Plot* pl, int32_t yoffset)
         }
     }
 }
+
+void axis_draw_last_data(Axis* a, Plot* pl, double pany, double lasty)
+{
+    /* highlight last data in axis */
+
+    // calculate first column of axis
+    //uint32_t xstart = pl->xsize - pl->ryaxis_size -1;
+
+    // calculate y index of last data
+    int32_t ilasty = map(lasty, a->dmin, a->dmax, pl->pystart, pl->ysize-1) + pany;
+
+    char buf[50] = {'\0'};
+    get_tickerstr(buf, lasty, a->txsize, a->nwhole, a->nfrac);
+    char* pbuf = buf;
+
+    // if last data is out of range, stick to top/bottom
+    if (ilasty < pl->pystart)
+        ilasty = pl->pystart;
+    if (ilasty >= pl->pysize)
+        ilasty = pl->pysize-1;
+
+    for (int32_t ix=a->txstart ; ix<a->txstart+strlen(buf) ; ix++, pbuf++) {
+        if (ix >= pl->xsize)
+            break;
+        Cell* c = plot_get_cell(pl, ix, ilasty);
+        c->chr[0] = *pbuf;
+        c->fgcol = GREEN;
+    }
+    // draw line
+    for (int32_t ix=pl->pxstart ; ix<pl->pxstart+pl->pxsize ; ix++, pbuf++) {
+        Cell* c = plot_get_cell(pl, ix, ilasty);
+        if (c->chr[0] == ' ') {
+            strcpy(c->chr, LINE_CHR);
+            c->fgcol = MAGENTA;
+        }
+    }
+}
+
 
 void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac)
 {

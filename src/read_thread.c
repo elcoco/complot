@@ -10,9 +10,7 @@ void* read_file_thread(void* args)
 
     // x incrementer, must be a converted datetime but for now this will do
     double ix = 0;
-    //FILE* fp = fopen("csv/test.csv", "r");
-    FILE* fp = fopen("csv/btcusd.csv", "r");
-    //FILE* fp = fopen("csv/XMRBTC_1m.csv", "r");
+    FILE* fp = fopen(a->path, "r");
 
     while (fgets(buf, sizeof(buf), fp) != NULL && !a->is_stopped) {
         // skip first line
@@ -51,7 +49,8 @@ void* read_file_thread(void* args)
             }
 
             pthread_mutex_lock(a->lock);
-            point_create(a->index, LINE1, dt, open, high, low, close);
+            point_create(a->index, a->lineid, ix, open, high, low, close);
+            //point_create(a->index, a->lineid, dt, open, high, low, close);
             pthread_mutex_unlock(a->lock);
 
         } else {
@@ -60,7 +59,7 @@ void* read_file_thread(void* args)
 
         ix+=xsteps;
 
-        usleep(10000);
+        usleep(100000);
     }
     return NULL;
 }
