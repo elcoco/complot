@@ -177,7 +177,7 @@ bool check_user_input(void* arg)
     return false;
 }
 
-void update(State* s, Index* index)
+void update(State* s, Index* index, Plot* pl)
 {
     // check if data or exit early
     if (index->npoints == 0) {
@@ -187,9 +187,6 @@ void update(State* s, Index* index)
     }
         
     Groups* groups;
-    Line* l1 = line_init("First line");
-    Plot* pl = plot_init(COLS, LINES);
-
     pthread_mutex_lock(&lock);
 
     //if (s->fit_all)
@@ -201,7 +198,7 @@ void update(State* s, Index* index)
     //      are decided there is no information about y axis width.
     //      Therefore we take the same amount of groups as there are columns
     //      in the terminal.
-    if ((groups = index_get_grouped(index, LINE1, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
+    if ((groups = index_get_grouped(index, l1->lineid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         set_status(1, "error");
         refresh();
         plot_destroy(pl);
@@ -209,7 +206,7 @@ void update(State* s, Index* index)
         return;
     }
 
-    axis_add_line(pl->raxis, l1, groups);
+    axis_set_data(pl->raxis, groups);
 
     if (s->dmin < 0 || s->set_autorange) {
         s->dmin = groups->gmin;
@@ -225,13 +222,15 @@ void update(State* s, Index* index)
 
     // cleanup
     groups_destroy(groups);
-    plot_destroy(pl);
-    line_destroy(l1);
     pthread_mutex_unlock(&lock);
 }
 
 void loop(State* s, Index* index)
 {
+    Line* l1 = line_init("First line");
+    Plot* pl = plot_init(COLS, LINES);
+    axis_add_line(pl->raxis, l1);
+
     while (!s->is_stopped && !sigint_caught) {
 
         if (! s->is_paused) {
@@ -246,6 +245,8 @@ void loop(State* s, Index* index)
         //return;
 
     }
+    line_destroy(l1);
+    plot_destroy(pl);
 }
 
 int main(int argc, char **argv)

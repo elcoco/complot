@@ -42,9 +42,9 @@ void  axis_destroy(Axis* a)
     free(a);
 }
 
-void axis_add_line(Axis* a, Line* l, Groups* groups)
+void axis_add_line(Axis* a, Line* l)
 {
-    // connect line linked list
+    // connect line in linked list
     if (a->line == NULL) {
         a->line = l;
         *(a->ltail) = l;
@@ -53,7 +53,10 @@ void axis_add_line(Axis* a, Line* l, Groups* groups)
         *(a->ltail) = l;
         prev->next = l;
     }
+}
 
+void axis_set_data(Axis* a, Line* l)
+{
     // set line data in line
     l->group = groups->group;
 
@@ -68,7 +71,6 @@ void axis_add_line(Axis* a, Line* l, Groups* groups)
         if (groups->dmax > a->dmax)
             a->dmax = groups->dmax;
     }
-
     // digits before and after the dot
     a->nwhole = find_nwhole(a->dmax); 
     a->nfrac  = find_nfrac(a->dmax - a->dmin);

@@ -57,7 +57,7 @@ struct Axis {
 
 Axis* axis_init(AxisSide side);
 void  axis_destroy(Axis* a);
-void  axis_add_line(Axis* a, Line* l, Groups* groups);
+void  axis_add_line(Axis* a, Line* l);
 void  axis_draw(Axis* a, Plot* pl, State* s);
 void  axis_draw_tickers(Axis* a, Plot* pl, int32_t yoffset);
 
