@@ -94,22 +94,22 @@ Bin* bin_create(Index* index, uint32_t i)
     b->is_empty = true;
 
     // init line container
-    b->lines = (Line**)malloc(index->nlines*sizeof(Line*));
+    b->lines = (LineBin**)malloc(index->nlines*sizeof(LineBin*));
 
     // init line conainers
-    Line** l = b->lines;
-    for (int i=0 ; i<index->nlines ; i++,l++) {
-        *l = (Line*)malloc(sizeof(Line));
-        (*l)->is_empty = true;
+    LineBin** lb = b->lines;
+    for (int i=0 ; i<index->nlines ; i++,lb++) {
+        *lb = (LineBin*)malloc(sizeof(LineBin));
+        (*lb)->is_empty = true;
     }
     return b;
 }
 
 void bin_destroy(Bin* b, Index* index)
 {
-    Line** l = b->lines;
-    for (int i=0 ; i<index->nlines ; i++,l++)
-        free(*l);
+    LineBin** lb = b->lines;
+    for (int i=0 ; i<index->nlines ; i++, lb++)
+        free(*lb);
     free(b->lines);
     free(b);
 }
@@ -256,8 +256,8 @@ int8_t index_insert(Index* index, Point* p)
     Bin* b  = index->bins[ix];
     b->is_empty = false;
 
-    Line* l = b->lines[p->lineid];
-    line_add_point(l, p);
+    LineBin* lb = b->lines[p->lineid];
+    line_add_point(lb, p);
 
     index->has_new_data = true;
 
@@ -331,27 +331,27 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
         for (int i=0 ; i<gsize ; i++) {
 
             Bin* b = bins[gstart+i];
-            Line* l = b->lines[lineid];
+            LineBin* lb = b->lines[lineid];
 
-            if (l->is_empty)
+            if (lb->is_empty)
                 continue;
 
             // set initial OHLC data from line in empty group
             if (g->is_empty) {
                 g->is_empty = false;
-                g->open  = l->open;
-                g->high  = l->high;
-                g->low   = l->low;
-                g->close = l->close;
+                g->open  = lb->open;
+                g->high  = lb->high;
+                g->low   = lb->low;
+                g->close = lb->close;
 
             } else {
-                g->close = l->close;
+                g->close = lb->close;
 
-                if (l->high > g->high)
-                    g->high = l->high;
+                if (lb->high > g->high)
+                    g->high = lb->high;
 
-                if (l->low < g->low)
-                    g->low = l->low;
+                if (lb->low < g->low)
+                    g->low = lb->low;
             }
         }
 
@@ -371,7 +371,6 @@ Groups* index_get_grouped(Index* index, uint8_t lineid, uint32_t gsize, uint32_t
     }
 
     groups->group = *ghead;
-    groups->gtail = *gtail;
     free(ghead);
     free(gtail);
     return groups;
@@ -417,7 +416,7 @@ void index_print(Index* index)
 {
     for (int i=0 ; i<index->isize ; i++) {
         Bin* b = index->bins[i];
-        Line* l = b->lines[0];
+        LineBin* lb = b->lines[0];
 
         if (b->is_empty)
             continue;
@@ -425,43 +424,43 @@ void index_print(Index* index)
         printf("BIN %3d: %f:%f %d => %9f %9f %9f %9f\n", i,
                                               b->wstart,
                                               b->wend,
-                                              l->npoints,
-                                              l->open,
-                                              l->high,
-                                              l->low,
-                                              l->close);
+                                              lb->npoints,
+                                              lb->open,
+                                              lb->high,
+                                              lb->low,
+                                              lb->close);
     }
 }
 
-int8_t line_add_point(Line* l, Point* p)
+int8_t line_add_point(LineBin* lb, Point* p)
 {
-    l->npoints++;
+    lb->npoints++;
 
-    if (l->is_empty) {
-        l->is_empty = false;
-        l->open = p->open;
-        l->close = p->close;
-        l->high = p->high;
-        l->low = p->low;
-        l->xmin = p->x;
-        l->xmax = p->x;
+    if (lb->is_empty) {
+        lb->is_empty = false;
+        lb->open = p->open;
+        lb->close = p->close;
+        lb->high = p->high;
+        lb->low = p->low;
+        lb->xmin = p->x;
+        lb->xmax = p->x;
         return 1;
     }
     // update line x lower limits if p->x is older than oldest point in line
-    if (p->x < l->xmin) {
-        l->open = p->open;
-        l->xmin = p->x;
+    if (p->x < lb->xmin) {
+        lb->open = p->open;
+        lb->xmin = p->x;
     }
     // update line x upper limits if p->x is newer than oldest point in line
-    if (p->x > l->xmax) {
-        l->close = p->close;
-        l->xmax = p->x;
+    if (p->x > lb->xmax) {
+        lb->close = p->close;
+        lb->xmax = p->x;
     }
-    if (p->high > l->high)
-        l->high = p->high;
+    if (p->high > lb->high)
+        lb->high = p->high;
 
-    if (p->low < l->low)
-        l->low = p->low;
+    if (p->low < lb->low)
+        lb->low = p->low;
 
     return 1;
 }

@@ -17,9 +17,9 @@ typedef struct Groups Groups;
 typedef struct Bin Bin;
 typedef struct Index Index;
 typedef struct Point Point;
-typedef struct Line Line;
+typedef struct LineBin LineBin;
 
-/* Point holds data for a one datapoint */
+/* Point holds data for one datapoint. */
 struct Point {
     double x;
     double open;
@@ -31,10 +31,8 @@ struct Point {
     uint32_t lineid;
 };
 
-/* A Group is a slice of the bins array in Index, for one line.
- * It represents a column on the display
- * Groups should be cached
- */
+/* A Group is a slice of the bins array from the Index.
+ * It represents a column on the display. */
 struct Group {
     //Bin** bins;
     double wstart;
@@ -54,10 +52,11 @@ struct Group {
     uint32_t id;
 };
 
-/* container returned from index_get_grouped() */
+/* Container returned from index_get_grouped().
+ * Contains Group linked list and data limit information. */
 struct Groups {
+    // linked list of groups
     Group* group;
-    Group* gtail;
 
     // data limits for all data in index
     double dmin;
@@ -70,9 +69,9 @@ struct Groups {
     bool is_empty; // indicate if groups has any data in it or just empty groups
 };
 
-/* Container to put points in that can be stored inside the Group struct.
- * This enables for quick filtering of points  */
-struct Line {
+/* Container to put points in that is stored in Bin struct.
+ * This enables for quick filtering of points per line. */
+struct LineBin {
     // holds averages of points in line
     double open;
     double high;
@@ -81,31 +80,33 @@ struct Line {
 
     bool is_empty;
 
-    // x limits so we can keep track of open and close values
-    // The actual window values are stored in Bin
+    // X limits so we can keep track of open and close values when new points are added.
+    // The actual window values are stored in Bin.
     double xmin;
     double xmax;
 
+    // TODO maybe remove?
     // amount of datapoints in line
     int32_t npoints;
 };
 
-/* Bin is points container that is used by Index to be able to evenly space groups of points
- * It abstracts loads of datapoints
- * This enable Index to do very fast slicing of data to return groups of a certain length.
- */
+/* Bin is points container that is used by Index to be able to evenly space groups of points.
+ * This enable Index to do very fast slicing of data to return groups of a certain length.  */
 struct Bin {
     // window start and end X values for this bin
     double wstart;
     double wend;
 
-    // holds the line containers that hold the averages for this bin per line
-    Line** lines;
+    // Holds the line containers that hold data per line
+    // Array is indexed by lineid
+    LineBin** lines;
 
     bool is_empty;
 };
 
-/* Index holds columns */
+/* Index holds all data.
+ * build an index of groups with a x xindow.
+ * In the groups are sets of datapoints that fall within this window. */
 struct Index {
     // grow/extend bins array when we're trying to add an out of bound value
     int32_t grow_amount;
@@ -153,8 +154,6 @@ struct Index {
     double xmin;
 };
 
-// build an index of groups with a x xindow
-// In the groups are sets of datapoints that fall within this window
 // the sets are grouped by line name
 Index*  index_init(uint8_t nlines);
 void    index_destroy(Index* index);
@@ -162,9 +161,11 @@ int8_t  index_build(Index* index);
 int32_t index_map_to_index(Index* index, double x);
 double  index_map_to_x(Index* index, int32_t i);
 int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount);
-void    index_reindex(Index* index);
 void    index_print(Index* index);
 bool    index_has_new_data(Index* index);
+
+// Reindex is done when the index spread changes, All bins are regenerated with a different window.
+void    index_reindex(Index* index);
 
 // inserts point in appropriate line in group, creates new if data falls out of current index range
 // line_id is the array index for line, is mapped by ENUM
@@ -178,7 +179,7 @@ Point* point_create(Index* index, uint32_t lineid, double x, double open, double
 void   point_append(Point* p, Point** tail);
 void   point_print(Point* p);
 
-int8_t line_add_point(Line* l, Point* p);
+int8_t line_add_point(LineBin* l, Point* p);
 
 Group* group_create(Index* index, int32_t gstart, uint32_t gsize);
 void   groups_print(Group* g);

@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include "assert.h"
 
+#include "yaxis.h"
 #include "utils.h"
 #include "index.h"
 
@@ -35,6 +36,10 @@
 // Node struct represents a cell in the matrix
 typedef struct Cell Cell;
 typedef struct Plot Plot;
+
+// forward declare from yaxis.h and line.h
+typedef struct Axis Axis;
+typedef struct Line Line;
 
 // Represents a cell in the matrix and viewport
 struct Cell {
@@ -72,16 +77,6 @@ struct Plot {
     // In this case do something cool with color and chars
     Cell*** cells;
 
-    // width of axis
-    int lyaxis_size;
-    int ryaxis_size;
-
-    int ryaxis_nfrac;       // digits after decimal point
-    int ryaxis_nwhole;      // digits before decimal point
-
-    int lyaxis_start;
-    int ryaxis_start;
-
     int xaxis_xsize;
     int xaxis_xstart;
     int xaxis_ystart;
@@ -89,23 +84,22 @@ struct Plot {
 
     // no of lines in status bar
     uint32_t status_size;
+
+    Axis* laxis;
+    Axis* raxis;
 };
 
-void pl_print(Plot* pl);
-Cell* pl_get_cell(Plot* pl, uint32_t x, uint32_t y);
-void pl_draw_candlestick(Plot* pl, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
-void pl_draw_candlesticks(Plot* pl, Group* g, double dmin, double dmax, int32_t yoffset);
-void pl_clear_cells(Plot* pl);
-void pl_draw_ryaxis(Plot* pl, double dmin, double dmax, int32_t yoffset);
-void pl_draw_last_data(Plot* pl, double dmin, double dmax, double pany, double lasty);
-void pl_draw_xaxis(Plot* pl, Group* g);
-void pl_set_dimensions(Plot* pl, double dmin, double dmax);
-void pl_draw(Plot* pl, Index* index, Groups* groups, State* s);
+Cell* plot_cell_init(uint32_t x, uint32_t y);
+Cell* plot_get_cell(Plot* pl, uint32_t x, uint32_t y);
 
-Plot* pl_init(uint32_t xsize, uint32_t ysize);
-void pl_destroy(Plot* pl);
-Cell* pl_cell_init(uint32_t x, uint32_t y);
-
-void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac);
+Plot* plot_init(uint32_t xsize, uint32_t ysize);
+void  plot_destroy(Plot* pl);
+void  plot_print(Plot* pl);
+void  plot_draw_candlesticks(Plot* pl, Group* g, Axis* a, int32_t yoffset);
+void  plot_draw_candlestick(Plot* pl, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
+void  plot_draw_last_data(Plot* pl, double dmin, double dmax, double pany, double lasty);
+void  plot_draw_xaxis(Plot* pl, Group* g);
+void  plot_draw(Plot* pl, Groups* groups, State* s);
+uint32_t plot_set_plot_dimensions(Plot* pl);
 
 #endif

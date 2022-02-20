@@ -49,6 +49,10 @@ pthread_mutex_t lock;
 // DONE rename component to plot oid
 // TODO write better makefile
 // DONE x should also be double
+// TODO plot should have axis and line structs to organize what should be drawn where
+// TODO rename pl (plot) to p and p (point) to pnt
+// DONE rename pl_ function names to plot_
+// TODO don't recreate plot on every iteration, not pretty
 
 
 int sigint_caught = 0;
@@ -183,7 +187,8 @@ void update(State* s, Index* index)
     }
         
     Groups* groups;
-    Plot* pl = pl_init(COLS, LINES);
+    Line* l1 = line_init("First line");
+    Plot* pl = plot_init(COLS, LINES);
 
     pthread_mutex_lock(&lock);
 
@@ -199,24 +204,29 @@ void update(State* s, Index* index)
     if ((groups = index_get_grouped(index, LINE1, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         set_status(1, "error");
         refresh();
-        pl_destroy(pl);
+        plot_destroy(pl);
         pthread_mutex_unlock(&lock);
         return;
     }
+
+    axis_add_line(pl->raxis, l1, groups);
 
     if (s->dmin < 0 || s->set_autorange) {
         s->dmin = groups->gmin;
         s->dmax = groups->gmax;
     }
+    pl->raxis->dmin = s->dmin;
+    pl->raxis->dmax = s->dmax;
 
-    pl_draw(pl, index, groups, s);
+    plot_draw(pl, groups, s);
 
     ui_show_plot(pl);
     set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
 
     // cleanup
     groups_destroy(groups);
-    pl_destroy(pl);
+    plot_destroy(pl);
+    line_destroy(l1);
     pthread_mutex_unlock(&lock);
 }
 
@@ -270,7 +280,7 @@ int main(int argc, char **argv)
 
     //usleep(1000000);
     //points_print(*(index->phead));
-    //Plot* pl = pl_init(COLS, LINES);
+    //Plot* pl = plot_init(COLS, LINES);
     //Groups* groups = index_get_grouped(index, LINE1, 1, 50, 0, 0);
     //groups_print(groups->group);
     //points_print(*(index->phead));

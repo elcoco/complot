@@ -10,8 +10,8 @@ void* read_file_thread(void* args)
 
     // x incrementer, must be a converted datetime but for now this will do
     double ix = 0;
-    FILE* fp = fopen("csv/test.csv", "r");
-    //FILE* fp = fopen("csv/btcusd.csv", "r");
+    //FILE* fp = fopen("csv/test.csv", "r");
+    FILE* fp = fopen("csv/btcusd.csv", "r");
     //FILE* fp = fopen("csv/XMRBTC_1m.csv", "r");
 
     while (fgets(buf, sizeof(buf), fp) != NULL && !a->is_stopped) {
