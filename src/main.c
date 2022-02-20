@@ -13,9 +13,6 @@
 #include "ui.h"
 #include "read_thread.h"
 
-#include "json/json_parser.h"
-#include "json/perr.h"
-
 #define NLINES 2
 
 #define SLEEP_MS 100*1000
@@ -49,10 +46,11 @@ pthread_mutex_t lock;
 // DONE rename component to plot oid
 // TODO write better makefile
 // DONE x should also be double
-// TODO plot should have axis and line structs to organize what should be drawn where
-// TODO rename pl (plot) to p and p (point) to pnt
+// DONE plot should have axis and line structs to organize what should be drawn where
+// DONE rename pl (plot) to p and p (point) to pnt
 // DONE rename pl_ function names to plot_
-// TODO don't recreate plot on every iteration, not pretty
+// DONE don't recreate plot on every iteration, not pretty
+// TODO draw legend from axis
 
 
 int sigint_caught = 0;
