@@ -146,7 +146,6 @@ void axis_draw_last_data(Axis* a, Plot* pl, double pany, double lasty)
     }
 }
 
-
 void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac)
 {
     // TODO null terminate characters in cell

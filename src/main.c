@@ -53,6 +53,7 @@ pthread_mutex_t lock;
 // TODO draw legend from axis
 // TODO when not using autoscale, it should not change axis scale
 // DONE nasty bug in index_get_grouped where we're trying to access a non existing group
+// TODO auto resize plot
 
 
 int sigint_caught = 0;
@@ -222,6 +223,14 @@ void loop(State* s, Index* index)
     axis_add_line(pl->raxis, l1);
 
     while (!s->is_stopped && !sigint_caught) {
+        if (is_term_resized(pl->ysize, pl->xsize)) {
+            // TODO we have to rebuild cells for this to work
+            //printf("RESIZE!!!!!!!!!!!!!!!!!\n");
+            //pl->xsize = COLS;
+            //pl->ysize = LINES;
+            //if (update(s, index, pl, l1) < 0)
+            //    break;
+        }
 
         if (! s->is_paused && index_has_new_data(index)) {
             if (update(s, index, pl, l1) < 0)
