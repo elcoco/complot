@@ -6,12 +6,11 @@
 #include <locale.h>     // for utf8 in curses
 #include <signal.h>     // catch SIGTERM
 #include <pthread.h>
-#include <curses.h>
 
 #include "index.h"
 #include "utils.h"
 #include "plot.h"
-//#include "ui.h"
+#include "ui.h"
 #include "read_thread.h"
 
 #define NLINES 2
@@ -197,19 +196,19 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l)
         return 0;
     }
 
-    //plot_clear(pl);
-    //pl->laxis->autorange = s->set_autorange;
-    //pl->raxis->autorange = s->set_autorange;
+    plot_clear(pl);
+    pl->laxis->autorange = s->set_autorange;
+    pl->raxis->autorange = s->set_autorange;
 
-    //if (line_set_data(l, groups) < 0) {
-    //    pthread_mutex_unlock(&lock);
-    //    groups_destroy(groups);
-    //    return -1;
-    //}
+    if (line_set_data(l, groups) < 0) {
+        pthread_mutex_unlock(&lock);
+        groups_destroy(groups);
+        return -1;
+    }
 
-    //plot_draw(pl, groups, s);
-    //ui_show_plot(pl);
-    //set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %.1f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
+    plot_draw(pl, groups, s);
+    ui_show_plot(pl);
+    set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %.1f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
 
     // cleanup
     groups_destroy(groups);
@@ -219,33 +218,32 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l)
 
 void loop(State* s, Index* index)
 {
-    //Line* l1 = line_init("First line");
-    //Plot* pl = plot_init(COLS, LINES);
-    //axis_add_line(pl->raxis, l1);
-    getch();
+    Line* l1 = line_init("First line");
+    Plot* pl = plot_init(COLS, LINES);
+    axis_add_line(pl->raxis, l1);
 
-    //while (!s->is_stopped && !sigint_caught) {
-    //    if (is_term_resized(pl->ysize, pl->xsize)) {
-    //        // TODO we have to rebuild cells for this to work
-    //        //printf("RESIZE!!!!!!!!!!!!!!!!!\n");
-    //        //pl->xsize = COLS;
-    //        //pl->ysize = LINES;
-    //        //if (update(s, index, pl, l1) < 0)
-    //        //    break;
-    //    }
+    while (!s->is_stopped && !sigint_caught) {
+        if (is_term_resized(pl->ysize, pl->xsize)) {
+            // TODO we have to rebuild cells for this to work
+            //printf("RESIZE!!!!!!!!!!!!!!!!!\n");
+            //pl->xsize = COLS;
+            //pl->ysize = LINES;
+            //if (update(s, index, pl, l1) < 0)
+            //    break;
+        }
 
-    //    if (! s->is_paused && index_has_new_data(index)) {
-    //        if (update(s, index, pl, l1) < 0)
-    //            break;
-    //    }
-    //    // update on user input
-    //    if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
-    //        if (update(s, index, pl, l1) < 0)
-    //            break;
-    //    }
-    //}
-    //line_destroy(l1);
-    //plot_destroy(pl);
+        if (! s->is_paused && index_has_new_data(index)) {
+            if (update(s, index, pl, l1) < 0)
+                break;
+        }
+        // update on user input
+        if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
+            if (update(s, index, pl, l1) < 0)
+                break;
+        }
+    }
+    line_destroy(l1);
+    plot_destroy(pl);
 }
 
 int main(int argc, char **argv)
@@ -290,13 +288,13 @@ int main(int argc, char **argv)
     //return;
 
 
-    //init_ui();
+    init_ui();
 
     loop(&s, index);
 
     args.is_stopped = true;
     pthread_join(threadid, NULL);
     index_destroy(index);
-    //cleanup_ui();
+    cleanup_ui();
     return 0;
 }
