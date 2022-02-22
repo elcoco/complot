@@ -5,12 +5,14 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <curses.h>
 #include "assert.h"
 
 #include "plot.h"
 #include "utils.h"
 #include "index.h"
 #include "line.h"
+#include "ui.h"
 
 #define LINE_CHR "─"
 
@@ -26,19 +28,17 @@ typedef enum AxisSide {
 } AxisSide;
 
 struct Axis {
-    AxisSide side;
+    WINDOW* parent;
+    WINDOW* win;
 
-    // ticker axis size in matrix
-    uint32_t txsize;
-    uint32_t tysize;
-    uint32_t txstart;
+    int xsize;
+    int ysize;
+
+    AxisSide side;
 
     // amount of digits before and after the dot
     uint32_t nwhole;
     uint32_t nfrac;
-
-    // data dimensions
-    // TODO rename to dymin/dymax
 
     // Total axis data min/max
     double tdmin;
@@ -61,12 +61,21 @@ struct Axis {
     bool autorange;
 };
 
-Axis* axis_init(AxisSide side);
+Axis* axis_init(WINDOW* parent, AxisSide side);
+void axis_draw_candlesticks(Axis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
+void axis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
+void axis_draw(Axis* a, WINDOW* wtarget, Groups* groups, State* s);
+void axis_draw_tickers(Axis* a, int32_t yoffset);
+void axis_set_window_width(Axis* a);
+void axis_clear_drange(Axis* a);
+
+
+
 void  axis_destroy(Axis* a);
 void  axis_add_line(Axis* a, Line* l);
-void  axis_draw(Axis* a, Plot* pl, State* s);
-void  axis_draw_tickers(Axis* a, Plot* pl, int32_t yoffset);
-void  axis_draw_last_data(Axis* a, Plot* pl, double pany, double lasty);
+//void  axis_draw(Axis* a, Plot* pl, State* s);
+//void  axis_draw_tickers(Axis* a, Plot* pl, int32_t yoffset);
+void axis_draw_last_data(Axis* a, double pany, double lasty);
 
 void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac);
 

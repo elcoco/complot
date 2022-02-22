@@ -51,3 +51,26 @@ char* ts_to_dt(time_t t, char* fmt, char* buf, uint8_t buflen)
     strftime(buf, buflen, fmt, &ts);
     return buf;
 }
+
+void draw_border(WINDOW* w, unsigned int lines, unsigned int cols)
+{
+    mvwhline(w, 0, 1, B_H, cols-2);
+    mvwhline(w, lines-1, 1, B_H, cols-2);
+    mvwvline(w, 1, 0, B_V, lines-2);
+    mvwvline(w, 1, cols-1, B_V, lines-2);
+
+    mvwaddstr(w, 0, 0, B_TL);
+    mvwaddstr(w, 0, cols-1, B_TR);
+    mvwaddstr(w, lines-1, 0, B_BL);
+    mvwaddstr(w, lines-1, cols-1, B_BR);
+}
+
+
+void fill_win(WINDOW* w, unsigned int lines, unsigned int cols, char c)
+{
+    for (int y=0 ; y<lines ; y++) {
+        for (int x=0 ; x<cols ; x++) {
+            mvwaddch(w, y, x, c);
+        }
+    }
+}

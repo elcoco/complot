@@ -8,7 +8,15 @@
 #include <stdint.h>
 #include <math.h>
 #include <time.h>
+#include <curses.h>
 
+
+#define B_TL "┌"
+#define B_TR "┐"
+#define B_BL "└"
+#define B_BR "┘"
+#define B_H  '-'
+#define B_V  '|'
 
 typedef struct {
     bool is_paused;
@@ -43,5 +51,8 @@ uint32_t count_digits(uint64_t n);
 char* ts_to_dt(time_t t, char* fmt, char* buf, uint8_t buflen);
 
 void die(char* msg);
+
+void draw_border(WINDOW* w, unsigned int lines, unsigned int cols);
+void fill_win(WINDOW* w, unsigned int lines, unsigned int cols, char c);
 
 #endif

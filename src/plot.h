@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <curses.h>
 #include "assert.h"
 
 #include "yaxis.h"
@@ -14,6 +15,7 @@
 #define CS_BODY "█"
 #define CS_WICK "┃"
 #define EMPTY   " "
+
 
 #define RED   1
 #define GREEN 2
@@ -35,6 +37,7 @@
 // Node struct represents a cell in the matrix
 typedef struct Cell Cell;
 typedef struct Plot Plot;
+typedef struct Graph Graph;
 
 // forward declare from yaxis.h and line.h
 typedef struct Axis Axis;
@@ -54,51 +57,44 @@ struct Cell {
     Cell* next;
 };
 
+struct Graph {
+    WINDOW* parent;
+    WINDOW* win;
+
+    int xsize;
+    int ysize;
+};
+
 // Represents the nodes that are visible on screen
 // Holds a subset of Matrix->nodes,
 struct Plot {
-    // total area dimensions
+    WINDOW* parent;
+    WINDOW* win;
+
+    Graph* graph;
+    Axis* lyaxis;
+    Axis* ryaxis;
+
+    // total plot dimensions
     int xsize;
     int ysize;
 
-    // plot area dimensions
-    int pxsize;
-    int pysize;
-
-    // coordinates of bottom left corner of plot area
-    int pxstart;
-    int pystart;
-
-    // 2d array representing data on screen
-    // every index has a cell struct
-    // if there are more than one cells (linked list) it means
-    // that we have lines drawing on top of other lines
-    // In this case do something cool with color and chars
-    Cell*** cells;
-
-    int xaxis_xsize;
-    int xaxis_xstart;
-    int xaxis_ystart;
-    int xaxis_ysize;
-
-    // no of lines in status bar
-    uint32_t status_size;
-
-    Axis* laxis;
-    Axis* raxis;
+    //int xaxis_xsize;
+    //int xaxis_xstart;
+    //int xaxis_ystart;
+    //int xaxis_ysize;
 };
 
-Cell* plot_cell_init(uint32_t x, uint32_t y);
-Cell* plot_get_cell(Plot* pl, uint32_t x, uint32_t y);
-
-Plot* plot_init(uint32_t xsize, uint32_t ysize);
+Plot* plot_init(WINDOW* parent, uint32_t ysize);
 void  plot_destroy(Plot* pl);
-void  plot_print(Plot* pl);
-void  plot_draw_candlesticks(Plot* pl, Group* g, Axis* a, int32_t yoffset);
-void  plot_draw_candlestick(Plot* pl, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
+
+void plot_draw(Plot* pl, Groups* groups, State* s);
+
+Graph* graph_init(WINDOW* parent, uint32_t xstart, uint32_t xsize);
+
+
 void  plot_draw_xaxis(Plot* pl, Group* g);
-void  plot_draw(Plot* pl, Groups* groups, State* s);
-uint32_t plot_set_dimensions(Plot* pl);
-void  plot_clear(Plot* pl);
+//uint32_t plot_set_dimensions(Plot* pl);
+//void  plot_clear(Plot* pl);
 
 #endif
