@@ -56,20 +56,20 @@ int draw()
     //draw_border(pwin, LINES-s_ysize, COLS);
 
     // left axis
-    lawin = subwin(pwin, getmaxy(pwin), laxis_xsize, 0, 0);
+    lawin = newwin(pwin, getmaxy(pwin), laxis_xsize, 0, 0);
     fill_win(lawin, getmaxy(pwin), laxis_xsize, 'O');
     //draw_border(lawin, getmaxy(pwin), laxis_xsize);
     //
-    //lspacer = subwin(pwin, getmaxy(pwin), 1, 0, 0);
+    //lspacer = newwin(pwin, getmaxy(pwin), 1, 0, 0);
 
     // right axis
-    rawin = subwin(pwin, getmaxy(pwin), raxis_xsize, 0, getmaxx(pwin)-raxis_xsize);
+    rawin = newwin(pwin, getmaxy(pwin), raxis_xsize, 0, getmaxx(pwin)-raxis_xsize);
     fill_win(rawin, getmaxy(pwin), raxis_xsize, 'O');
     //draw_border(rawin, getmaxy(pwin), raxis_xsize);
 
     // candlestick area
     int cswin_xsize = getmaxx(pwin) - getmaxx(lawin) - getmaxx(rawin);
-    cswin = subwin(pwin, getmaxy(pwin), cswin_xsize, 0, laxis_xsize);
+    cswin = newwin(pwin, getmaxy(pwin), cswin_xsize, 0, laxis_xsize);
     fill_win(cswin, getmaxy(pwin), cswin_xsize, 'P');
     draw_border(cswin, getmaxy(pwin), cswin_xsize);
 

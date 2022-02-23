@@ -1,18 +1,19 @@
 #include "yaxis.h"
 
-Axis* axis_init(WINDOW* parent, AxisSide side)
+Axis* axis_init(WINDOW* parent, AxisSide side, uint32_t ysize)
 {
     Axis* a = malloc(sizeof(Axis));
 
     a->parent = parent;
 
-    // TODO should be calculated
     a->xsize = 0;
-    a->ysize = getmaxy(parent);;
+    a->ysize = ysize;
 
-    int xstart = (side == AXIS_LEFT) ? 0 : getmaxx(parent) - a->xsize;
+    //int xstart = (side == AXIS_LEFT) ? 0 : getmaxx(parent) - a->xsize;
 
-    a->win = subwin(a->parent, a->ysize, a->xsize, 0, xstart);
+    // window is created if data is present
+    a->win = NULL;
+    //a->win = subwin(a->parent, a->ysize, a->xsize, 0, xstart);
 
     a->side = side;
 
@@ -60,8 +61,14 @@ void axis_add_line(Axis* a, Line* l)
     l->axis = a;
 }
 
-void axis_set_window_width(Axis* a)
+int8_t axis_set_window_width(Axis* a)
 {
+    /* Find window width of y tickers. Return 1 if size has changed since last check */
+    // prevent window from showing up
+    if (a->is_empty) {
+        return -1;
+    }
+
     if (a->autorange) {
         a->dmin = a->vdmin;
         a->dmax = a->vdmax;
@@ -79,24 +86,22 @@ void axis_set_window_width(Axis* a)
     // resize axis window to new ticker width
     if (a->xsize != new_xsize) {
         a->xsize = new_xsize;
-        a->ysize = getmaxy(a->parent);
+        //a->ysize = getmaxy(a->parent);
 
         delwin(a->win);
         if (a->side == AXIS_LEFT)
             a->win = subwin(a->parent, a->ysize, a->xsize, 0, 0);
         else
             a->win = subwin(a->parent, a->ysize, a->xsize, 0, getmaxx(a->parent)-new_xsize);
+        return 1;
     }
+    return 0;
 }
 
 void axis_draw(Axis* a, WINDOW* wtarget, Groups* groups, State* s)
 {
     // TODO wtarget should be in axis struct
     /* Draw all lines in this axis into Plot */
-    //if (a->autorange) {
-    //    a->dmin = a->vdmin;
-    //    a->dmax = a->vdmax;
-    //}
 
     // draw y axis tickers
     if (a->side == AXIS_RIGHT) {
@@ -104,23 +109,18 @@ void axis_draw(Axis* a, WINDOW* wtarget, Groups* groups, State* s)
 
         Line* l = a->line;
         while (l != NULL) {
-            axis_draw_candlesticks(a, wtarget, l->groups->group, s->pany);
-
             // Highlight last data in tickers
             if (l->groups->plast != NULL)
-                axis_draw_last_data(a, s->pany, l->groups->plast->close);
+                axis_draw_last_data(a, wtarget, s->pany, l->groups->plast->close);
+
+            axis_draw_candlesticks(a, wtarget, l->groups->group, s->pany);
 
             l = l->next;
         }
     }
 }
 
-void axis_clear_drange(Axis* a)
-{
-    a->is_empty = true;
-}
-
-void axis_draw_last_data(Axis* a, double pany, double lasty)
+void axis_draw_last_data(Axis* a, WINDOW* wgraph, double pany, double lasty)
 {
     /* highlight last data in axis */
     // calculate y index of last data
@@ -134,7 +134,11 @@ void axis_draw_last_data(Axis* a, double pany, double lasty)
 
     char buf[50] = {'\0'};
     get_tickerstr(buf, lasty, a->xsize, a->nwhole, a->nfrac);
-    add_str(a->win, a->ysize-ilasty, 0, CGREEN, buf);
+    add_str(a->win, a->ysize-ilasty-1, 0, CGREEN, buf);
+
+    for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++) {
+        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, LINE_CHR);
+    }
 }
 
 void axis_draw_tickers(Axis* a, int32_t yoffset)
@@ -143,12 +147,12 @@ void axis_draw_tickers(Axis* a, int32_t yoffset)
     double step = (a->dmax - a->dmin) / a->ysize;
 
     // calculate first column of axis
-    int32_t y=0;
-    for (int32_t iy=0 ; iy<a->ysize ; iy++, y++) {
+    int32_t y;
+    for (int32_t iy=0, y=0 ; iy<a->ysize ; iy++, y++) {
         char buf[50] = {'\0'};
         double ticker = a->dmin + ((y - yoffset)*step);
         get_tickerstr(buf, ticker, a->xsize, a->nwhole, a->nfrac);
-        add_str(a->win, a->ysize-iy, 0, CWHITE, buf);
+        add_str(a->win, a->ysize-iy-1, 0, CWHITE, buf);
     }
 }
 
@@ -194,15 +198,14 @@ void axis_draw_candlesticks(Axis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
 
     uint32_t ysize = getmaxy(wtarget);
     
-    // TODO fix this
-    /*
+    //TODO COLS is not necessarily the width of the parent window!!!!
     // we have to get more groups from index than we actually need so we need to skip the groups that don't fit in plot
-    uint32_t goffset = COLS - xsize;
+    uint32_t goffset = COLS - getmaxx(wtarget);
+    //uint32_t goffset = COLS - getmaxx(a->graph);
     while (goffset != 0) {
         g = g->next;
         goffset--;
     }
-    */
 
     while (g != NULL) {
         if (! g->is_empty) {

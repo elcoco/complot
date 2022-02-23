@@ -9,12 +9,16 @@
 #include "assert.h"
 
 #include "yaxis.h"
+#include "xaxis.h"
 #include "utils.h"
 #include "index.h"
 
 #define CS_BODY "█"
 #define CS_WICK "┃"
 #define EMPTY   " "
+
+#define MIN_WINDOW_XSIZE 10
+#define MIN_WINDOW_YSIZE 10
 
 
 #define RED   1
@@ -69,11 +73,14 @@ struct Graph {
 // Holds a subset of Matrix->nodes,
 struct Plot {
     WINDOW* parent;
+
+    // main window containing the subwindows
     WINDOW* win;
 
     Graph* graph;
     Axis* lyaxis;
     Axis* ryaxis;
+    Xaxis* xaxis;
 
     // total plot dimensions
     int xsize;
@@ -89,8 +96,9 @@ Plot* plot_init(WINDOW* parent, uint32_t ysize);
 void  plot_destroy(Plot* pl);
 
 void plot_draw(Plot* pl, Groups* groups, State* s);
+int8_t plot_resize(Plot* pl, uint32_t ysize);
 
-Graph* graph_init(WINDOW* parent, uint32_t xstart, uint32_t xsize);
+Graph* graph_init(WINDOW* parent, uint32_t ysize, uint32_t xsize, uint32_t xstart);
 
 
 void  plot_draw_xaxis(Plot* pl, Group* g);

@@ -66,11 +66,21 @@ void draw_border(WINDOW* w, unsigned int lines, unsigned int cols)
 }
 
 
-void fill_win(WINDOW* w, unsigned int lines, unsigned int cols, char c)
+void fill_win(WINDOW* w, char c)
 {
-    for (int y=0 ; y<lines ; y++) {
-        for (int x=0 ; x<cols ; x++) {
+    for (int y=0 ; y<getmaxy(w) ; y++) {
+        for (int x=0 ; x<getmaxx(w) ; x++) {
             mvwaddch(w, y, x, c);
         }
     }
+}
+
+Group* fast_forward_groups(Group* g, uint32_t amount)
+{
+    /* skip n amount groups, return pointer to next group */
+    while (amount != 0) {
+        g = g->next;
+        amount--;
+    }
+    return g;
 }

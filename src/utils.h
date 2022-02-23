@@ -10,6 +10,8 @@
 #include <time.h>
 #include <curses.h>
 
+#include "index.h"
+
 
 #define B_TL "┌"
 #define B_TR "┐"
@@ -22,6 +24,7 @@ typedef struct {
     bool is_paused;
     bool is_stopped;
     bool is_pan_changed;
+    bool is_resized;
 
     int clicked_x;
     int clicked_y;
@@ -53,6 +56,7 @@ char* ts_to_dt(time_t t, char* fmt, char* buf, uint8_t buflen);
 void die(char* msg);
 
 void draw_border(WINDOW* w, unsigned int lines, unsigned int cols);
-void fill_win(WINDOW* w, unsigned int lines, unsigned int cols, char c);
+void fill_win(WINDOW* w, char c);
+Group* fast_forward_groups(Group* g, uint32_t amount);
 
 #endif

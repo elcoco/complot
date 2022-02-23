@@ -55,6 +55,9 @@ pthread_mutex_t lock;
 // TODO when not using autoscale, it should not change axis scale
 // DONE nasty bug in index_get_grouped where we're trying to access a non existing group
 // TODO auto resize plot
+// TODO status window
+// TODO x axis window/struct
+// TODO rename axis to yaxis (a -> ya)
 
 
 int sigint_caught = 0;
@@ -80,6 +83,7 @@ void set_defaults(State* s)
 
     // amount of bins in a group
     s->gsize = DEFAULT_GROUP_SIZE;
+    s->is_resized = false;
 }
 
 bool check_user_input(void* arg)
@@ -158,6 +162,9 @@ bool check_user_input(void* arg)
                     s->dmax = -1;
                 }
                 break;
+            case KEY_RESIZE:
+                s->is_resized = true;
+                break;
             case ' ':
                 s->is_paused = !s->is_paused;
                 break;
@@ -183,6 +190,10 @@ bool check_user_input(void* arg)
     return false;
 }
 
+void handle_sigwinch(int sig)
+{
+}
+
 int8_t update(State* s, Index* index, Plot* pl, Line* l)
 {
     // check if data or exit early
@@ -200,8 +211,8 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l)
     pl->lyaxis->autorange = s->set_autorange;
     pl->ryaxis->autorange = s->set_autorange;
 
-    axis_clear_drange(pl->lyaxis);
-    axis_clear_drange(pl->ryaxis);
+    pl->lyaxis->is_empty = true;
+    pl->ryaxis->is_empty = true;
 
     if (line_set_data(l, groups) < 0) {
         pthread_mutex_unlock(&lock);
@@ -220,12 +231,17 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l)
 
 void loop(State* s, Index* index)
 {
-    Plot* pl = plot_init(stdscr, 30);
+    Plot* pl = plot_init(stdscr, LINES);
     Line* l = line_init("First line");
     axis_add_line(pl->ryaxis, l);
 
     while (!s->is_stopped && !sigint_caught) {
-        if (is_term_resized(pl->ysize, pl->xsize)) {
+
+        // is also done in plot_draw but this is faster
+        if (s->is_resized) {
+            s->is_resized = false;
+            if (plot_resize(pl, LINES) < 0)
+                continue;
         }
 
         if (! s->is_paused && index_has_new_data(index)) {
@@ -253,6 +269,12 @@ int main(int argc, char **argv)
     action.sa_handler = on_sigint;
     sigaction(SIGINT, &action, NULL);
 
+    // catch window resize
+    //struct sigaction sa;
+    //memset(&sa, 0, sizeof(struct sigaction));
+    //sa.sa_handler = handle_sigwinch;
+    //sigaction(SIGWINCH, &sa, NULL);
+
     // init lock
     if (pthread_mutex_init(&lock, NULL) != 0)
         die("\nMutex init failed\n");
@@ -267,8 +289,8 @@ int main(int argc, char **argv)
         return 0;
 
     // start data aggregation thread
-    //Args args = {.path="csv/btcusd.csv", .index=index, .lock=&lock, .lineid=0, .is_stopped=false, .idt=0, .iopen=1, .ihigh=2, .ilow=3, .iclose=4};
     Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=0, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
+    //Args args = {.path="csv/btcusd.csv", .index=index, .lock=&lock, .lineid=0, .is_stopped=false, .idt=0, .iopen=1, .ihigh=2, .ilow=3, .iclose=4};
     //Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     pthread_t threadid;
     pthread_create(&threadid, NULL, read_file_thread, &args);
