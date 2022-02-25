@@ -55,7 +55,7 @@ char* ts_to_dt(time_t t, char* fmt, char* buf, uint8_t buflen);
 
 void die(char* msg);
 
-void draw_border(WINDOW* w, unsigned int lines, unsigned int cols);
+void draw_border(WINDOW* w);
 void fill_win(WINDOW* w, char c);
 Group* fast_forward_groups(Group* g, uint32_t amount);
 

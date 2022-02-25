@@ -231,16 +231,16 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l)
 
 void loop(State* s, Index* index)
 {
-    Plot* pl = plot_init(stdscr, LINES);
+    Plot* pl = plot_init(stdscr);
     Line* l = line_init("First line");
-    axis_add_line(pl->ryaxis, l);
+    yaxis_add_line(pl->ryaxis, l);
 
     while (!s->is_stopped && !sigint_caught) {
 
         // is also done in plot_draw but this is faster
         if (s->is_resized) {
             s->is_resized = false;
-            if (plot_resize(pl, LINES) < 0)
+            if (plot_resize(pl) < 0)
                 continue;
         }
 
@@ -269,12 +269,6 @@ int main(int argc, char **argv)
     action.sa_handler = on_sigint;
     sigaction(SIGINT, &action, NULL);
 
-    // catch window resize
-    //struct sigaction sa;
-    //memset(&sa, 0, sizeof(struct sigaction));
-    //sa.sa_handler = handle_sigwinch;
-    //sigaction(SIGWINCH, &sa, NULL);
-
     // init lock
     if (pthread_mutex_init(&lock, NULL) != 0)
         die("\nMutex init failed\n");
@@ -295,19 +289,7 @@ int main(int argc, char **argv)
     pthread_t threadid;
     pthread_create(&threadid, NULL, read_file_thread, &args);
 
-    //usleep(1000000);
-    //points_print(*(index->phead));
-    //Plot* pl = plot_init(COLS, LINES);
-    //Line* l = line_init("First line");
-    //axis_add_line(pl->raxis, l);
-    //Groups* groups = index_get_grouped(index, l->lineid, 1, 50, 0, 0);
-    //groups_print(groups->group);
-    ////points_print(*(index->phead));
-    //return;
-
-
     init_ui();
-
     loop(&s, index);
 
     args.is_stopped = true;

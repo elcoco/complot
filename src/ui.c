@@ -6,10 +6,10 @@ int init_ui()
 {
     // https://stackoverflow.com/questions/61347351/ncurses-stdin-redirection
     // NOTE we have to reopen stdin, piping data into application doesn't play well with ncurses
-    if (!freopen("/dev/tty", "r", stdin)) {
-        perror("/dev/tty");
-        exit(1);
-    }
+    //if (!freopen("/dev/tty", "r", stdin)) {
+    //    perror("/dev/tty");
+    //    exit(1);
+    //}
     ui_window = initscr();
 
     if (ui_window == NULL)
@@ -31,7 +31,7 @@ void cleanup_ui()
     printf("\033[?1003l\n"); // Disable mouse movement events, as l = low
     delwin(ui_window);
     endwin();
-    refresh();
+    //refresh();
 }
 
 int get_color(int age)

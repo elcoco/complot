@@ -18,7 +18,7 @@ typedef struct Group Group;
 typedef struct Groups Groups;
 
 // forward declare from yaxis.h
-typedef struct Axis Axis;
+typedef struct Yaxis Yaxis;
 
 /* Represents a line. Lineid is the index for lineid in the indexer */
 struct Line {
@@ -29,7 +29,7 @@ struct Line {
     Groups* groups;
 
     Line* next;
-    Axis* axis;
+    Yaxis* axis;
 };
 
 Line* line_init(char* name);

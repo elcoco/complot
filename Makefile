@@ -2,6 +2,7 @@ SRC := src
 OBJ := obj
 CFLAGS := -g -Wall 
 LIBS   := -lncursesw -lm -lpthread
+CC := cc
 
 $(shell mkdir -p $(OBJ))
 NAME := $(shell basename $(shell pwd))

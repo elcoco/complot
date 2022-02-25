@@ -20,46 +20,20 @@
 #define MIN_WINDOW_XSIZE 10
 #define MIN_WINDOW_YSIZE 10
 
-
 #define RED   1
 #define GREEN 2
 #define WHITE 7
 #define MAGENTA 5
-//#define RED   "\033[0;31m"
-//#define GREEN "\033[0;32m"
-#define RESET "\033[0m"
-
-// data dimensions must have a middle point so should be an odd number
-#define MATRIX_WIDTH  1001
-#define MATRIX_HEIGHT 1001
-
-#define RAXIS_SIZE 5
 
 // chars inbetween tickers on x axis
 #define XTICK_SPACING 15
 
 // Node struct represents a cell in the matrix
-typedef struct Cell Cell;
 typedef struct Plot Plot;
 typedef struct Graph Graph;
 
 // forward declare from yaxis.h and line.h
-typedef struct Axis Axis;
-typedef struct Line Line;
-
-// Represents a cell in the matrix and viewport
-struct Cell {
-    int32_t x;
-    int32_t y;
-
-    char chr[5];
-    uint16_t bgcol;
-    uint16_t fgcol;
-
-    // keep changed cells in linked list for easy updating
-    Cell* prev;
-    Cell* next;
-};
+typedef struct Yaxis Yaxis;
 
 struct Graph {
     WINDOW* parent;
@@ -76,33 +50,25 @@ struct Plot {
 
     // main window containing the subwindows
     WINDOW* win;
+    WINDOW* wplot;
 
     Graph* graph;
-    Axis* lyaxis;
-    Axis* ryaxis;
+    Yaxis*  lyaxis;
+    Yaxis*  ryaxis;
     Xaxis* xaxis;
 
     // total plot dimensions
     int xsize;
     int ysize;
-
-    //int xaxis_xsize;
-    //int xaxis_xstart;
-    //int xaxis_ystart;
-    //int xaxis_ysize;
 };
 
-Plot* plot_init(WINDOW* parent, uint32_t ysize);
+Plot* plot_init(WINDOW* parent);
 void  plot_destroy(Plot* pl);
 
-void plot_draw(Plot* pl, Groups* groups, State* s);
-int8_t plot_resize(Plot* pl, uint32_t ysize);
+void   plot_draw(Plot* pl, Groups* groups, State* s);
+int8_t plot_resize(Plot* pl);
+void   plot_draw_xaxis(Plot* pl, Group* g);
 
 Graph* graph_init(WINDOW* parent, uint32_t ysize, uint32_t xsize, uint32_t xstart);
-
-
-void  plot_draw_xaxis(Plot* pl, Group* g);
-//uint32_t plot_set_dimensions(Plot* pl);
-//void  plot_clear(Plot* pl);
 
 #endif

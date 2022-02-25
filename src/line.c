@@ -22,16 +22,13 @@ int8_t line_set_data(Line* l, Groups* groups)
 {
     /* Set new data in line, update axis data dimensions */
 
-    // TODO most of this function should be in Axis module
-
-
     // Error if line is not part of an axis
     if (l->axis == NULL)
         return -1;
 
     l->groups = groups;
 
-    Axis* a = l->axis;
+    Yaxis* a = l->axis;
 
     // set/update axis dimensions
     if (a->is_empty) {
@@ -51,7 +48,5 @@ int8_t line_set_data(Line* l, Groups* groups)
         if (groups->gmax > a->vdmax)
             a->vdmax = groups->gmax;
     }
-
-
     return 0;
 }

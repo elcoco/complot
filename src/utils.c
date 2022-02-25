@@ -52,8 +52,10 @@ char* ts_to_dt(time_t t, char* fmt, char* buf, uint8_t buflen)
     return buf;
 }
 
-void draw_border(WINDOW* w, unsigned int lines, unsigned int cols)
+void draw_border(WINDOW* w)
 {
+    int cols = getmaxx(w);
+    int lines = getmaxy(w);
     mvwhline(w, 0, 1, B_H, cols-2);
     mvwhline(w, lines-1, 1, B_H, cols-2);
     mvwvline(w, 1, 0, B_V, lines-2);

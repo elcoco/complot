@@ -16,10 +16,9 @@
 
 #define LINE_CHR "─"
 
-typedef struct Axis Axis;
+typedef struct Yaxis Yaxis;
 
 // forward declare from plot.h
-typedef struct Plot Plot;
 typedef struct Line Line;
 
 typedef enum AxisSide {
@@ -27,7 +26,7 @@ typedef enum AxisSide {
     AXIS_RIGHT
 } AxisSide;
 
-struct Axis {
+struct Yaxis {
     WINDOW* parent;
     WINDOW* win;
 
@@ -61,19 +60,16 @@ struct Axis {
     bool autorange;
 };
 
-Axis* axis_init(WINDOW* parent, AxisSide side, uint32_t ysize);
-void axis_destroy(Axis* a);
-void axis_draw(Axis* a, WINDOW* wtarget, Groups* groups, State* s);
-void axis_draw_candlesticks(Axis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
-void axis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
-void axis_draw_tickers(Axis* a, int32_t yoffset);
-int8_t axis_set_window_width(Axis* a);
+Yaxis* yaxis_init(WINDOW* parent, AxisSide side, uint32_t ysize);
+void yaxis_destroy(Yaxis* a);
+void yaxis_draw(Yaxis* a, WINDOW* wtarget, Groups* groups, State* s);
+void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
+void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
+void yaxis_draw_tickers(Yaxis* a, int32_t yoffset);
+int8_t yaxis_set_window_width(Yaxis* a);
 
-
-void  axis_add_line(Axis* a, Line* l);
-//void  axis_draw(Axis* a, Plot* pl, State* s);
-//void  axis_draw_tickers(Axis* a, Plot* pl, int32_t yoffset);
-void axis_draw_last_data(Axis* a, WINDOW* wgraph, double pany, double lasty);
+void yaxis_add_line(Yaxis* a, Line* l);
+void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty);
 
 void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac);
 

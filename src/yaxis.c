@@ -1,8 +1,8 @@
 #include "yaxis.h"
 
-Axis* axis_init(WINDOW* parent, AxisSide side, uint32_t ysize)
+Yaxis* yaxis_init(WINDOW* parent, AxisSide side, uint32_t ysize)
 {
-    Axis* a = malloc(sizeof(Axis));
+    Yaxis* a = malloc(sizeof(Yaxis));
 
     a->parent = parent;
 
@@ -40,13 +40,13 @@ Axis* axis_init(WINDOW* parent, AxisSide side, uint32_t ysize)
     return a;
 }
 
-void  axis_destroy(Axis* a)
+void  yaxis_destroy(Yaxis* a)
 {
     free(a->ltail);
     free(a);
 }
 
-void axis_add_line(Axis* a, Line* l)
+void yaxis_add_line(Yaxis* a, Line* l)
 {
     // connect line in linked list
     if (a->line == NULL) {
@@ -61,7 +61,7 @@ void axis_add_line(Axis* a, Line* l)
     l->axis = a;
 }
 
-int8_t axis_set_window_width(Axis* a)
+int8_t yaxis_set_window_width(Yaxis* a)
 {
     /* Find window width of y tickers. Return 1 if size has changed since last check */
     // prevent window from showing up
@@ -98,29 +98,29 @@ int8_t axis_set_window_width(Axis* a)
     return 0;
 }
 
-void axis_draw(Axis* a, WINDOW* wtarget, Groups* groups, State* s)
+void yaxis_draw(Yaxis* a, WINDOW* wtarget, Groups* groups, State* s)
 {
     // TODO wtarget should be in axis struct
     /* Draw all lines in this axis into Plot */
 
     // draw y axis tickers
     if (a->side == AXIS_RIGHT) {
-        axis_draw_tickers(a, s->pany);
+        yaxis_draw_tickers(a, s->pany);
 
         Line* l = a->line;
         while (l != NULL) {
             // Highlight last data in tickers
             if (l->groups->plast != NULL)
-                axis_draw_last_data(a, wtarget, s->pany, l->groups->plast->close);
+                yaxis_draw_last_data(a, wtarget, s->pany, l->groups->plast->close);
 
-            axis_draw_candlesticks(a, wtarget, l->groups->group, s->pany);
+            yaxis_draw_candlesticks(a, wtarget, l->groups->group, s->pany);
 
             l = l->next;
         }
     }
 }
 
-void axis_draw_last_data(Axis* a, WINDOW* wgraph, double pany, double lasty)
+void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
 {
     /* highlight last data in axis */
     // calculate y index of last data
@@ -141,7 +141,7 @@ void axis_draw_last_data(Axis* a, WINDOW* wgraph, double pany, double lasty)
     }
 }
 
-void axis_draw_tickers(Axis* a, int32_t yoffset)
+void yaxis_draw_tickers(Yaxis* a, int32_t yoffset)
 {
     // calculate stepsize between tickers
     double step = (a->dmax - a->dmin) / a->ysize;
@@ -156,7 +156,7 @@ void axis_draw_tickers(Axis* a, int32_t yoffset)
     }
 }
 
-void axis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose)
+void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose)
 {
     uint32_t ysize = getmaxy(win);
 
@@ -189,7 +189,7 @@ void axis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihig
     }
 }
 
-void axis_draw_candlesticks(Axis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
+void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
 {
     /* itter groups and draw them in plot */
     // start at this xy indices
@@ -216,7 +216,7 @@ void axis_draw_candlesticks(Axis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
             uint32_t ilow   = map(g->low,   a->dmin, a->dmax, iy, ysize-1) + yoffset;
             uint32_t iclose = map(g->close, a->dmin, a->dmax, iy, ysize-1) + yoffset;
 
-            axis_draw_candlestick(wtarget, ix, iopen, ihigh, ilow, iclose);
+            yaxis_draw_candlestick(wtarget, ix, iopen, ihigh, ilow, iclose);
         }
         g = g->next;
         ix++;
