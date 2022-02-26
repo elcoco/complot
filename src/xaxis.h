@@ -10,7 +10,7 @@
 
 #include "utils.h"
 #include "index.h"
-//#include "ui.h"
+#include "ui.h"
 
 #define XTICK_SPACING 15
 

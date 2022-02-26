@@ -34,42 +34,12 @@ void cleanup_ui()
     //refresh();
 }
 
-int get_color(int age)
-{
-    int col = (age / 10) +1;
-    if (col > 8)
-        col = 8;
-    else if (col == 0)
-        col = 1;
-    return col;
-}
-
-int set_status(uint32_t lineno, char* fmt, ...)
-{
-    char buf[1000];
-    va_list ptr;
-    int ret;
-
-    va_start(ptr, fmt);
-    ret = vsprintf(buf, fmt, ptr);
-    va_end(ptr);
-
-    move(LINES-(1+lineno), 0);
-    clrtoeol();
-
-    attrset(COLOR_PAIR(CRED));
-    mvaddstr(LINES-(1+lineno), 0, buf);
-    attroff(COLOR_PAIR(CRED));
-    //refresh();
-
-    return(ret);
-}
-
 int add_chr(WINDOW* win, uint32_t y, uint32_t x, uint32_t color, char c)
 {
     wattrset(win, COLOR_PAIR(color));
     mvwaddch(win, y, x, c);
     wattroff(win, COLOR_PAIR(color));
+    return 0;
 }
 
 int add_str(WINDOW* win, uint32_t y, uint32_t x, uint32_t color, char* fmt, ...)

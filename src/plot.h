@@ -34,6 +34,7 @@ typedef struct Legend Legend;
 
 // forward declare from yaxis.h and line.h
 typedef struct Yaxis Yaxis;
+typedef struct Xaxis Xaxis;
 
 // forward declare from status.h
 typedef struct StatusBar StatusBar;

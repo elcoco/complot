@@ -157,6 +157,7 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
     clear_win(pl->xaxis->win);
     clear_win(pl->llegend->win);
     clear_win(pl->rlegend->win);
+    clear_win(pl->status->win);
 
     //fill_win(pl->xaxis->win, 'X');
     yaxis_draw(pl->lyaxis, pl->graph->win, groups, s);

@@ -3,10 +3,8 @@
 Xaxis* xaxis_init()
 {
     Xaxis* xa = malloc(sizeof(Xaxis));
-    //xa->xsize = getmaxx(parent);
     xa->ysize = 2;
     xa->win = NULL;
-    //xa->win = subwin(xa->parent, xa->ysize, xa->xsize, getmaxy(xa->parent)-xa->ysize, 0);
     return xa;
 }
 
@@ -30,8 +28,8 @@ void xaxis_draw(Xaxis* xa, Group* g, uint32_t xstart)
             ts_to_dt(g->wstart, "%Y-%m-%d", dbuf, sizeof(dbuf));
             ts_to_dt(g->wstart, "%H:%M:%S", tbuf, sizeof(tbuf));
 
-            add_str(xa->win, 1, ix, 3, dbuf);
-            add_str(xa->win, 0, ix, 4, tbuf);
+            add_str(xa->win, 1, ix, CWHITE, dbuf);
+            add_str(xa->win, 0, ix, CWHITE, tbuf);
         }
         g = g->next;
         ix++;

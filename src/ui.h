@@ -23,7 +23,6 @@
 
 int init_ui();
 void cleanup_ui();
-//void ui_show_plot(Plot* pl);
 void init_colors();
 bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg);
 int set_status(uint32_t lineno, char* fmt, ...);

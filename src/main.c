@@ -45,19 +45,19 @@ pthread_mutex_t lock;
 // DONE on reindex first point is added to linked list again
 // DONE create update function in index
 // DONE rename component to plot oid
-// TODO write better makefile
+// DONE write better makefile
 // DONE x should also be double
 // DONE plot should have axis and line structs to organize what should be drawn where
 // DONE rename pl (plot) to p and p (point) to pnt
 // DONE rename pl_ function names to plot_
 // DONE don't recreate plot on every iteration, not pretty
-// TODO draw legend from axis
+// DONE draw legend from axis
 // TODO when not using autoscale, it should not change axis scale
 // DONE nasty bug in index_get_grouped where we're trying to access a non existing group
-// TODO auto resize plot
-// TODO status window
-// TODO x axis window/struct
-// TODO rename axis to yaxis (a -> ya)
+// DONE auto resize plot
+// DONE status window
+// DONE x axis window/struct
+// DONE rename axis to yaxis (a -> ya)
 
 
 int sigint_caught = 0;
