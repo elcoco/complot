@@ -53,8 +53,6 @@ struct Plot {
 
     // main window containing the subwindows
     WINDOW* win;
-    WINDOW* wplot;
-    WINDOW* wrow2;
 
     Graph* graph;
     Yaxis*  lyaxis;

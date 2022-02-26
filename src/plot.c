@@ -12,13 +12,12 @@ Plot* plot_init(WINDOW* parent)
     pl->ysize = getmaxy(pl->parent);
 
     pl->win = subwin(pl->parent, pl->ysize, pl->xsize, 0, 0);
-    pl->wrow2 = subwin(pl->win, pl->ysize-5, pl->xsize, 4, 0);
 
-    pl->xaxis = xaxis_init();
-    pl->lyaxis = yaxis_init(pl->win, AXIS_LEFT);
-    pl->ryaxis = yaxis_init(pl->win, AXIS_RIGHT);
-    pl->graph = graph_init();
-
+    // create all struct that represent features in the plot
+    pl->xaxis   = xaxis_init();
+    pl->lyaxis  = yaxis_init(pl->win, AXIS_LEFT);
+    pl->ryaxis  = yaxis_init(pl->win, AXIS_RIGHT);
+    pl->graph   = graph_init();
     pl->llegend = legend_init(pl->lyaxis);
     pl->rlegend = legend_init(pl->ryaxis);
 
@@ -78,39 +77,8 @@ Graph* graph_init()
 {
     /* Area where the plot is being drawn */
     Graph* gr = malloc(sizeof(Graph));
-
     gr->win = NULL;
-    //gr->win = subwin(gr->parent, gr->ysize, gr->xsize, 0, xstart);
     return gr;
-}
-
-int8_t plot_resize_bak(Plot* pl)
-{
-    /* resize/create all windows to fit parent window*/
-
-    // resize main window
-    pl->xsize = getmaxx(pl->parent);
-    pl->ysize = getmaxy(pl->parent);
-    wresize(pl->win, pl->ysize, pl->xsize);
-
-    // resize xaxis
-    pl->xaxis->xsize = pl->xsize;
-    delwin(pl->xaxis->win);
-    pl->xaxis->win = subwin(pl->win, pl->xaxis->ysize, pl->xaxis->xsize, pl->ysize-pl->xaxis->ysize, 0);
-
-    // trigger yaxis window resize/recreate
-    int yaxis_ysize = pl->ysize - pl->xaxis->ysize;
-
-    pl->lyaxis->xsize = 0;
-    pl->lyaxis->ysize = yaxis_ysize;
-    yaxis_set_window_width(pl->lyaxis);
-
-    pl->ryaxis->xsize = 0;
-    pl->ryaxis->ysize = yaxis_ysize;
-    yaxis_set_window_width(pl->ryaxis);
-
-    graph_resize(pl->graph, pl);
-    return 0;
 }
 
 int8_t plot_resize(Plot* pl)
@@ -173,9 +141,8 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
         return;
 
     // Find the window width of the yaxis so we can calculate the graph width
-    if (yaxis_set_window_width(pl->lyaxis) >0 || yaxis_set_window_width(pl->ryaxis) >0) {
-        graph_resize(pl->graph, pl);
-    }
+    if (yaxis_set_window_width(pl->lyaxis) >0 || yaxis_set_window_width(pl->ryaxis) >0)
+        plot_resize(pl);
 
     clear_win(pl->graph->win);
     clear_win(pl->xaxis->win);
