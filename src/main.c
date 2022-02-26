@@ -196,6 +196,7 @@ void handle_sigwinch(int sig)
 
 int8_t update(State* s, Index* index, Plot* pl, Line* l)
 {
+
     // check if data or exit early
     if (index->npoints == 0)
         return 0;
@@ -220,8 +221,14 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l)
         return -1;
     }
 
+    status_set(pl->status, "autorange", "%d",    s->set_autorange);
+    status_set(pl->status, "paused",    "%d",    s->is_paused);
+    status_set(pl->status, "points",    "%d",    index->npoints);
+    status_set(pl->status, "gsize",     "%d",    s->gsize);
+    status_set(pl->status, "spread",    "%.3f",  index->spread);
+    status_set(pl->status, "panxy",     "%d/%d", s->panx, s->pany);
+
     plot_draw(pl, groups, s);
-    //set_status(0, "paused: %d | panx: %d | pany: %d | points: %d | gsize: %d | spread: %.1f", s->is_paused, s->panx, s->pany, index->npoints, s->gsize, index->spread);
 
     // cleanup
     groups_destroy(groups);
@@ -240,6 +247,7 @@ void loop(State* s, Index* index)
     yaxis_add_line(pl->ryaxis, l3);
     l2->color = CMAGENTA;
     l3->color = CBLUE;
+
 
     while (!s->is_stopped && !sigint_caught) {
 

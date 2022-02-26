@@ -12,6 +12,7 @@
 #include "xaxis.h"
 #include "utils.h"
 #include "index.h"
+#include "status.h"
 
 #define CS_BODY "█"
 #define CS_WICK "┃"
@@ -19,11 +20,6 @@
 
 #define MIN_WINDOW_XSIZE 10
 #define MIN_WINDOW_YSIZE 10
-
-#define RED   1
-#define GREEN 2
-#define WHITE 7
-#define MAGENTA 5
 
 #define LEGEND_MAX_SIZE 200
 #define UTF8_MAX_LEN 3
@@ -39,9 +35,12 @@ typedef struct Legend Legend;
 // forward declare from yaxis.h and line.h
 typedef struct Yaxis Yaxis;
 
+// forward declare from status.h
+typedef struct StatusBar StatusBar;
+
+
 struct Graph {
     WINDOW* win;
-
     int xsize;
     int ysize;
 };
@@ -60,6 +59,7 @@ struct Plot {
     Xaxis* xaxis;
     Legend* llegend;
     Legend* rlegend;
+    StatusBar* status;
 
     // total plot dimensions
     int xsize;
@@ -85,5 +85,6 @@ int8_t plot_resize(Plot* pl);
 void   plot_draw_xaxis(Plot* pl, Group* g);
 
 Graph* graph_init();
+
 
 #endif

@@ -20,6 +20,7 @@ Plot* plot_init(WINDOW* parent)
     pl->graph   = graph_init();
     pl->llegend = legend_init(pl->lyaxis);
     pl->rlegend = legend_init(pl->ryaxis);
+    pl->status  = status_init();
 
     // set all sizes and (re)create all windows
     plot_resize(pl);
@@ -70,6 +71,7 @@ void plot_destroy(Plot* pl)
     legend_destroy(pl->llegend);
     legend_destroy(pl->rlegend);
     free(pl->graph);
+    status_destroy(pl->status);
     free(pl);
 }
 
@@ -92,13 +94,19 @@ int8_t plot_resize(Plot* pl)
     pl->ysize = getmaxy(pl->parent);
     wresize(pl->win, pl->ysize, pl->xsize);
 
+    // resize statusbar
+    pl->status->xsize = pl->xsize;
+    delwin(pl->status->win);
+    pl->status->win = subwin(pl->win, pl->status->ysize, pl->status->xsize, pl->ysize-1, 0);
+
     // resize xaxis
     pl->xaxis->xsize = pl->xsize;
     delwin(pl->xaxis->win);
-    pl->xaxis->win = subwin(pl->win, pl->xaxis->ysize, pl->xaxis->xsize, pl->ysize-pl->xaxis->ysize, 0);
+    uint32_t xaxis_ypos = pl->ysize - pl->xaxis->ysize - pl->status->ysize;
+    pl->xaxis->win = subwin(pl->win, pl->xaxis->ysize, pl->xaxis->xsize, xaxis_ypos, 0);
 
     // trigger yaxis window resize/recreate
-    int yaxis_ysize = pl->ysize - pl->xaxis->ysize - pl->llegend->ysize;
+    int yaxis_ysize = pl->ysize - pl->xaxis->ysize - pl->llegend->ysize - pl->status->ysize;
 
     pl->lyaxis->xsize = 0;
     pl->lyaxis->ysize = yaxis_ysize;
@@ -117,9 +125,10 @@ int8_t plot_resize(Plot* pl)
     //graph_resize(pl->graph, pl);
     // yaxis changes width to data so we need to resize graph window accordingly
     pl->graph->xsize = pl->xsize - (pl->lyaxis->xsize + pl->ryaxis->xsize); 
-    pl->graph->ysize = pl->ysize - pl->xaxis->ysize - pl->llegend->ysize;
+    pl->graph->ysize = pl->ysize - pl->xaxis->ysize - pl->llegend->ysize - pl->status->ysize;
     delwin(pl->graph->win);
     pl->graph->win = subwin(pl->win, pl->graph->ysize, pl->graph->xsize, pl->llegend->ysize, pl->lyaxis->xsize);
+
     return 0;
 }
 
@@ -146,6 +155,8 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
 
     clear_win(pl->graph->win);
     clear_win(pl->xaxis->win);
+    clear_win(pl->llegend->win);
+    clear_win(pl->rlegend->win);
 
     //fill_win(pl->xaxis->win, 'X');
     yaxis_draw(pl->lyaxis, pl->graph->win, groups, s);
@@ -159,6 +170,8 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
     //fill_win(pl->rlegend->win, 'R');
     legend_draw(pl->llegend);
     legend_draw(pl->rlegend);
+
+    status_draw(pl->status);
 
     touchwin(pl->win);
     refresh();

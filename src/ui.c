@@ -65,15 +65,22 @@ int set_status(uint32_t lineno, char* fmt, ...)
     return(ret);
 }
 
+int add_chr(WINDOW* win, uint32_t y, uint32_t x, uint32_t color, char c)
+{
+    wattrset(win, COLOR_PAIR(color));
+    mvwaddch(win, y, x, c);
+    wattroff(win, COLOR_PAIR(color));
+}
+
 int add_str(WINDOW* win, uint32_t y, uint32_t x, uint32_t color, char* fmt, ...)
 {
     va_list ptr;
     va_start(ptr, fmt);
-    va_end(ptr);
 
     wattrset(win, COLOR_PAIR(color));
     mvwprintw(win, y, x, fmt, ptr);
     wattroff(win, COLOR_PAIR(color));
+    va_end(ptr);
 
     return 0;
 }

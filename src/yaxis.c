@@ -149,10 +149,9 @@ void yaxis_draw_tickers(Yaxis* a, int32_t yoffset)
     double step = (a->dmax - a->dmin) / a->ysize;
 
     // calculate first column of axis
-    int32_t y;
-    for (int32_t iy=0, y=0 ; iy<a->ysize ; iy++, y++) {
+    for (int32_t iy ; iy<a->ysize ; iy++) {
         char buf[50] = {'\0'};
-        double ticker = a->dmin + ((y - yoffset)*step);
+        double ticker = a->dmin + ((iy - yoffset)*step);
         get_tickerstr(buf, ticker, a->xsize, a->nwhole, a->nfrac);
         add_str(a->win, a->ysize-iy-1, 0, CWHITE, buf);
     }
