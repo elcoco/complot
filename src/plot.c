@@ -166,9 +166,6 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
     Group* g = fast_forward_groups(groups->group, pl->xsize-pl->graph->xsize);
     xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
 
-    //draw_border(pl->win);
-    //fill_win(pl->llegend->win, 'L');
-    //fill_win(pl->rlegend->win, 'R');
     legend_draw(pl->llegend);
     legend_draw(pl->rlegend);
 
@@ -177,10 +174,4 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
     touchwin(pl->win);
     refresh();
     wrefresh(pl->win);
-
-    //wrefresh(pl->lyaxis->win);
-    //wrefresh(pl->graph->win);
-    //wrefresh(pl->ryaxis->win);
-    //wrefresh(pl->xaxis->win);
-
 }
