@@ -1,13 +1,13 @@
 #include "yaxis.h"
 
-Yaxis* yaxis_init(WINDOW* parent, AxisSide side, uint32_t ysize)
+Yaxis* yaxis_init(WINDOW* parent, AxisSide side)
 {
     Yaxis* a = malloc(sizeof(Yaxis));
 
     a->parent = parent;
 
-    a->xsize = 0;
-    a->ysize = ysize;
+    //a->xsize = 0;
+    //a->ysize = ysize;
 
     //int xstart = (side == AXIS_LEFT) ? 0 : getmaxx(parent) - a->xsize;
 
@@ -64,10 +64,8 @@ void yaxis_add_line(Yaxis* a, Line* l)
 int8_t yaxis_set_window_width(Yaxis* a)
 {
     /* Find window width of y tickers. Return 1 if size has changed since last check */
-    // prevent window from showing up
-    if (a->is_empty) {
+    if (a->is_empty)
         return -1;
-    }
 
     if (a->autorange) {
         a->dmin = a->vdmin;
@@ -82,17 +80,15 @@ int8_t yaxis_set_window_width(Yaxis* a)
     a->nfrac  = find_nfrac(a->dmax - a->dmin);
     uint32_t new_xsize = a->nwhole + 1 + a->nfrac;
 
-    // TODO this is only valid for right y axis
-    // resize axis window to new ticker width
+    // resize axis window to new ticker width if changed
     if (a->xsize != new_xsize) {
         a->xsize = new_xsize;
-        //a->ysize = getmaxy(a->parent);
 
         delwin(a->win);
         if (a->side == AXIS_LEFT)
-            a->win = subwin(a->parent, a->ysize, a->xsize, 0, 0);
+            a->win = subwin(a->parent, a->ysize, a->xsize, 1, 0);
         else
-            a->win = subwin(a->parent, a->ysize, a->xsize, 0, getmaxx(a->parent)-new_xsize);
+            a->win = subwin(a->parent, a->ysize, a->xsize, 1, getmaxx(a->parent)-new_xsize);
         return 1;
     }
     return 0;
@@ -109,6 +105,12 @@ void yaxis_draw(Yaxis* a, WINDOW* wtarget, Groups* groups, State* s)
 
         Line* l = a->line;
         while (l != NULL) {
+
+            if (l->groups == NULL) {
+                l = l->next;
+                continue;
+            }
+
             // Highlight last data in tickers
             if (l->groups->plast != NULL)
                 yaxis_draw_last_data(a, wtarget, s->pany, l->groups->plast->close);
@@ -201,7 +203,6 @@ void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffse
     //TODO COLS is not necessarily the width of the parent window!!!!
     // we have to get more groups from index than we actually need so we need to skip the groups that don't fit in plot
     uint32_t goffset = COLS - getmaxx(wtarget);
-    //uint32_t goffset = COLS - getmaxx(a->graph);
     while (goffset != 0) {
         g = g->next;
         goffset--;

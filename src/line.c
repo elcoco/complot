@@ -9,6 +9,8 @@ Line* line_init(char* name)
     l->next = NULL;
     l->lineid = lineid_counter++;
     l->groups = NULL;
+    strcpy(l->icon, CS_ICON);
+    l->color = CGREEN;
     return l;
 }
 

@@ -18,14 +18,13 @@
 typedef struct Xaxis Xaxis;
 
 struct Xaxis {
-    WINDOW* parent;
     WINDOW* win;
 
     int xsize;
     int ysize;
 };
 
-Xaxis* xaxis_init(WINDOW* parent);
+Xaxis* xaxis_init();
 void   xaxis_destroy(Xaxis* xa);
 void   xaxis_draw(Xaxis* xa, Group* g, uint32_t xstart);
 

@@ -11,6 +11,9 @@
 #include "index.h"
 #include "yaxis.h"
 
+#define LINE_ICON "█"
+#define CS_ICON   "┿"
+
 typedef struct Line Line;
 
 // forward declare from index.h
@@ -25,11 +28,17 @@ struct Line {
     uint32_t lineid;
     char* name;
 
+    // unicode character takes at most 4 bytes
+    char icon[5];
+
     // contains data for this line
     Groups* groups;
 
     Line* next;
     Yaxis* axis;
+
+    // TODO specify color for line
+    uint32_t color;
 };
 
 Line* line_init(char* name);

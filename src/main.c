@@ -232,8 +232,14 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l)
 void loop(State* s, Index* index)
 {
     Plot* pl = plot_init(stdscr);
-    Line* l = line_init("First line");
+    Line* l = line_init("First");
+    Line* l2 = line_init("Second");
+    Line* l3 = line_init("Third xxxxxxxxxxxxxxxxxxxxxxx");
     yaxis_add_line(pl->ryaxis, l);
+    yaxis_add_line(pl->ryaxis, l2);
+    yaxis_add_line(pl->ryaxis, l3);
+    l2->color = CMAGENTA;
+    l3->color = CBLUE;
 
     while (!s->is_stopped && !sigint_caught) {
 

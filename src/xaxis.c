@@ -1,12 +1,12 @@
 #include "xaxis.h"
 
-Xaxis* xaxis_init(WINDOW* parent)
+Xaxis* xaxis_init()
 {
     Xaxis* xa = malloc(sizeof(Xaxis));
-    xa->parent = parent;
-    xa->xsize = getmaxx(parent);
+    //xa->xsize = getmaxx(parent);
     xa->ysize = 2;
-    xa->win = subwin(xa->parent, xa->ysize, xa->xsize, getmaxy(xa->parent)-xa->ysize, 0);
+    xa->win = NULL;
+    //xa->win = subwin(xa->parent, xa->ysize, xa->xsize, getmaxy(xa->parent)-xa->ysize, 0);
     return xa;
 }
 

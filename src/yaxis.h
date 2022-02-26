@@ -60,7 +60,7 @@ struct Yaxis {
     bool autorange;
 };
 
-Yaxis* yaxis_init(WINDOW* parent, AxisSide side, uint32_t ysize);
+Yaxis* yaxis_init(WINDOW* parent, AxisSide side);
 void yaxis_destroy(Yaxis* a);
 void yaxis_draw(Yaxis* a, WINDOW* wtarget, Groups* groups, State* s);
 void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
