@@ -70,10 +70,11 @@ int8_t yaxis_set_window_width(Yaxis* a)
     if (a->autorange) {
         a->dmin = a->vdmin;
         a->dmax = a->vdmax;
-    } else {
-        a->dmin = a->tdmin;
-        a->dmax = a->tdmax;
     }
+    //} else {
+    //    a->dmin = a->tdmin;
+    //    a->dmax = a->tdmax;
+    //}
 
     // digits before and after the dot
     a->nwhole = find_nwhole(a->dmax); 

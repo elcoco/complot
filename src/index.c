@@ -92,40 +92,6 @@ Point* index_get_last_point(Index* index, uint32_t lineid)
     return NULL;
 }
 
-Bin* bin_create(Index* index, uint32_t i)
-{
-    /* Create and allocate new Bin struct that has a fixed X window.
-     * It holds points that fall within this window.
-     * This makes taking slices/grouping of data super fast.  */
-    Bin* b = malloc(sizeof(Bin));
-
-    // set x window
-    b->wstart = (i*index->spread) + index->dmin;
-    b->wend = b->wstart + index->spread;
-
-    b->is_empty = true;
-
-    // init line container
-    b->lines = (LineBin**)malloc(index->nlines*sizeof(LineBin*));
-
-    // init line conainers
-    LineBin** lb = b->lines;
-    for (int i=0 ; i<index->nlines ; i++,lb++) {
-        *lb = (LineBin*)malloc(sizeof(LineBin));
-        (*lb)->is_empty = true;
-    }
-    return b;
-}
-
-void bin_destroy(Bin* b, Index* index)
-{
-    LineBin** lb = b->lines;
-    for (int i=0 ; i<index->nlines ; i++, lb++)
-        free(*lb);
-    free(b->lines);
-    free(b);
-}
-
 int32_t index_map_to_index(Index* index, double x)
 {
     /* Map data X value to an array index */
@@ -137,34 +103,6 @@ double index_map_to_x(Index* index, int32_t i)
 {
     /* Map index to x value */
     return (i * index->spread) + index->xmin;
-}
-
-void points_print(Point* p)
-{
-    uint32_t i = 0;
-
-    while (p != NULL) {
-        point_print(p);
-        p = p->next;
-        i++;
-    }
-}
-
-void point_append(Point* p, Point** tail)
-{
-    /* Append point in linked list */
-    Point* prev = *tail;
-    *tail = p;
-    prev->next = p;
-}
-
-void group_append(Group* g, Group** tail)
-{
-    /* Append point in linked list */
-    Group* prev = *tail;
-    *tail = g;
-    prev->next = g;
-    g->prev = prev;
 }
 
 void index_set_data_limits(Index* index, Point* p)
@@ -195,41 +133,6 @@ void index_reindex(Index* index)
         index_insert(index, p);
         p = p->next;
     }
-}
-
-void point_print(Point* p)
-{
-    printf("%f => [%f, %f, %f, %f]\n", p->x, p->open, p->high, p->low, p->close);
-}
-
-Point* point_create(Index* index, uint32_t lineid, double x, double open, double high, double low, double close)
-{
-    Point* p = (Point*)malloc(sizeof(Point));
-    p->x = x;
-    p->open = open;
-    p->high = high;
-    p->low = low;
-    p->close = close;
-    p->lineid = lineid;
-
-    index->npoints++;
-
-    // connect point in linked list, this is used to regenerate index when spread changes
-    if (*(index->phead) == NULL) {
-        *(index->phead) = p;
-        *(index->ptail) = p;
-    } else {
-        point_append(p, index->ptail);
-    }
-
-    // about to insert second point, we can calculate the spread now and reindex
-    if (index->npoints == 2) {
-        index->spread = p->x - (*index->phead)->x;
-        index_reindex(index);
-    }
-
-    index_insert(index, p);
-    return p;
 }
 
 int8_t index_insert(Index* index, Point* p)
@@ -268,7 +171,7 @@ int8_t index_insert(Index* index, Point* p)
     Bin* b  = index->bins[ix];
     b->is_empty = false;
 
-    LineBin* lb = b->lines[p->lineid];
+    CsLineBin* lb = b->cslines[p->lineid];
     line_add_point(lb, p);
 
     index->has_new_data = true;
@@ -285,25 +188,6 @@ int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount)
     //printf("first group i: %d\n", first_group_i);
     //printf("last group i:  %d\n", last_group_i);
     return first_group_i;
-}
-
-Group* group_create(Index* index, int32_t gstart, uint32_t gsize, Group** gtail)
-{
-    Group* g = (Group*)malloc(sizeof(Group));
-    g->wstart = index_map_to_x(index, gstart);
-    g->wend   = index_map_to_x(index, gstart + gsize);
-    g->is_empty = true;
-    g->next = NULL;
-
-    // Set unique constant id for this group.
-    // This is used to keep x tickers in the right spot.
-    g->id = gstart / gsize;
-
-    // connect new group to linked list
-    if (*gtail != NULL)
-        group_append(g, gtail);
-
-    return g;
 }
 
 Groups* index_get_grouped(Index* index, uint32_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
@@ -337,7 +221,7 @@ Groups* index_get_grouped(Index* index, uint32_t lineid, uint32_t gsize, uint32_
                 break;
 
             Bin* b = bins[gstart+i];
-            LineBin* lb = b->lines[lineid];
+            CsLineBin* lb = b->cslines[lineid];
 
             if (lb->is_empty)
                 continue;
@@ -363,6 +247,61 @@ Groups* index_get_grouped(Index* index, uint32_t lineid, uint32_t gsize, uint32_
     }
     groups->group = *ghead;
     return groups;
+}
+
+bool index_has_new_data(Index* index)
+{
+    bool state = index->has_new_data;
+    index->has_new_data = false;
+    return state;
+}
+
+void index_print(Index* index)
+{
+    for (int i=0 ; i<index->isize ; i++) {
+        Bin* b = index->bins[i];
+        CsLineBin* lb = b->cslines[0];
+
+        if (b->is_empty)
+            continue;
+
+        printf("BIN %3d: %f:%f %d => %9f %9f %9f %9f\n", i,
+                                              b->wstart,
+                                              b->wend,
+                                              lb->npoints,
+                                              lb->open,
+                                              lb->high,
+                                              lb->low,
+                                              lb->close);
+    }
+}
+
+Group* group_create(Index* index, int32_t gstart, uint32_t gsize, Group** gtail)
+{
+    Group* g = (Group*)malloc(sizeof(Group));
+    g->wstart = index_map_to_x(index, gstart);
+    g->wend   = index_map_to_x(index, gstart + gsize);
+    g->is_empty = true;
+    g->next = NULL;
+
+    // Set unique constant id for this group.
+    // This is used to keep x tickers in the right spot.
+    g->id = gstart / gsize;
+
+    // connect new group to linked list
+    if (*gtail != NULL)
+        group_append(g, gtail);
+
+    return g;
+}
+
+void group_append(Group* g, Group** tail)
+{
+    /* Append point in linked list */
+    Group* prev = *tail;
+    *tail = g;
+    prev->next = g;
+    g->prev = prev;
 }
 
 void groups_update_limits(Groups* groups, Group* g)
@@ -407,13 +346,6 @@ void groups_destroy(Groups* groups)
     free(groups);
 }
 
-bool index_has_new_data(Index* index)
-{
-    bool state = index->has_new_data;
-    index->has_new_data = false;
-    return state;
-}
-
 void groups_print(Group* g)
 {
     int32_t c = 0;
@@ -429,27 +361,95 @@ void groups_print(Group* g)
     }
 }
 
-void index_print(Index* index)
+Bin* bin_create(Index* index, uint32_t i)
 {
-    for (int i=0 ; i<index->isize ; i++) {
-        Bin* b = index->bins[i];
-        LineBin* lb = b->lines[0];
+    /* Create and allocate new Bin struct that has a fixed X window.
+     * It holds points that fall within this window.
+     * This makes taking slices/grouping of data super fast.  */
+    Bin* b = malloc(sizeof(Bin));
 
-        if (b->is_empty)
-            continue;
+    // set x window
+    b->wstart = (i*index->spread) + index->dmin;
+    b->wend = b->wstart + index->spread;
 
-        printf("BIN %3d: %f:%f %d => %9f %9f %9f %9f\n", i,
-                                              b->wstart,
-                                              b->wend,
-                                              lb->npoints,
-                                              lb->open,
-                                              lb->high,
-                                              lb->low,
-                                              lb->close);
+    b->is_empty = true;
+
+    // init line container
+    b->cslines = (CsLineBin**)malloc(index->nlines*sizeof(CsLineBin*));
+
+    // init line conainers
+    CsLineBin** lb = b->cslines;
+    for (int i=0 ; i<index->nlines ; i++,lb++) {
+        *lb = (CsLineBin*)malloc(sizeof(CsLineBin));
+        (*lb)->is_empty = true;
+    }
+    return b;
+}
+
+void bin_destroy(Bin* b, Index* index)
+{
+    CsLineBin** lb = b->cslines;
+    for (int i=0 ; i<index->nlines ; i++, lb++)
+        free(*lb);
+    free(b->cslines);
+    free(b);
+}
+
+void point_print(Point* p)
+{
+    printf("%f => [%f, %f, %f, %f]\n", p->x, p->open, p->high, p->low, p->close);
+}
+
+Point* point_create(Index* index, uint32_t lineid, double x, double open, double high, double low, double close)
+{
+    Point* p = (Point*)malloc(sizeof(Point));
+    p->x = x;
+    p->open = open;
+    p->high = high;
+    p->low = low;
+    p->close = close;
+    p->lineid = lineid;
+
+    index->npoints++;
+
+    // connect point in linked list, this is used to regenerate index when spread changes
+    if (*(index->phead) == NULL) {
+        *(index->phead) = p;
+        *(index->ptail) = p;
+    } else {
+        point_append(p, index->ptail);
+    }
+
+    // about to insert second point, we can calculate the spread now and reindex
+    if (index->npoints == 2) {
+        index->spread = p->x - (*index->phead)->x;
+        index_reindex(index);
+    }
+
+    index_insert(index, p);
+    return p;
+}
+
+void points_print(Point* p)
+{
+    uint32_t i = 0;
+
+    while (p != NULL) {
+        point_print(p);
+        p = p->next;
+        i++;
     }
 }
 
-int8_t line_add_point(LineBin* lb, Point* p)
+void point_append(Point* p, Point** tail)
+{
+    /* Append point in linked list */
+    Point* prev = *tail;
+    *tail = p;
+    prev->next = p;
+}
+
+int8_t line_add_point(CsLineBin* lb, Point* p)
 {
     lb->npoints++;
 
@@ -481,3 +481,4 @@ int8_t line_add_point(LineBin* lb, Point* p)
 
     return 1;
 }
+

@@ -13,6 +13,7 @@
 #include "utils.h"
 #include "index.h"
 #include "status.h"
+#include "legend.h"
 
 #define CS_BODY "█"
 #define CS_WICK "┃"
@@ -67,20 +68,9 @@ struct Plot {
     int ysize;
 };
 
-struct Legend {
-    WINDOW* win;
-    int xsize;
-    int ysize;
-    Yaxis* yaxis;
-};
 
-Legend* legend_init(Yaxis* ya);
-void legend_draw(Legend* le);
-void legend_destroy(Legend* le);
-
-Plot* plot_init(WINDOW* parent);
-void  plot_destroy(Plot* pl);
-
+Plot*  plot_init(WINDOW* parent);
+void   plot_destroy(Plot* pl);
 void   plot_draw(Plot* pl, Groups* groups, State* s);
 int8_t plot_resize(Plot* pl);
 void   plot_draw_xaxis(Plot* pl, Group* g);

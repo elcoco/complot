@@ -14,7 +14,7 @@
 #include "ui.h"
 #include "read_thread.h"
 
-#define NLINES 2
+#define NLINES 5
 
 #define SLEEP_MS 100*1000
 
@@ -58,6 +58,8 @@ pthread_mutex_t lock;
 // DONE status window
 // DONE x axis window/struct
 // DONE rename axis to yaxis (a -> ya)
+// TODO create non candlestick lines
+// TODO create pop up log window
 
 
 int sigint_caught = 0;
@@ -196,7 +198,6 @@ void handle_sigwinch(int sig)
 
 int8_t update(State* s, Index* index, Plot* pl, Line* l)
 {
-
     // check if data or exit early
     if (index->npoints == 0)
         return 0;

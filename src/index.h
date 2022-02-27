@@ -18,7 +18,13 @@ typedef struct Bin Bin;
 typedef struct Index Index;
 typedef struct Point Point;
 typedef struct LineBin LineBin;
+typedef struct CsLineBin CsLineBin;
 
+typedef enum LType LType;
+enum LType {
+    LTYPE_OHLC,
+    LTYPE_LINE
+};
 /* Point holds data for one datapoint. */
 struct Point {
     double x;
@@ -29,6 +35,9 @@ struct Point {
     Point* prev;
     Point* next;
     uint32_t lineid;
+
+    // is line a normal line ore a candlestick line
+    LType ltype;
 };
 
 /* A Group is a slice of the bins array from the Index.
@@ -75,7 +84,7 @@ struct Groups {
 
 /* Container to put points in that is stored in Bin struct.
  * This enables for quick filtering of points per line. */
-struct LineBin {
+struct CsLineBin {
     // holds averages of points in line
     double open;
     double high;
@@ -104,6 +113,7 @@ struct Bin {
     // Holds the line containers that hold data per line
     // Array is indexed by lineid
     LineBin** lines;
+    CsLineBin** cslines;
 
     bool is_empty;
 };
@@ -184,7 +194,7 @@ Point* point_create(Index* index, uint32_t lineid, double x, double open, double
 void   point_append(Point* p, Point** tail);
 void   point_print(Point* p);
 
-int8_t line_add_point(LineBin* l, Point* p);
+int8_t line_add_point(CsLineBin* l, Point* p);
 
 Group* group_create(Index* index, int32_t gstart, uint32_t gsize, Group** gtail);
 void   group_append(Group* g, Group** tail);
