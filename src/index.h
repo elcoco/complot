@@ -18,23 +18,33 @@ typedef struct Bin Bin;
 typedef struct Index Index;
 typedef struct Point Point;
 typedef struct LineBin LineBin;
-typedef struct CsLineBin CsLineBin;
+typedef struct OHLCBin OHLCBin;
+typedef struct LineID LineID;
 
 typedef enum LType LType;
 enum LType {
     LTYPE_OHLC,
     LTYPE_LINE
 };
+
+/* LineID holds info about a line, it helps the indexer to find the right data when groups for a line are requested */
+struct LineID{
+    uint32_t lineid;
+    LType ltype;
+    //Line* next;
+};
+
 /* Point holds data for one datapoint. */
 struct Point {
     double x;
+    double y;
     double open;
     double high;
     double low;
     double close;
     Point* prev;
     Point* next;
-    uint32_t lineid;
+    LineID* lineid;
 
     // is line a normal line ore a candlestick line
     LType ltype;
@@ -47,6 +57,7 @@ struct Group {
     double wstart;
     double wend;
 
+    double y;
     double open;
     double high;
     double low;
@@ -82,9 +93,20 @@ struct Groups {
     Point* plast;
 };
 
-/* Container to put points in that is stored in Bin struct.
+/* Container to put normal line points in that is stored in Bin struct.
  * This enables for quick filtering of points per line. */
-struct CsLineBin {
+struct LineBin {
+    // holds averages of points in line
+    double y;
+    bool is_empty;
+
+    // amount of datapoints in line
+    int32_t npoints;
+};
+
+/* Container to put candlestick points in that is stored in Bin struct.
+ * This enables for quick filtering of points per line. */
+struct OHLCBin {
     // holds averages of points in line
     double open;
     double high;
@@ -112,8 +134,9 @@ struct Bin {
 
     // Holds the line containers that hold data per line
     // Array is indexed by lineid
-    LineBin** lines;
-    CsLineBin** cslines;
+    //LineBin** lines;
+    //OHLCBin** cslines;
+    void** lbins;
 
     bool is_empty;
 };
@@ -187,16 +210,17 @@ void    index_reindex(Index* index);
 int8_t index_insert(Index* index, Point* point);
 
 // get last amount of grouped bins with size gsize
-Groups* index_get_grouped(Index* index, uint32_t lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
+Groups* index_get_grouped(Index* index, LineID lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
 
 void   points_print(Point* p);
-Point* point_create(Index* index, uint32_t lineid, double x, double open, double high, double low, double close);
+Point* point_create_cspoint(Index* index, LineID* lineid, double x, double open, double high, double low, double close);
+Point* point_create_point(Index* index, LineID* lineid, double x, double y);
 void   point_append(Point* p, Point** tail);
 void   point_print(Point* p);
 
-int8_t line_add_point(CsLineBin* l, Point* p);
+int8_t line_add_point(Bin* b, Point* p);
 
-Group* group_create(Index* index, int32_t gstart, uint32_t gsize, Group** gtail);
+Group* group_init(Index* index, int32_t gstart, uint32_t gsize, Group** gtail);
 void   group_append(Group* g, Group** tail);
 
 Groups* groups_init(Index* index, uint32_t lineid);

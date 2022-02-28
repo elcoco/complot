@@ -13,6 +13,56 @@ void* read_file_thread(void* args)
     FILE* fp = fopen(a->path, "r");
 
     while (fgets(buf, sizeof(buf), fp) != NULL && !a->is_stopped) {
+
+        if (buf[strlen(buf)-1] == '\n') {
+            char* spos = buf;
+            int c = 0;
+            double y;
+
+            while (fast_forward(&spos, ",\n", NULL, NULL, tmpbuf)) {
+
+                // Reset local, using UTF-8 makes atof() wait for ',' instead of '.'
+                // as a float delimiter
+                // So to reset the previous: setlocale(LC_ALL, "");
+                setlocale(LC_NUMERIC,"C");
+
+                // NOTE atof failes on unicode!!!!
+                if (c == a->iy)
+                    y = atof(tmpbuf);
+
+                spos++;
+                c++;
+                tmpbuf[0] = '\0';
+            }
+
+            pthread_mutex_lock(a->lock);
+            point_create_point(a->index, a->lineid, ix, y);
+            pthread_mutex_unlock(a->lock);
+
+        } else {
+            printf("too long!!! %lu: %s\n", strlen(buf), buf);
+        }
+
+        ix+=xsteps;
+
+        usleep(100000);
+    }
+    return NULL;
+}
+
+void* cs_read_file_thread(void* args)
+{
+    Args* a = args;
+
+    char buf[BUF_SIZE] = {'\0'};
+    char tmpbuf[BUF_SIZE] = {'\0'};
+    uint32_t xsteps = 5;
+
+    // x incrementer, must be a converted datetime but for now this will do
+    double ix = 0;
+    FILE* fp = fopen(a->path, "r");
+
+    while (fgets(buf, sizeof(buf), fp) != NULL && !a->is_stopped) {
         // skip first line
         //if (ix == 0) {
         //    ix+=xsteps;
@@ -50,7 +100,7 @@ void* read_file_thread(void* args)
             }
 
             pthread_mutex_lock(a->lock);
-            point_create(a->index, a->lineid, ix, open, high, low, close);
+            point_create_cspoint(a->index, a->lineid, ix, open, high, low, close);
             //point_create(a->index, a->lineid, dt, open, high, low, close);
             pthread_mutex_unlock(a->lock);
 

@@ -60,9 +60,11 @@ pthread_mutex_t lock;
 // DONE rename axis to yaxis (a -> ya)
 // TODO create non candlestick lines
 // TODO create pop up log window
+// TODO write a bit of documentation about the way the indexer works before i forget all of it
 
 
 int sigint_caught = 0;
+LineID lineid = {.lineid=0, .ltype=LTYPE_OHLC};
 
 
 void on_sigint(int signum)
@@ -205,7 +207,7 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l)
     pthread_mutex_lock(&lock);
 
     Groups* groups;
-    if ((groups = index_get_grouped(index, l->lineid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
+    if ((groups = index_get_grouped(index, lineid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         pthread_mutex_unlock(&lock);
         return 0;
     }
@@ -297,12 +299,20 @@ int main(int argc, char **argv)
     if ((index = index_init(NLINES)) == NULL)
         return 0;
 
+
     // start data aggregation thread
-    Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=0, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
+    //LineID lineid = {.lineid=0, .ltype=LTYPE_LINE};
+    //Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=&lineid, .is_stopped=false, .idt=0, .iy=5};
+    //pthread_t threadid;
+    //pthread_create(&threadid, NULL, read_file_thread, &args);
+
     //Args args = {.path="csv/btcusd.csv", .index=index, .lock=&lock, .lineid=0, .is_stopped=false, .idt=0, .iopen=1, .ihigh=2, .ilow=3, .iclose=4};
     //Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
+    //
+    //
+    Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=&lineid, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     pthread_t threadid;
-    pthread_create(&threadid, NULL, read_file_thread, &args);
+    pthread_create(&threadid, NULL, cs_read_file_thread, &args);
 
     init_ui();
     loop(&s, index);
