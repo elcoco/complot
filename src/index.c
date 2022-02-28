@@ -180,6 +180,48 @@ int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount)
     return first_group_i;
 }
 
+Group* group_ohlc_update(Group* g, OHLCBin* lb)
+{
+    if (lb == NULL)
+        return NULL;
+
+    // set initial OHLC data from line in empty group
+    if (g->is_empty) {
+        g->is_empty = false;
+        g->open  = lb->open;
+        g->high  = lb->high;
+        g->low   = lb->low;
+        g->close = lb->close;
+
+    } else {
+        g->close = lb->close;
+
+        if (lb->high > g->high)
+            g->high = lb->high;
+        if (lb->low < g->low)
+            g->low = lb->low;
+    }
+    return g;
+}
+
+Group* group_line_update(Group* g, LineBin* lb)
+{
+    if (lb == NULL)
+        return NULL;
+
+    if (g->is_empty) {
+        g->is_empty = false;
+        g->y  = lb->y;
+    }
+
+    if (lb->y > g->high)
+        g->high = lb->y;
+    if (lb->y < g->low)
+        g->low = lb->y;
+
+    return g;
+}
+
 Groups* index_get_grouped(Index* index, LineID lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
 {
     /* Create groups, get data from last data */
@@ -212,48 +254,10 @@ Groups* index_get_grouped(Index* index, LineID lineid, uint32_t gsize, uint32_t 
 
             Bin* b = bins[gstart+i];
 
-            // TODO needs prettyfying
-
-            if (lineid.ltype == LTYPE_OHLC) {
-                OHLCBin* lb = b->lbins[lineid.lineid];
-
-                if (lb == NULL)
-                    continue;
-
-                // set initial OHLC data from line in empty group
-                if (g->is_empty) {
-                    g->is_empty = false;
-                    g->open  = lb->open;
-                    g->high  = lb->high;
-                    g->low   = lb->low;
-                    g->close = lb->close;
-
-                } else {
-                    g->close = lb->close;
-
-                    if (lb->high > g->high)
-                        g->high = lb->high;
-                    if (lb->low < g->low)
-                        g->low = lb->low;
-                }
-            } else if (lineid.ltype == LTYPE_LINE) {
-                LineBin* lb = b->lbins[lineid.lineid];
-
-                if (lb == NULL)
-                    continue;
-
-                if (g->is_empty) {
-                    g->is_empty = false;
-                    g->y  = lb->y;
-                }
-
-                if (lb->y > g->high)
-                    g->high = lb->y;
-                if (lb->y < g->low)
-                    g->low = lb->y;
-
-
-            }
+            if (lineid.ltype == LTYPE_OHLC)
+                group_ohlc_update(g, b->lbins[lineid.lineid]);
+            else if (lineid.ltype == LTYPE_LINE)
+                group_line_update(g, b->lbins[lineid.lineid]);
         }
         groups_update_limits(groups, g);
     }
@@ -363,13 +367,13 @@ void groups_destroy(Groups* groups)
 void groups_print(Group* g)
 {
     int32_t c = 0;
-    printf("\n%5s %6s %5s %9s %9s %9s %9s\n", "INDEX", "WSTART", "WEND",  "OPEN", "HIGH", "LOW", "CLOSE");
+    printf("\n%5s %6s %5s %9s %9s %9s %9s %9s\n", "INDEX", "WSTART", "WEND",  "Y", "OPEN", "HIGH", "LOW", "CLOSE");
 
     while (g != NULL) {
         if (g->is_empty)
-            printf("%5d %6f %5f %9s %9s %9s %9s\n", c, g->wstart, g->wend, "empty", "empty", "empty", "empty");
+            printf("%5d %6f %5f %9s, %9s %9s %9s %9s\n", c, g->wstart, g->wend, "empty", "empty", "empty", "empty", "empty");
         else
-            printf("%5d %6f %5f %9.9f %9.9f %9.9f %9.9f\n", c, g->wstart, g->wend, g->open, g->high, g->low, g->close);
+            printf("%5d %6f %5f %9.9f, %9.9f %9.9f %9.9f %9.9f\n", c, g->wstart, g->wend, g->y, g->open, g->high, g->low, g->close);
         g = g->next;
         c++;
     }

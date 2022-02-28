@@ -64,7 +64,7 @@ pthread_mutex_t lock;
 
 
 int sigint_caught = 0;
-LineID lineid = {.lineid=0, .ltype=LTYPE_OHLC};
+LineID lineid = {.lineid=0, .ltype=LTYPE_LINE};
 
 
 void on_sigint(int signum)
@@ -302,17 +302,21 @@ int main(int argc, char **argv)
 
     // start data aggregation thread
     //LineID lineid = {.lineid=0, .ltype=LTYPE_LINE};
-    //Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=&lineid, .is_stopped=false, .idt=0, .iy=5};
-    //pthread_t threadid;
-    //pthread_create(&threadid, NULL, read_file_thread, &args);
+    Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=&lineid, .is_stopped=false, .idt=0, .iy=5};
+    pthread_t threadid;
+    pthread_create(&threadid, NULL, read_file_thread, &args);
 
     //Args args = {.path="csv/btcusd.csv", .index=index, .lock=&lock, .lineid=0, .is_stopped=false, .idt=0, .iopen=1, .ihigh=2, .ilow=3, .iclose=4};
     //Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     //
     //
-    Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=&lineid, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
-    pthread_t threadid;
-    pthread_create(&threadid, NULL, cs_read_file_thread, &args);
+    //Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=&lineid, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
+    //thread_t threadid;
+    //thread_create(&threadid, NULL, cs_read_file_thread, &args);
+    //sleep(1000000);
+
+    //Groups* groups = index_get_grouped(index, lineid, s.gsize, 30, 0, 0);
+    //groups_print(groups->group);
 
     init_ui();
     loop(&s, index);

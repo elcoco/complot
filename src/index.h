@@ -222,6 +222,8 @@ int8_t line_add_point(Bin* b, Point* p);
 
 Group* group_init(Index* index, int32_t gstart, uint32_t gsize, Group** gtail);
 void   group_append(Group* g, Group** tail);
+Group* group_ohlc_update(Group* g, OHLCBin* lb);
+Group* group_line_update(Group* g, LineBin* lb);
 
 Groups* groups_init(Index* index, uint32_t lineid);
 void    groups_print(Group* g);
