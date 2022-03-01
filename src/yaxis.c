@@ -113,10 +113,17 @@ void yaxis_draw(Yaxis* a, WINDOW* wtarget, Groups* groups, State* s)
             }
 
             // Highlight last data in tickers
-            if (l->groups->plast != NULL)
-                yaxis_draw_last_data(a, wtarget, s->pany, l->groups->plast->close);
+            if (l->groups->plast != NULL) {
+                if (groups->lineid->ltype == LTYPE_OHLC)
+                    yaxis_draw_last_data(a, wtarget, s->pany, l->groups->plast->close);
+                else if (groups->lineid->ltype == LTYPE_LINE)
+                    yaxis_draw_last_data(a, wtarget, s->pany, l->groups->plast->y);
+            }
 
-            yaxis_draw_candlesticks(a, wtarget, l->groups->group, s->pany);
+            if (groups->lineid->ltype == LTYPE_OHLC)
+                yaxis_draw_candlesticks(a, wtarget, l->groups->group, s->pany);
+            else if (groups->lineid->ltype == LTYPE_LINE)
+                yaxis_draw_line(a, wtarget, l->groups->group, s->pany);
 
             l = l->next;
         }
@@ -141,6 +148,105 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
 
     for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++) {
         add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, LINE_CHR);
+    }
+}
+
+void xinterpolate(InterpolateXY* points, double x0, double y0, double x1, double y1)
+{
+    // calculate grow factor between points: y = xd + y
+    double d = (y1 - y0) / (x1 - x0);
+
+    // calculate how many xs we need to interpolate
+    uint32_t xlen = x1 - x0;
+
+    for (uint32_t x=1, i=0 ; x<xlen ; x++, i++, points++) {
+        points->x = floor(x+x0);
+        points->y = floor((points->x - x0) * d + y0);
+    }
+}
+
+void yinterpolate(WINDOW* wtarget, double x0, double y0, double x1, double y1)
+{
+    int32_t ylen = y1-y0;
+    uint32_t ysize = getmaxy(wtarget);
+
+    // ascending and not above eachother
+    if (ylen > 1) {
+        for (uint32_t y=y0+1 ; y<y1 ; y++)
+            add_str(wtarget, ysize-y-1, x1, CMAGENTA, CS_BLOCK);
+    }
+
+    // decending and not above eachother
+    else if (ylen < -1) {
+        for (uint32_t y=y1+1 ; y<y0 ; y++)
+            add_str(wtarget, ysize-y-1, x1, CRED, CS_BLOCK);
+    }
+}
+
+void interpolate(WINDOW* wtarget, uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1)
+{
+    uint32_t ysize = getmaxy(wtarget);
+    uint32_t npoints = x1-x0-1;
+    InterpolateXY* prevp = &(InterpolateXY) {.x=x0, .y=y0};
+
+    // xinterpolate
+    if (npoints > 0) {
+        InterpolateXY points[npoints];
+        InterpolateXY* p = points;
+
+        xinterpolate(points, x0, y0, x1, y1);
+        for (uint32_t i=0 ; i<npoints ; i++, p++) {
+
+            // draw intermediate points
+            add_str(wtarget, ysize-p->y-1, p->x, CBLUE, CS_BLOCK);
+
+            // draw y interpolated points that are next to eachother
+            yinterpolate(wtarget, prevp->x, prevp->y, p->x, p->y);
+
+            prevp = p;
+
+        }
+    }
+    yinterpolate(wtarget, prevp->x, prevp->y, x1, y1);
+}
+
+void yaxis_draw_line(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
+{
+    /* itter groups and draw them in plot */
+    // start at this xy indices
+    uint32_t ix = 0;
+
+    uint32_t ysize = getmaxy(wtarget);
+    
+    //TODO COLS is not necessarily the width of the parent window!!!!
+    // we have to get more groups from index than we actually need so we need to skip the groups that don't fit in plot
+    uint32_t goffset = COLS - getmaxx(wtarget);
+    while (goffset != 0) {
+        g = g->next;
+        goffset--;
+    }
+
+    int32_t previx = -1;
+    int32_t previy = -1;
+
+    while (g != NULL) {
+        if (! g->is_empty) {
+
+            // map data point from data range to terminal rows range
+            uint32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
+            add_str(wtarget, ysize-iy-1, ix, CGREEN, CS_BLOCK);
+
+            if (previx > 0) {
+                interpolate(wtarget, previx, previy, ix, iy);
+            }
+
+            // y interpolate
+            previx = ix;
+            previy = iy;
+
+        }
+        g = g->next;
+        ix++;
     }
 }
 
@@ -196,7 +302,6 @@ void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffse
     /* itter groups and draw them in plot */
     // start at this xy indices
     uint32_t ix = 0;
-    uint32_t iy = 0;
 
     uint32_t ysize = getmaxy(wtarget);
     
@@ -212,10 +317,10 @@ void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffse
         if (! g->is_empty) {
 
             // map data point from data range to terminal rows range
-            uint32_t iopen  = map(g->open,  a->dmin, a->dmax, iy, ysize-1) + yoffset;
-            uint32_t ihigh  = map(g->high,  a->dmin, a->dmax, iy, ysize-1) + yoffset;
-            uint32_t ilow   = map(g->low,   a->dmin, a->dmax, iy, ysize-1) + yoffset;
-            uint32_t iclose = map(g->close, a->dmin, a->dmax, iy, ysize-1) + yoffset;
+            uint32_t iopen  = map(g->open,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
+            uint32_t ihigh  = map(g->high,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
+            uint32_t ilow   = map(g->low,   a->dmin, a->dmax, 0, ysize-1) + yoffset;
+            uint32_t iclose = map(g->close, a->dmin, a->dmax, 0, ysize-1) + yoffset;
 
             yaxis_draw_candlestick(wtarget, ix, iopen, ihigh, ilow, iclose);
         }

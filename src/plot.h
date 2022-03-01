@@ -15,9 +15,6 @@
 #include "status.h"
 #include "legend.h"
 
-#define CS_BODY "█"
-#define CS_WICK "┃"
-#define EMPTY   " "
 
 #define MIN_WINDOW_XSIZE 10
 #define MIN_WINDOW_YSIZE 10

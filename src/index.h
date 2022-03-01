@@ -91,6 +91,8 @@ struct Groups {
                    
     // last datapoint for this lineid
     Point* plast;
+
+    LineID* lineid; 
 };
 
 /* Container to put normal line points in that is stored in Bin struct.
@@ -210,7 +212,7 @@ void    index_reindex(Index* index);
 int8_t index_insert(Index* index, Point* point);
 
 // get last amount of grouped bins with size gsize
-Groups* index_get_grouped(Index* index, LineID lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
+Groups* index_get_grouped(Index* index, LineID* lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
 
 void   points_print(Point* p);
 Point* point_create_cspoint(Index* index, LineID* lineid, double x, double open, double high, double low, double close);
@@ -225,7 +227,7 @@ void   group_append(Group* g, Group** tail);
 Group* group_ohlc_update(Group* g, OHLCBin* lb);
 Group* group_line_update(Group* g, LineBin* lb);
 
-Groups* groups_init(Index* index, uint32_t lineid);
+Groups* groups_init(Index* index, LineID* lineid);
 void    groups_print(Group* g);
 void    groups_destroy(Groups* groups);
 void    groups_update_limits(Groups* groups, Group* g);

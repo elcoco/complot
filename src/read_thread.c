@@ -6,10 +6,10 @@ void* read_file_thread(void* args)
 
     char buf[BUF_SIZE] = {'\0'};
     char tmpbuf[BUF_SIZE] = {'\0'};
-    uint32_t xsteps = 5;
+    //uint32_t xsteps = 5;
 
     // x incrementer, must be a converted datetime but for now this will do
-    double ix = 0;
+    //double ix = 0;
     FILE* fp = fopen(a->path, "r");
 
     while (fgets(buf, sizeof(buf), fp) != NULL && !a->is_stopped) {
@@ -17,7 +17,7 @@ void* read_file_thread(void* args)
         if (buf[strlen(buf)-1] == '\n') {
             char* spos = buf;
             int c = 0;
-            double y;
+            double x,y;
 
             while (fast_forward(&spos, ",\n", NULL, NULL, tmpbuf)) {
 
@@ -29,6 +29,8 @@ void* read_file_thread(void* args)
                 // NOTE atof failes on unicode!!!!
                 if (c == a->iy)
                     y = atof(tmpbuf);
+                if (c == a->idt)
+                    x = atof(tmpbuf);
 
                 spos++;
                 c++;
@@ -36,16 +38,16 @@ void* read_file_thread(void* args)
             }
 
             pthread_mutex_lock(a->lock);
-            point_create_point(a->index, a->lineid, ix, y);
+            point_create_point(a->index, a->lineid, x, y);
             pthread_mutex_unlock(a->lock);
 
         } else {
             printf("too long!!! %lu: %s\n", strlen(buf), buf);
         }
 
-        ix+=xsteps;
+        //ix+=xsteps;
 
-        usleep(100000);
+        usleep(500000);
     }
     return NULL;
 }

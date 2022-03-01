@@ -15,6 +15,10 @@
 #include "ui.h"
 
 #define LINE_CHR "─"
+#define CS_BODY "█"
+#define CS_WICK "┃"
+#define EMPTY   " "
+#define CS_BLOCK "█"
 
 typedef struct Yaxis Yaxis;
 
@@ -25,6 +29,11 @@ typedef enum AxisSide {
     AXIS_LEFT,
     AXIS_RIGHT
 } AxisSide;
+
+typedef struct InterpolateXY {
+    uint32_t x;
+    uint32_t y;
+} InterpolateXY;
 
 struct Yaxis {
     WINDOW* parent;
@@ -63,6 +72,7 @@ struct Yaxis {
 Yaxis* yaxis_init(WINDOW* parent, AxisSide side);
 void yaxis_destroy(Yaxis* a);
 void yaxis_draw(Yaxis* a, WINDOW* wtarget, Groups* groups, State* s);
+void yaxis_draw_line(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
 void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
 void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
 void yaxis_draw_tickers(Yaxis* a, int32_t yoffset);

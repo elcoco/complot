@@ -212,6 +212,8 @@ Group* group_line_update(Group* g, LineBin* lb)
     if (g->is_empty) {
         g->is_empty = false;
         g->y  = lb->y;
+        g->high = lb->y;
+        g->low = lb->y;
     }
 
     if (lb->y > g->high)
@@ -222,14 +224,14 @@ Group* group_line_update(Group* g, LineBin* lb)
     return g;
 }
 
-Groups* index_get_grouped(Index* index, LineID lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
+Groups* index_get_grouped(Index* index, LineID* lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
 {
     /* Create groups, get data from last data */
     // calculate at which bin index the first group starts
     int32_t gstart = index_get_gstart(index, gsize, amount) + (x_offset*gsize);
 
     Bin** bins = index->bins;
-    Groups* groups = groups_init(index, lineid.lineid);
+    Groups* groups = groups_init(index, lineid);
 
     // setup linked list
     Group* htmp = NULL;
@@ -254,10 +256,10 @@ Groups* index_get_grouped(Index* index, LineID lineid, uint32_t gsize, uint32_t 
 
             Bin* b = bins[gstart+i];
 
-            if (lineid.ltype == LTYPE_OHLC)
-                group_ohlc_update(g, b->lbins[lineid.lineid]);
-            else if (lineid.ltype == LTYPE_LINE)
-                group_line_update(g, b->lbins[lineid.lineid]);
+            if (lineid->ltype == LTYPE_OHLC)
+                group_ohlc_update(g, b->lbins[lineid->lineid]);
+            else if (lineid->ltype == LTYPE_LINE)
+                group_line_update(g, b->lbins[lineid->lineid]);
         }
         groups_update_limits(groups, g);
     }
@@ -341,14 +343,15 @@ void groups_update_limits(Groups* groups, Group* g)
     }
 }
 
-Groups* groups_init(Index* index, uint32_t lineid)
+Groups* groups_init(Index* index, LineID* lineid)
 {
     // create groups container
     Groups* groups = (Groups*)malloc(sizeof(Groups));
     groups->is_empty = true;
     groups->dmin = index->dmin;
     groups->dmax = index->dmax;
-    groups->plast = index_get_last_point(index, lineid);
+    groups->plast = index_get_last_point(index, lineid->lineid);
+    groups->lineid = lineid;
     return groups;
 }
 

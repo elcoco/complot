@@ -207,7 +207,7 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l)
     pthread_mutex_lock(&lock);
 
     Groups* groups;
-    if ((groups = index_get_grouped(index, lineid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
+    if ((groups = index_get_grouped(index, &lineid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         pthread_mutex_unlock(&lock);
         return 0;
     }
@@ -302,7 +302,8 @@ int main(int argc, char **argv)
 
     // start data aggregation thread
     //LineID lineid = {.lineid=0, .ltype=LTYPE_LINE};
-    Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=&lineid, .is_stopped=false, .idt=0, .iy=5};
+    Args args = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=&lineid, .is_stopped=false, .idt=0, .iy=5};
+    //Args args = {.path="csv/XMRBTC_1m.csv", .index=index, .lock=&lock, .lineid=&lineid, .is_stopped=false, .idt=0, .iy=5};
     pthread_t threadid;
     pthread_create(&threadid, NULL, read_file_thread, &args);
 
