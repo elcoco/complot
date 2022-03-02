@@ -12,7 +12,7 @@ Index* index_init(uint8_t nlines)
     *(index->ptail) = NULL;
 
     // data distance inbetween aray indices
-    index->spread = INDEX_DEFAULT_SPREAD;
+    index->spread = -1;
 
     index->grow_amount = INDEX_DEFAULT_GROW_AMOUNT;
     index->isize = INDEX_DEFAULT_GROW_AMOUNT;
@@ -110,10 +110,12 @@ void index_reindex(Index* index)
     /* After updating spread, recreate all bins from points linked list. */
     //printf("Reindexing index with spread: %f\n", index->spread);
 
-    // destroy old bins
-    for (int i=0 ; i<index->isize ; i++)
-        bin_destroy(*(index->bins+i), index);
-    free(index->bins);
+    if (index->is_initialized) {
+        // destroy old bins
+        for (int i=0 ; i<index->isize ; i++)
+            bin_destroy(*(index->bins+i), index);
+        free(index->bins);
+    }
 
     // create new bins
     index->bins = (Bin**)malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
@@ -129,17 +131,25 @@ void index_reindex(Index* index)
 int8_t index_insert(Index* index, Point* p)
 {
     /* Insert point into index, extend bins array if necessary */
+    if (index->spread < 0)
+        return 0;
 
     // first insert determines the index start x
     if (! index->is_initialized) {
-        index->dmin = p->low;
-        index->dmax = p->high;
+        if (p->ltype == LTYPE_OHLC) {
+            index->dmin = p->low;
+            index->dmax = p->high;
+        } else if (p->ltype == LTYPE_LINE) {
+            index->dmin = p->y;
+            index->dmax = p->y;
+        }
         index_build(index);
         index->xmin = p->x;
     }
 
     // map x to index->bins array index
     int32_t ix = index_map_to_index(index, p->x);
+    //return (x - index->xmin) / index->spread;
 
     // check if index is too smoll to hold data
     if (ix > index->isize-1) {
@@ -147,7 +157,13 @@ int8_t index_insert(Index* index, Point* p)
             return -1;
 
     } else if (ix < 0) {
-        printf("Out of bounds, grow to left not implemented... %d, %f, %f\n", ix, p->x, p->open);
+        printf("Out of bounds, grow to left not implemented...\n");
+        printf("ix   = %d\n", ix);
+        printf("x    = %f\n", p->x);
+        printf("y    = %f\n", p->y);
+        printf("open = %f\n", p->open);
+        printf("xmin = %f\n", index->xmin);
+        printf("spread = %f\n", index->spread);
         return -1;
     }
 
@@ -312,6 +328,13 @@ Group* group_init(Index* index, int32_t gstart, uint32_t gsize, Group** gtail)
     if (*gtail != NULL)
         group_append(g, gtail);
 
+    //// init line container
+    //g->lbins = malloc(index->nlines*sizeof(void*));
+
+    //// init void pointer array that will be casted to the appropriate type later
+    //for (int i=0 ; i<index->nlines ; i++)
+    //    g->lbins[i] = NULL;
+
     return g;
 }
 
@@ -400,10 +423,8 @@ Bin* bin_create(Index* index, uint32_t i)
 
     // init void pointer array that will be casted to the appropriate type later
     void** vlb = b->lbins;
-    for (int i=0 ; i<index->nlines ; i++,vlb++) {
-        *vlb = malloc(sizeof(void));
+    for (int i=0 ; i<index->nlines ; i++,vlb++)
         *vlb = NULL;
-    }
     return b;
 }
 
@@ -450,9 +471,11 @@ Point* point_create_cspoint(Index* index, LineID* lineid, double x, double open,
     p->lineid = lineid;
 
     // about to insert second point, we can calculate the spread now and reindex
-    if (index->npoints == 2) {
-        index->spread = p->x - (*index->phead)->x;
-        index_reindex(index);
+    if (index->npoints > 1 && index->spread == -1) {
+        if (p->x - (*index->phead)->x > 0) {
+            index->spread = p->x - (*index->phead)->x;
+            index_reindex(index);
+        }
     }
     index_insert(index, p);
     return p;
@@ -466,9 +489,11 @@ Point* point_create_point(Index* index, LineID* lineid, double x, double y)
     p->lineid = lineid;
 
     // about to insert second point, we can calculate the spread now and reindex
-    if (index->npoints == 2) {
-        index->spread = p->x - (*index->phead)->x;
-        index_reindex(index);
+    if (index->npoints > 1 && index->spread == -1) {
+        if (p->x - (*index->phead)->x > 0) {
+            index->spread = p->x - (*index->phead)->x;
+            index_reindex(index);
+        }
     }
     index_insert(index, p);
     return p;

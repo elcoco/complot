@@ -95,9 +95,8 @@ int8_t yaxis_set_window_width(Yaxis* a)
     return 0;
 }
 
-void yaxis_draw(Yaxis* a, WINDOW* wtarget, Groups* groups, State* s)
+void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s)
 {
-    // TODO wtarget should be in axis struct
     /* Draw all lines in this axis into Plot */
 
     // draw y axis tickers
@@ -111,19 +110,21 @@ void yaxis_draw(Yaxis* a, WINDOW* wtarget, Groups* groups, State* s)
                 l = l->next;
                 continue;
             }
+            Groups* groups = l->groups;
 
             // Highlight last data in tickers
-            if (l->groups->plast != NULL) {
+            if (groups->plast != NULL) {
+            
                 if (groups->lineid->ltype == LTYPE_OHLC)
-                    yaxis_draw_last_data(a, wtarget, s->pany, l->groups->plast->close);
+                    yaxis_draw_last_data(a, wtarget, s->pany, groups->plast->close);
                 else if (groups->lineid->ltype == LTYPE_LINE)
-                    yaxis_draw_last_data(a, wtarget, s->pany, l->groups->plast->y);
+                    yaxis_draw_last_data(a, wtarget, s->pany, groups->plast->y);
             }
 
             if (groups->lineid->ltype == LTYPE_OHLC)
-                yaxis_draw_candlesticks(a, wtarget, l->groups->group, s->pany);
+                yaxis_draw_candlesticks(a, wtarget, groups->group, s->pany);
             else if (groups->lineid->ltype == LTYPE_LINE)
-                yaxis_draw_line(a, wtarget, l->groups->group, s->pany);
+                yaxis_draw_line(a, wtarget, groups->group, s->pany);
 
             l = l->next;
         }
@@ -151,6 +152,12 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
     }
 }
 
+bool y_is_in_view(WINDOW* win, uint32_t iy)
+{
+    /* check if y fits in window matrix */
+    return (iy >= 0 && iy < getmaxy(win));
+}
+
 void xinterpolate(InterpolateXY* points, double x0, double y0, double x1, double y1)
 {
     // calculate grow factor between points: y = xd + y
@@ -165,48 +172,52 @@ void xinterpolate(InterpolateXY* points, double x0, double y0, double x1, double
     }
 }
 
-void yinterpolate(WINDOW* wtarget, double x0, double y0, double x1, double y1)
+void yinterpolate(WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     int32_t ylen = y1-y0;
     uint32_t ysize = getmaxy(wtarget);
 
     // ascending and not above eachother
     if (ylen > 1) {
-        for (uint32_t y=y0+1 ; y<y1 ; y++)
-            add_str(wtarget, ysize-y-1, x1, CMAGENTA, CS_BLOCK);
+        for (int32_t y=y0+1 ; y<y1 ; y++) {
+            if (y_is_in_view(wtarget, ysize-y-1))
+                add_str(wtarget, ysize-y-1, x1, CMAGENTA, CS_BLOCK);
+        }
     }
 
     // decending and not above eachother
     else if (ylen < -1) {
-        for (uint32_t y=y1+1 ; y<y0 ; y++)
-            add_str(wtarget, ysize-y-1, x1, CRED, CS_BLOCK);
+        for (int32_t y=y1+1 ; y<y0 ; y++) {
+            if (y_is_in_view(wtarget, ysize-y-1))
+                add_str(wtarget, ysize-y-1, x1, CRED, CS_BLOCK);
+        }
     }
 }
 
-void interpolate(WINDOW* wtarget, uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1)
+void interpolate(WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     uint32_t ysize = getmaxy(wtarget);
     uint32_t npoints = x1-x0-1;
     InterpolateXY* prevp = &(InterpolateXY) {.x=x0, .y=y0};
 
-    // xinterpolate
     if (npoints > 0) {
         InterpolateXY points[npoints];
         InterpolateXY* p = points;
-
         xinterpolate(points, x0, y0, x1, y1);
-        for (uint32_t i=0 ; i<npoints ; i++, p++) {
+
+        for (int32_t i=0 ; i<npoints ; i++, p++) {
 
             // draw intermediate points
-            add_str(wtarget, ysize-p->y-1, p->x, CBLUE, CS_BLOCK);
+            if (y_is_in_view(wtarget, ysize-p->y-1))
+                add_str(wtarget, ysize-p->y-1, p->x, CBLUE, CS_BLOCK);
 
             // draw y interpolated points that are next to eachother
             yinterpolate(wtarget, prevp->x, prevp->y, p->x, p->y);
 
             prevp = p;
-
         }
     }
+    // interpolate from last intermediate point up to x1/y1
     yinterpolate(wtarget, prevp->x, prevp->y, x1, y1);
 }
 
@@ -233,14 +244,13 @@ void yaxis_draw_line(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
         if (! g->is_empty) {
 
             // map data point from data range to terminal rows range
-            uint32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
-            add_str(wtarget, ysize-iy-1, ix, CGREEN, CS_BLOCK);
+            int32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
+            if (y_is_in_view(wtarget, ysize-iy-1))
+                add_str(wtarget, ysize-iy-1, ix, CGREEN, CS_BLOCK);
 
-            if (previx > 0) {
+            if (previx > 0)
                 interpolate(wtarget, previx, previy, ix, iy);
-            }
 
-            // y interpolate
             previx = ix;
             previy = iy;
 

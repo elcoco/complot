@@ -71,7 +71,7 @@ struct Yaxis {
 
 Yaxis* yaxis_init(WINDOW* parent, AxisSide side);
 void yaxis_destroy(Yaxis* a);
-void yaxis_draw(Yaxis* a, WINDOW* wtarget, Groups* groups, State* s);
+void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s);
 void yaxis_draw_line(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
 void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
 void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);

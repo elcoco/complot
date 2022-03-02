@@ -58,24 +58,16 @@ void* cs_read_file_thread(void* args)
 
     char buf[BUF_SIZE] = {'\0'};
     char tmpbuf[BUF_SIZE] = {'\0'};
-    uint32_t xsteps = 5;
 
     // x incrementer, must be a converted datetime but for now this will do
-    double ix = 0;
     FILE* fp = fopen(a->path, "r");
 
     while (fgets(buf, sizeof(buf), fp) != NULL && !a->is_stopped) {
-        // skip first line
-        //if (ix == 0) {
-        //    ix+=xsteps;
-        //    continue;
-        //}
 
         if (buf[strlen(buf)-1] == '\n') {
             char* spos = buf;
             int c = 0;
-            double open, high, low, close;
-            //double dt, open, high, low, close;
+            double dt, open, high, low, close;
 
             while (fast_forward(&spos, ",\n", NULL, NULL, tmpbuf)) {
 
@@ -93,8 +85,8 @@ void* cs_read_file_thread(void* args)
                     low = atof(tmpbuf);
                 else if (c == a->iclose)
                     close = atof(tmpbuf);
-                //else if (c == a->idt)
-                //    dt = atof(tmpbuf);
+                else if (c == a->idt)
+                    dt = atof(tmpbuf);
 
                 spos++;
                 c++;
@@ -102,17 +94,16 @@ void* cs_read_file_thread(void* args)
             }
 
             pthread_mutex_lock(a->lock);
-            point_create_cspoint(a->index, a->lineid, ix, open, high, low, close);
-            //point_create(a->index, a->lineid, dt, open, high, low, close);
+            //printf("dt: %f\n", dt);
+            point_create_cspoint(a->index, a->lineid, dt, open, high, low, close);
             pthread_mutex_unlock(a->lock);
 
         } else {
             printf("too long!!! %lu: %s\n", strlen(buf), buf);
         }
 
-        ix+=xsteps;
 
-        usleep(100000);
+        usleep(500000);
     }
     return NULL;
 }

@@ -16,7 +16,7 @@ uint16_t get_rand(uint16_t lower, uint16_t upper)
     return (rand() % (upper - lower + 1)) + lower;
 }
 
-uint32_t map(double value, double in_min, double in_max, uint32_t out_min, uint32_t out_max)
+int32_t map(double value, double in_min, double in_max, uint32_t out_min, uint32_t out_max)
 {
     return round((value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
 }
