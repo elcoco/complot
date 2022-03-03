@@ -20,35 +20,48 @@ void line_destroy(Line* l)
     free(l);
 }
 
-int8_t line_set_data(Line* l, Groups* groups)
+int8_t line_set_data(Line* l, GroupContainer* gc)
 {
     /* Set new data in line, update axis data dimensions */
+
+    static int i = 0;
+    i++;
 
     // Error if line is not part of an axis
     if (l->axis == NULL)
         return -1;
 
-    l->groups = groups;
+    if (gc == NULL)
+        return 0;
+        //return -1;
+
+    if (gc->is_empty)
+        return 0;
+
+    l->groups = gc;
 
     Yaxis* a = l->axis;
+    //add_str(stdscr, 50, 0, 4, "min/max: %f - %f", a->vdmin, a->vdmax);
+    //if (gc->dmin == 0)
+    //    printf("min/max: %f - %f\n", a->dmin, a->dmax);
 
     // set/update axis dimensions
     if (a->is_empty) {
         a->is_empty = false;
-        a->tdmin = groups->dmin;
-        a->tdmax = groups->dmax;
-        a->vdmin = groups->gmin;
-        a->vdmax = groups->gmax;
+        a->tdmin = gc->dmin;
+        a->tdmax = gc->dmax;
+        a->vdmin = gc->gmin;
+        a->vdmax = gc->gmax;
     } else {
-        if (groups->dmin < a->tdmin)
-            a->tdmin = groups->dmin;
-        if (groups->dmax > a->tdmax)
-            a->tdmax = groups->dmax;
+        if (gc->dmin < a->tdmin)
+            a->tdmin = gc->dmin;
+        if (gc->dmax > a->tdmax)
+            a->tdmax = gc->dmax;
 
-        if (groups->gmin < a->vdmin)
-            a->vdmin = groups->gmin;
-        if (groups->gmax > a->vdmax)
-            a->vdmax = groups->gmax;
+        if (gc->gmin < a->vdmin)
+            a->vdmin = gc->gmin;
+        if (gc->gmax > a->vdmax)
+            a->vdmax = gc->gmax;
     }
     return 0;
 }

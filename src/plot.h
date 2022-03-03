@@ -68,7 +68,8 @@ struct Plot {
 
 Plot*  plot_init(WINDOW* parent);
 void   plot_destroy(Plot* pl);
-void   plot_draw(Plot* pl, Groups* groups, State* s);
+//void   plot_draw(Plot* pl, GroupContainer* groups, State* s);
+void plot_draw(Plot* pl, Groups* groups, State* s);
 int8_t plot_resize(Plot* pl);
 void   plot_draw_xaxis(Plot* pl, Group* g);
 

@@ -18,6 +18,11 @@ Index* index_init(uint8_t nlines)
     index->isize = INDEX_DEFAULT_GROW_AMOUNT;
     index->nlines = nlines;
 
+    // initialize all lineid structs with NULL pointers
+    index->lineids = malloc(index->nlines * sizeof(LineID*));
+    for (int i=0 ; i<index->nlines ; i++)
+        index->lineids[i] = NULL;
+
     index->ilast = 0;
     index->has_new_data = false;
     index->is_initialized = false;
@@ -72,12 +77,12 @@ int8_t index_extend(Index* index)
     return 1;
 }
 
-Point* index_get_last_point(Index* index, uint32_t lineid)
+Point* index_get_last_point(Index* index, LineID* lineid)
 {
     /* Get last datapoint for a specific lineid */
     Point* p = *(index->ptail);
     while (p != NULL) {
-        if (p->lineid->lineid == lineid)
+        if (p->lineid->lineid == lineid->lineid)
             return p;
         p = p->prev;
     }
@@ -196,106 +201,12 @@ int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount)
     return first_group_i;
 }
 
-Group* group_ohlc_update(Group* g, OHLCBin* lb)
-{
-    if (lb == NULL)
-        return NULL;
-
-    // set initial OHLC data from line in empty group
-    if (g->is_empty) {
-        g->is_empty = false;
-        g->open  = lb->open;
-        g->high  = lb->high;
-        g->low   = lb->low;
-        g->close = lb->close;
-
-    } else {
-        g->close = lb->close;
-
-        if (lb->high > g->high)
-            g->high = lb->high;
-        if (lb->low < g->low)
-            g->low = lb->low;
-    }
-    return g;
-}
-
-Group* group_line_update(Group* g, LineBin* lb)
-{
-    if (lb == NULL)
-        return NULL;
-
-    if (g->is_empty) {
-        g->is_empty = false;
-        g->y  = lb->y;
-        g->high = lb->y;
-        g->low = lb->y;
-    }
-
-    if (lb->y > g->high)
-        g->high = lb->y;
-    if (lb->y < g->low)
-        g->low = lb->y;
-
-    return g;
-}
-
-Groups* index_get_grouped(Index* index, LineID* lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
-{
-    /* Create groups, get data from last data */
-    // calculate at which bin index the first group starts
-    int32_t gstart = index_get_gstart(index, gsize, amount) + (x_offset*gsize);
-
-    Bin** bins = index->bins;
-    Groups* groups = groups_init(index, lineid);
-
-    // setup linked list
-    Group* htmp = NULL;
-    Group* ttmp = NULL;
-    Group** ghead = &htmp;
-    Group** gtail = &ttmp;
-
-    for (int32_t gindex=0 ; gindex<amount ; gindex++, gstart+=gsize) {
-        Group* g = group_init(index, gstart, gsize, gtail);
-
-        if (*ghead == NULL) {
-            *ghead = g;
-            *gtail = g;
-        }
-
-        // set OHLC values from lbins in group
-        for (int i=0 ; i<gsize ; i++) {
-
-            // Check if we're trying to access a group beyond index boundaries
-            if (gstart < 0 || gstart+i >= index->isize-1)
-                break;
-
-            Bin* b = bins[gstart+i];
-
-            if (lineid->ltype == LTYPE_OHLC)
-                group_ohlc_update(g, b->lbins[lineid->lineid]);
-            else if (lineid->ltype == LTYPE_LINE)
-                group_line_update(g, b->lbins[lineid->lineid]);
-        }
-        groups_update_limits(groups, g);
-    }
-    groups->group = *ghead;
-    return groups;
-}
-
-bool index_has_new_data(Index* index)
-{
-    bool state = index->has_new_data;
-    index->has_new_data = false;
-    return state;
-}
-
 /*
 void index_print(Index* index)
 {
     for (int i=0 ; i<index->isize ; i++) {
         Bin* b = index->bins[i];
-        OHLCBin* lb = b->cslines[0];
+        OHLCContainer* lb = b->cslines[0];
 
         if (b->is_empty)
             continue;
@@ -311,99 +222,6 @@ void index_print(Index* index)
     }
 }
 */
-
-Group* group_init(Index* index, int32_t gstart, uint32_t gsize, Group** gtail)
-{
-    Group* g = (Group*)malloc(sizeof(Group));
-    g->wstart = index_map_to_x(index, gstart);
-    g->wend   = index_map_to_x(index, gstart + gsize);
-    g->is_empty = true;
-    g->next = NULL;
-
-    // Set unique constant id for this group.
-    // This is used to keep x tickers in the right spot.
-    g->id = gstart / gsize;
-
-    // connect new group to linked list
-    if (*gtail != NULL)
-        group_append(g, gtail);
-
-    //// init line container
-    //g->lbins = malloc(index->nlines*sizeof(void*));
-
-    //// init void pointer array that will be casted to the appropriate type later
-    //for (int i=0 ; i<index->nlines ; i++)
-    //    g->lbins[i] = NULL;
-
-    return g;
-}
-
-void group_append(Group* g, Group** tail)
-{
-    /* Append point in linked list */
-    Group* prev = *tail;
-    *tail = g;
-    prev->next = g;
-    g->prev = prev;
-}
-
-void groups_update_limits(Groups* groups, Group* g)
-{
-    /* Update Groups data limits from Group struct */
-
-    // set initial data dimensions in groups container
-    if (groups->is_empty && !g->is_empty) {
-        groups->is_empty = false;
-        groups->gmin = g->low;
-        groups->gmax = g->high;
-    }
-    // set data dimensions in groups container
-    else if (!groups->is_empty && !g->is_empty) {
-        if (g->high > groups->gmax)
-            groups->gmax = g->high;
-        if (g->low < groups->gmin)
-            groups->gmin = g->low;
-    }
-}
-
-Groups* groups_init(Index* index, LineID* lineid)
-{
-    // create groups container
-    Groups* groups = (Groups*)malloc(sizeof(Groups));
-    groups->is_empty = true;
-    groups->dmin = index->dmin;
-    groups->dmax = index->dmax;
-    groups->plast = index_get_last_point(index, lineid->lineid);
-    groups->lineid = lineid;
-    return groups;
-}
-
-void groups_destroy(Groups* groups)
-{
-    Group* g = groups->group;
-    Group* prev;
-    while (g != NULL) {
-        prev = g;
-        g = g->next;
-        free(prev);
-    }
-    free(groups);
-}
-
-void groups_print(Group* g)
-{
-    int32_t c = 0;
-    printf("\n%5s %6s %5s %9s %9s %9s %9s %9s\n", "INDEX", "WSTART", "WEND",  "Y", "OPEN", "HIGH", "LOW", "CLOSE");
-
-    while (g != NULL) {
-        if (g->is_empty)
-            printf("%5d %6f %5f %9s, %9s %9s %9s %9s\n", c, g->wstart, g->wend, "empty", "empty", "empty", "empty", "empty");
-        else
-            printf("%5d %6f %5f %9.9f, %9.9f %9.9f %9.9f %9.9f\n", c, g->wstart, g->wend, g->y, g->open, g->high, g->low, g->close);
-        g = g->next;
-        c++;
-    }
-}
 
 Bin* bin_create(Index* index, uint32_t i)
 {
@@ -470,6 +288,9 @@ Point* point_create_cspoint(Index* index, LineID* lineid, double x, double open,
     p->close = close;
     p->lineid = lineid;
 
+    if (index->lineids[lineid->lineid] == NULL)
+        index->lineids[lineid->lineid] = lineid;
+
     // about to insert second point, we can calculate the spread now and reindex
     if (index->npoints > 1 && index->spread == -1) {
         if (p->x - (*index->phead)->x > 0) {
@@ -487,6 +308,9 @@ Point* point_create_point(Index* index, LineID* lineid, double x, double y)
     p->x = x;
     p->y = y;
     p->lineid = lineid;
+
+    if (index->lineids[lineid->lineid] == NULL)
+        index->lineids[lineid->lineid] = lineid;
 
     // about to insert second point, we can calculate the spread now and reindex
     if (index->npoints > 1 && index->spread == -1) {
@@ -516,12 +340,13 @@ void point_append(Point* p, Point** tail)
     Point* prev = *tail;
     *tail = p;
     prev->next = p;
+    p->prev = prev;
 }
 
-void line_add_ohlc_point(OHLCBin** lb, Point* p)
+void line_add_ohlc_point(OHLCContainer** lb, Point* p)
 {
     if (*lb == NULL) {
-        *lb = malloc(sizeof(OHLCBin));
+        *lb = malloc(sizeof(OHLCContainer));
         (*lb)->is_empty = true;
     }
 
@@ -556,11 +381,11 @@ void line_add_ohlc_point(OHLCBin** lb, Point* p)
         (*lb)->low = p->low;
 }
 
-void line_add_line_point(LineBin** lb, Point* p)
+void line_add_line_point(LineContainer** lb, Point* p)
 {
     // initialize linebin if not yet created
     if (*lb == NULL) {
-        *lb = malloc(sizeof(LineBin));
+        *lb = malloc(sizeof(LineContainer));
         (*lb)->is_empty = true;
     }
 
@@ -581,11 +406,11 @@ int8_t line_add_point(Bin* b, Point* p)
 {
     // find the right linebin to insert the point in
     if (p->lineid->ltype == LTYPE_OHLC) {
-        OHLCBin** lb = &(b->lbins[p->lineid->lineid]);
+        OHLCContainer** lb = &(b->lbins[p->lineid->lineid]);
         line_add_ohlc_point(lb, p);
     }
     else if (p->lineid->ltype == LTYPE_LINE) {
-        LineBin** lb = &(b->lbins[p->lineid->lineid]);
+        LineContainer** lb = &(b->lbins[p->lineid->lineid]);
         line_add_line_point(lb, p);
     }
     else

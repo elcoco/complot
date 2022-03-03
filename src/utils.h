@@ -59,4 +59,6 @@ void draw_border(WINDOW* w);
 void fill_win(WINDOW* w, char c);
 Group* fast_forward_groups(Group* g, uint32_t amount);
 
+void debug(char* fmt, ...);
+
 #endif

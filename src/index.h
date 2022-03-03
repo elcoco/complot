@@ -8,18 +8,22 @@
 #include <math.h>
 #include <pthread.h>
 
+#include "index_groups.h"
+
 
 #define INDEX_DEFAULT_GROW_AMOUNT 2000
 #define INDEX_DEFAULT_SPREAD 5
 
-typedef struct Group Group;
-typedef struct Groups Groups;
 typedef struct Bin Bin;
 typedef struct Index Index;
 typedef struct Point Point;
-typedef struct LineBin LineBin;
-typedef struct OHLCBin OHLCBin;
+typedef struct LineContainer LineContainer;
+typedef struct OHLCContainer OHLCContainer;
 typedef struct LineID LineID;
+
+// forward declare
+typedef struct Group Group;
+typedef struct Groups Groups;
 
 typedef enum LType LType;
 enum LType {
@@ -50,56 +54,9 @@ struct Point {
     LType ltype;
 };
 
-/* A Group is a slice of the bins array from the Index.
- * It represents a column on the display. */
-struct Group {
-    //Bin** bins;
-    double wstart;
-    double wend;
-
-    double y;
-    double open;
-    double high;
-    double low;
-    double close;
-    bool is_empty;
-
-    // iter groups using linked list
-    Group* next;
-    Group* prev;
-
-    // group id, is used to let x tickers follow candles
-    uint32_t id;
-    
-    void** lbins;
-};
-
-/* Container returned from index_get_grouped().
- * Contains Group linked list and data limit information. */
-struct Groups {
-    // linked list of groups
-    Group* group;
-
-    // data limits for all data in index
-    double dmin;
-    double dmax;
-
-    // data limits for this group
-    double gmin;
-    double gmax;
-
-    // indicate if groups has any data in it or just empty groups
-    bool is_empty; 
-                   
-    // last datapoint for this lineid
-    Point* plast;
-
-    LineID* lineid; 
-};
-
-/* Container to put normal line points in that is stored in Bin struct.
+/* Container to put normal line points in that is stored in Bin or Group struct.
  * This enables for quick filtering of points per line. */
-struct LineBin {
+struct LineContainer {
     // holds averages of points in line
     double y;
     bool is_empty;
@@ -108,9 +65,9 @@ struct LineBin {
     int32_t npoints;
 };
 
-/* Container to put candlestick points in that is stored in Bin struct.
+/* Container to put candlestick points in that is stored in Bin or Group struct.
  * This enables for quick filtering of points per line. */
-struct OHLCBin {
+struct OHLCContainer {
     // holds averages of points in line
     double open;
     double high;
@@ -138,8 +95,7 @@ struct Bin {
 
     // Holds the line containers that hold data per line
     // Array is indexed by lineid
-    //LineBin** lines;
-    //OHLCBin** cslines;
+    // Type can be a LineContainer or an OHLCContainer
     void** lbins;
 
     bool is_empty;
@@ -175,8 +131,9 @@ struct Index {
     // current index size
     int32_t isize;
 
-    // amount of lines this index represents
+    // keep track of the linetypes in index
     uint8_t nlines;
+    LineID** lineids;
 
     // amount of points in index
     uint32_t npoints;
@@ -204,7 +161,7 @@ double  index_map_to_x(Index* index, int32_t i);
 int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount);
 void    index_print(Index* index);
 bool    index_has_new_data(Index* index);
-Point*  index_get_last_point(Index* index, uint32_t lineid);
+Point* index_get_last_point(Index* index, LineID* lineid);
 
 // Reindex is done when the index spread changes, All bins are regenerated with a different window.
 void    index_reindex(Index* index);
@@ -213,9 +170,6 @@ void    index_reindex(Index* index);
 // line_id is the array index for line, is mapped by ENUM
 int8_t index_insert(Index* index, Point* point);
 
-// get last amount of grouped bins with size gsize
-Groups* index_get_grouped(Index* index, LineID* lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
-
 void   points_print(Point* p);
 Point* point_create_cspoint(Index* index, LineID* lineid, double x, double open, double high, double low, double close);
 Point* point_create_point(Index* index, LineID* lineid, double x, double y);
@@ -223,16 +177,6 @@ void   point_append(Point* p, Point** tail);
 void   point_print(Point* p);
 
 int8_t line_add_point(Bin* b, Point* p);
-
-Group* group_init(Index* index, int32_t gstart, uint32_t gsize, Group** gtail);
-void   group_append(Group* g, Group** tail);
-Group* group_ohlc_update(Group* g, OHLCBin* lb);
-Group* group_line_update(Group* g, LineBin* lb);
-
-Groups* groups_init(Index* index, LineID* lineid);
-void    groups_print(Group* g);
-void    groups_destroy(Groups* groups);
-void    groups_update_limits(Groups* groups, Group* g);
 
 Bin* bin_create(Index* index, uint32_t i);
 void bin_destroy(Bin* b, Index* index);

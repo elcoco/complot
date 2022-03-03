@@ -106,25 +106,27 @@ void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s)
         Line* l = a->line;
         while (l != NULL) {
 
-            if (l->groups == NULL) {
+            GroupContainer* gc = l->groups;
+
+            if (gc == NULL) {
                 l = l->next;
                 continue;
             }
-            Groups* groups = l->groups;
+
+            debug("Got gc for: %d\n", l->lineid);
 
             // Highlight last data in tickers
-            if (groups->plast != NULL) {
-            
-                if (groups->lineid->ltype == LTYPE_OHLC)
-                    yaxis_draw_last_data(a, wtarget, s->pany, groups->plast->close);
-                else if (groups->lineid->ltype == LTYPE_LINE)
-                    yaxis_draw_last_data(a, wtarget, s->pany, groups->plast->y);
+            if (gc->plast != NULL) {
+                if (gc->lineid->ltype == LTYPE_OHLC)
+                    yaxis_draw_last_data(a, wtarget, s->pany, gc->plast->close);
+                else if (gc->lineid->ltype == LTYPE_LINE)
+                    yaxis_draw_last_data(a, wtarget, s->pany, gc->plast->y);
             }
 
-            if (groups->lineid->ltype == LTYPE_OHLC)
-                yaxis_draw_candlesticks(a, wtarget, groups->group, s->pany);
-            else if (groups->lineid->ltype == LTYPE_LINE)
-                yaxis_draw_line(a, wtarget, groups->group, s->pany);
+            if (gc->lineid->ltype == LTYPE_OHLC)
+                yaxis_draw_candlesticks(a, wtarget, gc->group, s->pany);
+            else if (gc->lineid->ltype == LTYPE_LINE)
+                yaxis_draw_line(a, wtarget, gc->group, s->pany);
 
             l = l->next;
         }

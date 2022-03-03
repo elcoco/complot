@@ -125,11 +125,11 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
     clear_win(pl->status->win);
 
     //fill_win(pl->xaxis->win, 'X');
-    yaxis_draw(pl->lyaxis, pl->graph->win, s);
+    //yaxis_draw(pl->lyaxis, pl->graph->win, s);
     yaxis_draw(pl->ryaxis, pl->graph->win, s);
 
-    Group* g = fast_forward_groups(groups->group, pl->xsize-pl->graph->xsize);
-    xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
+    //Group* g = fast_forward_groups(groups->group, pl->xsize-pl->graph->xsize);
+    //xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
 
     legend_draw(pl->llegend);
     legend_draw(pl->rlegend);

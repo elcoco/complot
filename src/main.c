@@ -67,7 +67,8 @@ pthread_mutex_t lock;
 
 int sigint_caught = 0;
 LineID lineid0 = {.lineid=0, .ltype=LTYPE_LINE};
-LineID lineid1 = {.lineid=1, .ltype=LTYPE_OHLC};
+LineID lineid1 = {.lineid=1, .ltype=LTYPE_LINE};
+//LineID lineid1 = {.lineid=1, .ltype=LTYPE_OHLC};
 
 
 void on_sigint(int signum)
@@ -201,7 +202,7 @@ void handle_sigwinch(int sig)
 {
 }
 
-int8_t update(State* s, Index* index, Plot* pl, Line* l, LineID* lid)
+int8_t update(State* s, Index* index, Plot* pl, Line* l0, Line* l1, LineID* lid)
 {
     // check if data or exit early
     if (index->npoints == 0)
@@ -209,11 +210,17 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l, LineID* lid)
         
     pthread_mutex_lock(&lock);
 
+    //Groups* g2 = index_get_grouped2(index, s->gsize, pl->xsize, s->panx, s->pany);
+
     Groups* groups;
-    if ((groups = index_get_grouped(index, lid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
+    //if ((groups = index_get_grouped(index, lid, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
+    if ((groups = index_get_grouped2(index, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
         pthread_mutex_unlock(&lock);
         return 0;
     }
+
+    //GroupContainer* gc = groups->lines[lid->lineid];
+
 
     pl->lyaxis->autorange = s->set_autorange;
     pl->ryaxis->autorange = s->set_autorange;
@@ -221,9 +228,14 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l, LineID* lid)
     pl->lyaxis->is_empty = true;
     pl->ryaxis->is_empty = true;
 
-    if (line_set_data(l, groups) < 0) {
+    if (line_set_data(l0, groups->lines[0]) < 0) {
         pthread_mutex_unlock(&lock);
-        groups_destroy(groups);
+        //groups_destroy(groups);
+        return -1;
+    }
+    if (line_set_data(l1, groups->lines[1]) < 0) {
+        pthread_mutex_unlock(&lock);
+        //groups_destroy(groups);
         return -1;
     }
 
@@ -237,7 +249,7 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l, LineID* lid)
     plot_draw(pl, groups, s);
 
     // cleanup
-    groups_destroy(groups);
+    //groups_destroy(groups);
     pthread_mutex_unlock(&lock);
     return 0;
 }
@@ -261,20 +273,17 @@ void loop(State* s, Index* index)
         }
 
         if (! s->is_paused && index_has_new_data(index)) {
-            if (update(s, index, pl, l0, &lineid0) < 0)
+            if (update(s, index, pl, l0, l1, &lineid0) < 0)
                 break;
-            //if (update(s, index, pl, l1, &lineid1) < 0)
-            //    break;
         }
         // update on user input
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
-            if (update(s, index, pl, l0, &lineid0) < 0)
+            if (update(s, index, pl, l0, l1, &lineid0) < 0)
                 break;
-            //if (update(s, index, pl, l1, &lineid1) < 0)
-            //    break;
         }
     }
     line_destroy(l0);
+    line_destroy(l1);
     plot_destroy(pl);
 }
 
@@ -314,22 +323,27 @@ int main(int argc, char **argv)
     //Args args = {.index=index, .lock=&lock, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     //
     //
+    Args largs2 = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=&lineid1, .is_stopped=false, .idt=0, .iy=4};
+    pthread_t l2threadid;
+    pthread_create(&l2threadid, NULL, read_file_thread, &largs2);
+
     //Args ohlcargs = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=&lineid1, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     //pthread_t ohlcthreadid;
     //pthread_create(&ohlcthreadid, NULL, cs_read_file_thread, &ohlcargs);
 
     //printf(">>>>>>>>>past\n");
-    //sleep(1000000);
-    //Groups* groups = index_get_grouped(index, &lineid1, s.gsize, 30, 0, 0);
-    //groups_print(groups->group);
-    //return 1;
+    //usleep(3000000);
+    //Groups* groups = index_get_grouped2(index, s.gsize, 30, 0, 0);
+    //groups_print(groups);
 
     init_ui();
     loop(&s, index);
 
     largs.is_stopped = true;
+    largs2.is_stopped = true;
     //ohlcargs.is_stopped = true;
-    //pthread_join(lthreadid, NULL);
+    pthread_join(lthreadid, NULL);
+    pthread_join(l2threadid, NULL);
     //pthread_join(ohlcthreadid, NULL);
 
     index_destroy(index);

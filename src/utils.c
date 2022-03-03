@@ -86,3 +86,19 @@ Group* fast_forward_groups(Group* g, uint32_t amount)
     }
     return g;
 }
+
+void debug(char* fmt, ...)
+{
+
+    char buf[100];
+
+    va_list ptr;
+    va_start(ptr, fmt);
+    vsprintf(buf, fmt, ptr);
+    va_end(ptr);
+
+    FILE* fp = fopen("./complot.log", "a");
+    fputs(buf, fp);
+    fclose(fp);
+
+}

@@ -32,7 +32,7 @@ struct Line {
     char icon[5];
 
     // contains data for this line
-    Groups* groups;
+    GroupContainer* groups;
 
     Line* next;
     Yaxis* axis;
@@ -44,6 +44,6 @@ struct Line {
 Line* line_init(char* name);
 void  line_destroy(Line* l);
 void  line_print_lines(Line* l);
-int8_t line_set_data(Line* l, Groups* groups);
+int8_t line_set_data(Line* l, GroupContainer* groups);
 
 #endif
