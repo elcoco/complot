@@ -65,7 +65,7 @@ struct Group {
     
     // holds OHLCContainer or LineContainer structs containing y values
     // *lbins==NULL if line has no data in this group
-    void** lbins;
+    void** gcontainers;
 };
 
 /* Container returned from index_get_grouped().

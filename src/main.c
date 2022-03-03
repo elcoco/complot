@@ -58,17 +58,19 @@ pthread_mutex_t lock;
 // DONE status window
 // DONE x axis window/struct
 // DONE rename axis to yaxis (a -> ya)
-// TODO create non candlestick lines
+// DONE create non candlestick lines
 // TODO create pop up log window
 // TODO write a bit of documentation about the way the indexer works before i forget all of it
-// TODO test multiple lines on multiple axis
-// TODO request many lines from index so we can process them at once in the draw function
+// DONE test multiple lines on multiple axis
+// DONE request many lines from index so we can process them at once in the draw function
+// TODO find a better way to sync line id between index and plot
+// TODO request groups for specific lines
 
 
 int sigint_caught = 0;
-LineID lineid0 = {.lineid=0, .ltype=LTYPE_LINE};
-LineID lineid1 = {.lineid=1, .ltype=LTYPE_OHLC};
-//LineID lineid1 = {.lineid=1, .ltype=LTYPE_OHLC};
+Plot* pl;
+Line* l0;
+Line* l1;
 
 
 void on_sigint(int signum)
@@ -198,11 +200,7 @@ bool check_user_input(void* arg)
     return false;
 }
 
-void handle_sigwinch(int sig)
-{
-}
-
-int8_t update(State* s, Index* index, Plot* pl, Line* l0, Line* l1, LineID* lid)
+int8_t update(State* s, Index* index, Plot* pl)
 {
     // check if data or exit early
     if (index->npoints == 0)
@@ -218,16 +216,15 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l0, Line* l1, LineID* lid)
 
     pl->lyaxis->autorange = s->set_autorange;
     pl->ryaxis->autorange = s->set_autorange;
-
     pl->lyaxis->is_empty = true;
     pl->ryaxis->is_empty = true;
 
-    if (line_set_data(l0, groups->lines[0]) < 0) {
+    if (line_set_data(l0, groups->lines[l0->lineid->id]) < 0) {
         pthread_mutex_unlock(&lock);
         groups_destroy(groups);
         return -1;
     }
-    if (line_set_data(l1, groups->lines[1]) < 0) {
+    if (line_set_data(l1, groups->lines[l1->lineid->id]) < 0) {
         pthread_mutex_unlock(&lock);
         groups_destroy(groups);
         return -1;
@@ -250,13 +247,6 @@ int8_t update(State* s, Index* index, Plot* pl, Line* l0, Line* l1, LineID* lid)
 
 void loop(State* s, Index* index)
 {
-    Plot* pl = plot_init(stdscr);
-    Line* l0 = line_init("Right");
-    Line* l1 = line_init("Left");
-    l0->color = CBLUE;
-    yaxis_add_line(pl->ryaxis, l0);
-    yaxis_add_line(pl->lyaxis, l1);
-
     while (!s->is_stopped && !sigint_caught) {
 
         // is also done in plot_draw but this is faster
@@ -267,12 +257,12 @@ void loop(State* s, Index* index)
         }
 
         if (! s->is_paused && index_has_new_data(index)) {
-            if (update(s, index, pl, l0, l1, &lineid0) < 0)
+            if (update(s, index, pl) < 0)
                 break;
         }
         // update on user input
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
-            if (update(s, index, pl, l0, l1, &lineid0) < 0)
+            if (update(s, index, pl) < 0)
                 break;
         }
     }
@@ -300,38 +290,40 @@ int main(int argc, char **argv)
     State s;
     set_defaults(&s);
 
+    init_ui();
+
+    // lineid structs link the plot and index lines together
+    LineID lineid0 = {.id=0, .ltype=LTYPE_LINE};
+    LineID lineid1 = {.id=1, .ltype=LTYPE_OHLC};
+
+    // plot does everything UI
+    pl = plot_init(stdscr);
+    l0 = line_init("Right", &lineid0);
+    l1 = line_init("Left",  &lineid1);
+    l0->color = CBLUE;
+    yaxis_add_line(pl->ryaxis, l0);
+    yaxis_add_line(pl->lyaxis, l1);
+
     // index holds all data normalized into bins
     Index* index;
     if ((index = index_init(NLINES)) == NULL)
         return 0;
 
-
     // start data aggregation thread
-    Args largs = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=&lineid0, .is_stopped=false, .idt=0, .iy=3};
+    Args largs = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=l0->lineid, .is_stopped=false, .idt=0, .iy=3};
     pthread_t lthreadid;
     pthread_create(&lthreadid, NULL, read_file_thread, &largs);
 
-    //Args largs2 = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=&lineid1, .is_stopped=false, .idt=0, .iy=4};
-    //pthread_t l2threadid;
-    //pthread_create(&l2threadid, NULL, read_file_thread, &largs2);
-
-    Args ohlcargs = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=&lineid1, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
+    Args ohlcargs = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=l1->lineid, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     pthread_t ohlcthreadid;
     pthread_create(&ohlcthreadid, NULL, cs_read_file_thread, &ohlcargs);
 
-    //printf(">>>>>>>>>past\n");
-    //usleep(3000000);
-    //Groups* groups = index_get_grouped2(index, s.gsize, 30, 0, 0);
-    //groups_print(groups);
-
-    init_ui();
     loop(&s, index);
 
     largs.is_stopped = true;
-    //largs2.is_stopped = true;
     ohlcargs.is_stopped = true;
+
     pthread_join(lthreadid, NULL);
-    //pthread_join(l2threadid, NULL);
     pthread_join(ohlcthreadid, NULL);
 
     index_destroy(index);

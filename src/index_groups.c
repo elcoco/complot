@@ -1,45 +1,45 @@
 #include "index_groups.h"
 
-Group* group_ohlc_update(Group* g, OHLCContainer* lb)
+Group* group_ohlc_update(Group* g, OHLCContainer* lc)
 {
-    if (lb == NULL)
+    if (lc == NULL)
         return NULL;
 
     // set initial OHLC data from line in empty group
     if (g->is_empty) {
         g->is_empty = false;
-        g->open  = lb->open;
-        g->high  = lb->high;
-        g->low   = lb->low;
-        g->close = lb->close;
+        g->open  = lc->open;
+        g->high  = lc->high;
+        g->low   = lc->low;
+        g->close = lc->close;
 
     } else {
-        g->close = lb->close;
+        g->close = lc->close;
 
-        if (lb->high > g->high)
-            g->high = lb->high;
-        if (lb->low < g->low)
-            g->low = lb->low;
+        if (lc->high > g->high)
+            g->high = lc->high;
+        if (lc->low < g->low)
+            g->low = lc->low;
     }
     return g;
 }
 
-Group* group_line_update(Group* g, LineContainer* lb)
+Group* group_line_update(Group* g, LineContainer* lc)
 {
-    if (lb == NULL)
+    if (lc == NULL)
         return NULL;
 
     if (g->is_empty) {
         g->is_empty = false;
-        g->y  = lb->y;
-        g->high = lb->y;
-        g->low = lb->y;
+        g->y  = lc->y;
+        g->high = lc->y;
+        g->low = lc->y;
     }
 
-    if (lb->y > g->high)
-        g->high = lb->y;
-    if (lb->y < g->low)
-        g->low = lb->y;
+    if (lc->y > g->high)
+        g->high = lc->y;
+    if (lc->y < g->low)
+        g->low = lc->y;
 
     // TODO Y must be calculated as an average
 
@@ -111,7 +111,7 @@ Groups* index_get_grouped(Index* index, uint32_t gsize, uint32_t amount, int32_t
                 *gtail = g;
             }
 
-            // set OHLC values from lbins in group
+            // set OHLC values from gcontainers in group
             for (int i=0 ; i<gsize ; i++) {
 
                 // Check if we're trying to access a group beyond index boundaries
@@ -121,9 +121,9 @@ Groups* index_get_grouped(Index* index, uint32_t gsize, uint32_t amount, int32_t
                 Bin* b = bins[gstart+i];
 
                 if (lineid->ltype == LTYPE_LINE)
-                    group_line_update(g, b->lbins[li]);
+                    group_line_update(g, b->lcontainers[li]);
                 else if (lineid->ltype == LTYPE_OHLC)
-                    group_ohlc_update(g, b->lbins[li]);
+                    group_ohlc_update(g, b->lcontainers[li]);
             }
             // TODO this must update groupcontainer
             groupcontainer_update_limits(gc, g);
@@ -157,11 +157,11 @@ Group* group_init(Index* index, int32_t gstart, uint32_t gsize, Group** gtail)
         group_append(g, gtail);
 
     //// init line container
-    g->lbins = malloc(index->nlines*sizeof(void*));
+    g->gcontainers = malloc(index->nlines*sizeof(void*));
 
     //// init void pointer array that will be casted to the appropriate type later
     for (int i=0 ; i<index->nlines ; i++)
-        g->lbins[i] = NULL;
+        g->gcontainers[i] = NULL;
 
     return g;
 }

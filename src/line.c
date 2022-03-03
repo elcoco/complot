@@ -1,15 +1,20 @@
 #include "line.h"
 
-uint32_t lineid_counter = 0;
-
-Line* line_init(char* name)
+Line* line_init(char* name, LineID* lineid)
 {
     Line* l = malloc(sizeof(Line));
     l->name = strdup(name);
     l->next = NULL;
-    l->lineid = lineid_counter++;
     l->groups = NULL;
-    strcpy(l->icon, CS_ICON);
+    l->lineid = lineid;
+
+    if (lineid->ltype == LTYPE_OHLC)
+        strcpy(l->icon, CS_ICON);
+    else if (lineid->ltype == LTYPE_LINE)
+        strcpy(l->icon, LINE_ICON);
+    else
+        strcpy(l->icon, LINE_ICON);
+
     strcpy(l->chr,  DEFAULT_LINE_CHR);
     l->color = CGREEN;
     return l;

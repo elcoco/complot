@@ -82,7 +82,7 @@ Point* index_get_last_point(Index* index, LineID* lineid)
     /* Get last datapoint for a specific lineid */
     Point* p = *(index->ptail);
     while (p != NULL) {
-        if (p->lineid->lineid == lineid->lineid)
+        if (p->lineid->id == lineid->id)
             return p;
         p = p->prev;
     }
@@ -141,10 +141,10 @@ int8_t index_insert(Index* index, Point* p)
 
     // first insert determines the index start x
     if (! index->is_initialized) {
-        if (p->ltype == LTYPE_OHLC) {
+        if (p->lineid->ltype == LTYPE_OHLC) {
             index->dmin = p->low;
             index->dmax = p->high;
-        } else if (p->ltype == LTYPE_LINE) {
+        } else if (p->lineid->ltype == LTYPE_LINE) {
             index->dmin = p->y;
             index->dmax = p->y;
         }
@@ -214,10 +214,10 @@ Bin* bin_create(Index* index, uint32_t i)
     b->is_empty = true;
 
     // init line container
-    b->lbins = malloc(index->nlines*sizeof(void*));
+    b->lcontainers = malloc(index->nlines*sizeof(void*));
 
     // init void pointer array that will be casted to the appropriate type later
-    void** vlb = b->lbins;
+    void** vlb = b->lcontainers;
     for (int i=0 ; i<index->nlines ; i++,vlb++)
         *vlb = NULL;
     return b;
@@ -225,10 +225,10 @@ Bin* bin_create(Index* index, uint32_t i)
 
 void bin_destroy(Bin* b, Index* index)
 {
-    void** lb = b->lbins;
-    for (int i=0 ; i<index->nlines ; i++, lb++)
-        free(*lb);
-    free(b->lbins);
+    void** lc = b->lcontainers;
+    for (int i=0 ; i<index->nlines ; i++, lc++)
+        free(*lc);
+    free(b->lcontainers);
     free(b);
 }
 
@@ -265,8 +265,8 @@ Point* point_create_cspoint(Index* index, LineID* lineid, double x, double open,
     p->close = close;
     p->lineid = lineid;
 
-    if (index->lineids[lineid->lineid] == NULL)
-        index->lineids[lineid->lineid] = lineid;
+    if (index->lineids[lineid->id] == NULL)
+        index->lineids[lineid->id] = lineid;
 
     // about to insert second point, we can calculate the spread now and reindex
     if (index->npoints > 1 && index->spread == -1) {
@@ -286,8 +286,8 @@ Point* point_create_point(Index* index, LineID* lineid, double x, double y)
     p->y = y;
     p->lineid = lineid;
 
-    if (index->lineids[lineid->lineid] == NULL)
-        index->lineids[lineid->lineid] = lineid;
+    if (index->lineids[lineid->id] == NULL)
+        index->lineids[lineid->id] = lineid;
 
     // about to insert second point, we can calculate the spread now and reindex
     if (index->npoints > 1 && index->spread == -1) {
@@ -320,75 +320,76 @@ void point_append(Point* p, Point** tail)
     p->prev = prev;
 }
 
-void line_add_ohlc_point(OHLCContainer** lb, Point* p)
+void line_add_ohlc_point(OHLCContainer** lc, Point* p)
 {
-    if (*lb == NULL) {
-        *lb = malloc(sizeof(OHLCContainer));
-        (*lb)->is_empty = true;
+    if (*lc == NULL) {
+        *lc = malloc(sizeof(OHLCContainer));
+        (*lc)->is_empty = true;
     }
 
-    if ((*lb)->is_empty) {
-        (*lb)->is_empty = false;
-        (*lb)->open = p->open;
-        (*lb)->close = p->close;
-        (*lb)->high = p->high;
-        (*lb)->low = p->low;
-        (*lb)->xmin = p->x;
-        (*lb)->xmax = p->x;
-        (*lb)->npoints = 0;
+    if ((*lc)->is_empty) {
+        (*lc)->is_empty = false;
+        (*lc)->open = p->open;
+        (*lc)->close = p->close;
+        (*lc)->high = p->high;
+        (*lc)->low = p->low;
+        (*lc)->xmin = p->x;
+        (*lc)->xmax = p->x;
+        (*lc)->npoints = 0;
         return;
     }
 
-    (*lb)->npoints++;
+    (*lc)->npoints++;
 
     // update line x lower limits if p->x is older than oldest point in line
-    if (p->x < (*lb)->xmin) {
-        (*lb)->open = p->open;
-        (*lb)->xmin = p->x;
+    if (p->x < (*lc)->xmin) {
+        (*lc)->open = p->open;
+        (*lc)->xmin = p->x;
     }
     // update line x upper limits if p->x is newer than oldest point in line
-    if (p->x > (*lb)->xmax) {
-        (*lb)->close = p->close;
-        (*lb)->xmax = p->x;
+    if (p->x > (*lc)->xmax) {
+        (*lc)->close = p->close;
+        (*lc)->xmax = p->x;
     }
-    if (p->high > (*lb)->high)
-        (*lb)->high = p->high;
+    if (p->high > (*lc)->high)
+        (*lc)->high = p->high;
 
-    if (p->low < (*lb)->low)
-        (*lb)->low = p->low;
+    if (p->low < (*lc)->low)
+        (*lc)->low = p->low;
 }
 
-void line_add_line_point(LineContainer** lb, Point* p)
+void line_add_line_point(LineContainer** lc, Point* p)
 {
     // initialize linebin if not yet created
-    if (*lb == NULL) {
-        *lb = malloc(sizeof(LineContainer));
-        (*lb)->is_empty = true;
+    if (*lc == NULL) {
+        *lc = malloc(sizeof(LineContainer));
+        (*lc)->is_empty = true;
     }
 
-    if ((*lb)->is_empty) {
-        (*lb)->is_empty = false;
-        (*lb)->y = p->y;
-        (*lb)->npoints = 0;
+    if ((*lc)->is_empty) {
+        (*lc)->is_empty = false;
+        (*lc)->y = p->y;
+        (*lc)->npoints = 0;
         return;
     }
-    (*lb)->npoints++;
+    (*lc)->npoints++;
 
     // TODO we should calculate an average here, for now we just take the highest y
-    if (p->y > (*lb)->y)
-        (*lb)->y = p->y;
+    if (p->y > (*lc)->y)
+        (*lc)->y = p->y;
 }
 
 int8_t line_add_point(Bin* b, Point* p)
 {
-    // find the right linebin to insert the point in
+    // Cast container to right type and create pointer to it.
+    // Then add point to it
     if (p->lineid->ltype == LTYPE_OHLC) {
-        OHLCContainer** lb = &(b->lbins[p->lineid->lineid]);
-        line_add_ohlc_point(lb, p);
+        OHLCContainer** lc = (OHLCContainer**)(&(b->lcontainers[p->lineid->id]));
+        line_add_ohlc_point(lc, p);
     }
     else if (p->lineid->ltype == LTYPE_LINE) {
-        LineContainer** lb = &(b->lbins[p->lineid->lineid]);
-        line_add_line_point(lb, p);
+        LineContainer** lc = (LineContainer**)(&(b->lcontainers[p->lineid->id]));
+        line_add_line_point(lc, p);
     }
     else
         return -1;

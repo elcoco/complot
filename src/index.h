@@ -33,7 +33,7 @@ enum LType {
 
 /* LineID holds info about a line, it helps the indexer to find the right data when groups for a line are requested */
 struct LineID{
-    uint32_t lineid;
+    uint32_t id;
     LType ltype;
     //Line* next;
 };
@@ -49,9 +49,6 @@ struct Point {
     Point* prev;
     Point* next;
     LineID* lineid;
-
-    // is line a normal line ore a candlestick line
-    LType ltype;
 };
 
 /* Container to put normal line points in that is stored in Bin or Group struct.
@@ -96,7 +93,7 @@ struct Bin {
     // Holds the line containers that hold data per line
     // Array is indexed by lineid
     // Type can be a LineContainer or an OHLCContainer
-    void** lbins;
+    void** lcontainers;
 
     bool is_empty;
 };

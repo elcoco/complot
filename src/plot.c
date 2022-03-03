@@ -135,12 +135,14 @@ void plot_draw(Plot* pl, State* s)
     // find data to display on x axis in Yaxis
     GroupContainer* gc;
     if ((gc = yaxis_get_gc(pl->lyaxis)) != NULL) {
-        Group* g = fast_forward_groups(gc->group, pl->xsize-pl->graph->xsize);
-        xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
+        //Group* g = fast_forward_groups(gc->group, pl->xsize-pl->graph->xsize);
+        //xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
+        xaxis_draw(pl->xaxis, gc->group, pl->lyaxis->xsize, pl->graph->xsize);
     }
     else if ((gc = yaxis_get_gc(pl->ryaxis)) != NULL) {
-        Group* g = fast_forward_groups(gc->group, pl->xsize-pl->graph->xsize);
-        xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
+        //Group* g = fast_forward_groups(gc->group, pl->xsize-pl->graph->xsize);
+        //xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
+        xaxis_draw(pl->xaxis, gc->group, pl->lyaxis->xsize, pl->graph->xsize);
     }
     else
         debug("No data found\n");

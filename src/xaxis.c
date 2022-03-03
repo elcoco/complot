@@ -13,14 +13,16 @@ void xaxis_destroy(Xaxis* xa)
     free(xa);
 }
 
-void xaxis_draw(Xaxis* xa, Group* g, uint32_t xstart)
+void xaxis_draw(Xaxis* xa, Group* g, uint32_t xstart, uint32_t width)
 {
     int32_t ix = xstart;
+    g = fast_forward_groups(g, getmaxx(xa->win) - width);
 
     while (g != NULL) {
-        if (g->id % XTICK_SPACING == 0 && !g->is_empty) {
+        if (g->id % XTICK_SPACING == 0) {
             if (ix >= xa->xsize)
                 return;
+            //pl->xsize - pl->graph->xsize
 
             char dbuf[15] = {'\0'};
             char tbuf[15] = {'\0'};

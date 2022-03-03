@@ -12,6 +12,7 @@
 #include "index.h"
 #include "ui.h"
 
+// chars inbetween tickers on x axis
 #define XTICK_SPACING 15
 
 
@@ -26,6 +27,6 @@ struct Xaxis {
 
 Xaxis* xaxis_init();
 void   xaxis_destroy(Xaxis* xa);
-void   xaxis_draw(Xaxis* xa, Group* g, uint32_t xstart);
+void xaxis_draw(Xaxis* xa, Group* g, uint32_t xstart, uint32_t width);
 
 #endif

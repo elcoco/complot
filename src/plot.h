@@ -22,8 +22,6 @@
 #define LEGEND_MAX_SIZE 200
 #define UTF8_MAX_LEN 3
 
-// chars inbetween tickers on x axis
-#define XTICK_SPACING 15
 
 // Node struct represents a cell in the matrix
 typedef struct Plot Plot;
