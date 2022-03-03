@@ -97,7 +97,7 @@ int8_t plot_resize(Plot* pl)
     return 0;
 }
 
-void plot_draw(Plot* pl, Groups* groups, State* s)
+void plot_draw(Plot* pl, State* s)
 {
     // check if window is too small
     if (getmaxx(pl->win) < MIN_WINDOW_XSIZE || getmaxy(pl->win) < MIN_WINDOW_YSIZE)
@@ -115,7 +115,11 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
         return;
 
     // Find the window width of the yaxis so we can calculate the graph width
-    if (yaxis_set_window_width(pl->lyaxis) >0 || yaxis_set_window_width(pl->ryaxis) >0)
+    //if (yaxis_set_window_width(pl->lyaxis) >0 || yaxis_set_window_width(pl->ryaxis) >0)
+    if (yaxis_set_window_width(pl->lyaxis) >0)
+        plot_resize(pl);
+
+    if (yaxis_set_window_width(pl->ryaxis) >0)
         plot_resize(pl);
 
     clear_win(pl->graph->win);
@@ -125,11 +129,21 @@ void plot_draw(Plot* pl, Groups* groups, State* s)
     clear_win(pl->status->win);
 
     //fill_win(pl->xaxis->win, 'X');
-    //yaxis_draw(pl->lyaxis, pl->graph->win, s);
+    yaxis_draw(pl->lyaxis, pl->graph->win, s);
     yaxis_draw(pl->ryaxis, pl->graph->win, s);
 
-    //Group* g = fast_forward_groups(groups->group, pl->xsize-pl->graph->xsize);
-    //xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
+    // find data to display on x axis in Yaxis
+    GroupContainer* gc;
+    if ((gc = yaxis_get_gc(pl->lyaxis)) != NULL) {
+        Group* g = fast_forward_groups(gc->group, pl->xsize-pl->graph->xsize);
+        xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
+    }
+    else if ((gc = yaxis_get_gc(pl->ryaxis)) != NULL) {
+        Group* g = fast_forward_groups(gc->group, pl->xsize-pl->graph->xsize);
+        xaxis_draw(pl->xaxis, g, pl->lyaxis->xsize);
+    }
+    else
+        debug("No data found\n");
 
     legend_draw(pl->llegend);
     legend_draw(pl->rlegend);

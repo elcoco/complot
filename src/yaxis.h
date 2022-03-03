@@ -72,11 +72,13 @@ struct Yaxis {
 Yaxis* yaxis_init(WINDOW* parent, AxisSide side);
 void yaxis_destroy(Yaxis* a);
 void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s);
-void yaxis_draw_line(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
+void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffset);
 void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
 void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
 void yaxis_draw_tickers(Yaxis* a, int32_t yoffset);
 int8_t yaxis_set_window_width(Yaxis* a);
+
+GroupContainer* yaxis_get_gc(Yaxis* a);
 
 void yaxis_add_line(Yaxis* a, Line* l);
 void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty);

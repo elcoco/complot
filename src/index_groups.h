@@ -101,12 +101,11 @@ Group* group_ohlc_update(Group* g, OHLCContainer* lb);
 Group* group_line_update(Group* g, LineContainer* lb);
 
 Groups* groups_init(Index* index);
-void groups_print(Groups* groups);
+void    groups_print(Groups* groups);
 void    groups_destroy(Groups* groups);
 void    groups_update_limits(Groups* groups, Group* g);
 
 // get last amount of grouped bins with size gsize
-Groups* index_get_grouped(Index* index, LineID* lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
-Groups* index_get_grouped2(Index* index, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
+Groups* index_get_grouped(Index* index, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset);
 
 #endif

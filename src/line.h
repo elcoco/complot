@@ -14,6 +14,8 @@
 #define LINE_ICON "█"
 #define CS_ICON   "┿"
 
+#define DEFAULT_LINE_CHR "█"
+
 typedef struct Line Line;
 
 // forward declare from index.h
@@ -30,6 +32,7 @@ struct Line {
 
     // unicode character takes at most 4 bytes
     char icon[5];
+    char chr[5];
 
     // contains data for this line
     GroupContainer* groups;

@@ -10,6 +10,7 @@ Line* line_init(char* name)
     l->lineid = lineid_counter++;
     l->groups = NULL;
     strcpy(l->icon, CS_ICON);
+    strcpy(l->chr,  DEFAULT_LINE_CHR);
     l->color = CGREEN;
     return l;
 }
@@ -41,9 +42,6 @@ int8_t line_set_data(Line* l, GroupContainer* gc)
     l->groups = gc;
 
     Yaxis* a = l->axis;
-    //add_str(stdscr, 50, 0, 4, "min/max: %f - %f", a->vdmin, a->vdmax);
-    //if (gc->dmin == 0)
-    //    printf("min/max: %f - %f\n", a->dmin, a->dmax);
 
     // set/update axis dimensions
     if (a->is_empty) {

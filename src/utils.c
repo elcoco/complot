@@ -67,7 +67,6 @@ void draw_border(WINDOW* w)
     mvwaddstr(w, lines-1, cols-1, B_BR);
 }
 
-
 void fill_win(WINDOW* w, char c)
 {
     for (int y=0 ; y<getmaxy(w) ; y++) {
@@ -89,7 +88,6 @@ Group* fast_forward_groups(Group* g, uint32_t amount)
 
 void debug(char* fmt, ...)
 {
-
     char buf[100];
 
     va_list ptr;
@@ -100,5 +98,4 @@ void debug(char* fmt, ...)
     FILE* fp = fopen("./complot.log", "a");
     fputs(buf, fp);
     fclose(fp);
-
 }

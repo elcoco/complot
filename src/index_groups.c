@@ -1,49 +1,5 @@
 #include "index_groups.h"
 
-
-//Groups* index_get_grouped(Index* index, LineID* lineid, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
-//{
-//    /* Create groups, get data from last data */
-//    // calculate at which bin index the first group starts
-//    int32_t gstart = index_get_gstart(index, gsize, amount) + (x_offset*gsize);
-//
-//    Bin** bins = index->bins;
-//    Groups* groups = groups_init(index, lineid);
-//
-//    // setup linked list
-//    Group* htmp = NULL;
-//    Group* ttmp = NULL;
-//    Group** ghead = &htmp;
-//    Group** gtail = &ttmp;
-//
-//    for (int32_t gindex=0 ; gindex<amount ; gindex++, gstart+=gsize) {
-//        Group* g = group_init(index, gstart, gsize, gtail);
-//
-//        if (*ghead == NULL) {
-//            *ghead = g;
-//            *gtail = g;
-//        }
-//
-//        // set OHLC values from lbins in group
-//        for (int i=0 ; i<gsize ; i++) {
-//
-//            // Check if we're trying to access a group beyond index boundaries
-//            if (gstart < 0 || gstart+i >= index->isize-1)
-//                break;
-//
-//            Bin* b = bins[gstart+i];
-//
-//            if (lineid->ltype == LTYPE_OHLC)
-//                group_ohlc_update(g, b->lbins[lineid->lineid]);
-//            else if (lineid->ltype == LTYPE_LINE)
-//                group_line_update(g, b->lbins[lineid->lineid]);
-//        }
-//        groups_update_limits(groups, g);
-//    }
-//    groups->group = *ghead;
-//    return groups;
-//}
-
 Group* group_ohlc_update(Group* g, OHLCContainer* lb)
 {
     if (lb == NULL)
@@ -119,7 +75,7 @@ void groupcontainer_update_limits(GroupContainer* gc, Group* g)
     }
 }
 
-Groups* index_get_grouped2(Index* index, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
+Groups* index_get_grouped(Index* index, uint32_t gsize, uint32_t amount, int32_t x_offset, int32_t y_offset)
 {
     /* Create groups, get data from last data */
     // calculate at which bin index the first group starts
@@ -166,6 +122,8 @@ Groups* index_get_grouped2(Index* index, uint32_t gsize, uint32_t amount, int32_
 
                 if (lineid->ltype == LTYPE_LINE)
                     group_line_update(g, b->lbins[li]);
+                else if (lineid->ltype == LTYPE_OHLC)
+                    group_ohlc_update(g, b->lbins[li]);
             }
             // TODO this must update groupcontainer
             groupcontainer_update_limits(gc, g);
@@ -305,7 +263,7 @@ void groups_print(Groups* groups)
 
             while (g != NULL) {
                 if (g->is_empty)
-                    printf("%5d %6f %5f %9s\n", c, g->wstart, g->wend, "empty", "empty");
+                    printf("%5d %6f %5f %9s\n", c, g->wstart, g->wend, "empty");
                 else
                     printf("%5d %6f %5f %9.9f\n", c, g->wstart, g->wend, g->y);
                 g = g->next;

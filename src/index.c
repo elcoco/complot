@@ -154,7 +154,6 @@ int8_t index_insert(Index* index, Point* p)
 
     // map x to index->bins array index
     int32_t ix = index_map_to_index(index, p->x);
-    //return (x - index->xmin) / index->spread;
 
     // check if index is too smoll to hold data
     if (ix > index->isize-1) {
@@ -200,28 +199,6 @@ int32_t index_get_gstart(Index* index, uint32_t gsize, uint32_t amount)
     //printf("last group i:  %d\n", last_group_i);
     return first_group_i;
 }
-
-/*
-void index_print(Index* index)
-{
-    for (int i=0 ; i<index->isize ; i++) {
-        Bin* b = index->bins[i];
-        OHLCContainer* lb = b->cslines[0];
-
-        if (b->is_empty)
-            continue;
-
-        printf("BIN %3d: %f:%f %d => %9f %9f %9f %9f\n", i,
-                                              b->wstart,
-                                              b->wend,
-                                              lb->npoints,
-                                              lb->open,
-                                              lb->high,
-                                              lb->low,
-                                              lb->close);
-    }
-}
-*/
 
 Bin* bin_create(Index* index, uint32_t i)
 {

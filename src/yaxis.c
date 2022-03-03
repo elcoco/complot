@@ -6,14 +6,8 @@ Yaxis* yaxis_init(WINDOW* parent, AxisSide side)
 
     a->parent = parent;
 
-    //a->xsize = 0;
-    //a->ysize = ysize;
-
-    //int xstart = (side == AXIS_LEFT) ? 0 : getmaxx(parent) - a->xsize;
-
     // window is created if data is present
     a->win = NULL;
-    //a->win = subwin(a->parent, a->ysize, a->xsize, 0, xstart);
 
     a->side = side;
 
@@ -61,6 +55,23 @@ void yaxis_add_line(Yaxis* a, Line* l)
     l->axis = a;
 }
 
+GroupContainer* yaxis_get_gc(Yaxis* a)
+{
+    /* Find first available data for a line.
+     * Used mainly to find data so we can generate the Xaxis */
+    if (a->is_empty)
+        return NULL;
+
+    Line* l = a->line;
+    while (l != NULL) {
+        if (l->groups != NULL)
+            return l->groups;
+
+        l = l->next;
+    }
+    return NULL;
+}
+
 int8_t yaxis_set_window_width(Yaxis* a)
 {
     /* Find window width of y tickers. Return 1 if size has changed since last check */
@@ -71,10 +82,6 @@ int8_t yaxis_set_window_width(Yaxis* a)
         a->dmin = a->vdmin;
         a->dmax = a->vdmax;
     }
-    //} else {
-    //    a->dmin = a->tdmin;
-    //    a->dmax = a->tdmax;
-    //}
 
     // digits before and after the dot
     a->nwhole = find_nwhole(a->dmax); 
@@ -98,38 +105,35 @@ int8_t yaxis_set_window_width(Yaxis* a)
 void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s)
 {
     /* Draw all lines in this axis into Plot */
+    if (a->is_empty)
+        return;
 
-    // draw y axis tickers
-    if (a->side == AXIS_RIGHT) {
-        yaxis_draw_tickers(a, s->pany);
+    yaxis_draw_tickers(a, s->pany);
 
-        Line* l = a->line;
-        while (l != NULL) {
+    Line* l = a->line;
+    while (l != NULL) {
 
-            GroupContainer* gc = l->groups;
+        GroupContainer* gc = l->groups;
 
-            if (gc == NULL) {
-                l = l->next;
-                continue;
-            }
-
-            debug("Got gc for: %d\n", l->lineid);
-
-            // Highlight last data in tickers
-            if (gc->plast != NULL) {
-                if (gc->lineid->ltype == LTYPE_OHLC)
-                    yaxis_draw_last_data(a, wtarget, s->pany, gc->plast->close);
-                else if (gc->lineid->ltype == LTYPE_LINE)
-                    yaxis_draw_last_data(a, wtarget, s->pany, gc->plast->y);
-            }
-
-            if (gc->lineid->ltype == LTYPE_OHLC)
-                yaxis_draw_candlesticks(a, wtarget, gc->group, s->pany);
-            else if (gc->lineid->ltype == LTYPE_LINE)
-                yaxis_draw_line(a, wtarget, gc->group, s->pany);
-
+        if (gc == NULL) {
             l = l->next;
+            continue;
         }
+
+        // Highlight last data in tickers
+        if (gc->plast != NULL) {
+            if (gc->lineid->ltype == LTYPE_OHLC)
+                yaxis_draw_last_data(a, wtarget, s->pany, gc->plast->close);
+            else if (gc->lineid->ltype == LTYPE_LINE)
+                yaxis_draw_last_data(a, wtarget, s->pany, gc->plast->y);
+        }
+
+        if (gc->lineid->ltype == LTYPE_OHLC)
+            yaxis_draw_candlesticks(a, wtarget, gc->group, s->pany);
+        else if (gc->lineid->ltype == LTYPE_LINE)
+            yaxis_draw_line(a, l, wtarget, gc->group, s->pany);
+
+        l = l->next;
     }
 }
 
@@ -174,56 +178,61 @@ void xinterpolate(InterpolateXY* points, double x0, double y0, double x1, double
     }
 }
 
-void yinterpolate(WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+void yinterpolate(InterpolateXY* points, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
-    int32_t ylen = y1-y0;
-    uint32_t ysize = getmaxy(wtarget);
+    //uint32_t ysize = getmaxy(wtarget);
+    int32_t ystart = (y0<y1) ? y0+1 : y1+1;
+    int32_t ylen   = abs(y1-y0);
+    int32_t yend   = ystart + ylen-1;
 
     // ascending and not above eachother
     if (ylen > 1) {
-        for (int32_t y=y0+1 ; y<y1 ; y++) {
-            if (y_is_in_view(wtarget, ysize-y-1))
-                add_str(wtarget, ysize-y-1, x1, CMAGENTA, CS_BLOCK);
-        }
-    }
-
-    // decending and not above eachother
-    else if (ylen < -1) {
-        for (int32_t y=y1+1 ; y<y0 ; y++) {
-            if (y_is_in_view(wtarget, ysize-y-1))
-                add_str(wtarget, ysize-y-1, x1, CRED, CS_BLOCK);
+        for (int32_t y=ystart ; y<yend ; y++, points++) {
+                points->x = x1;
+                points->y = y;
         }
     }
 }
 
-void interpolate(WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     uint32_t ysize = getmaxy(wtarget);
-    uint32_t npoints = x1-x0-1;
-    InterpolateXY* prevp = &(InterpolateXY) {.x=x0, .y=y0};
+    InterpolateXY* prevxp = &(InterpolateXY) {.x=x0, .y=y0};
+    uint32_t nxpoints = x1-x0-1;
 
-    if (npoints > 0) {
-        InterpolateXY points[npoints];
-        InterpolateXY* p = points;
-        xinterpolate(points, x0, y0, x1, y1);
+    if (nxpoints > 0) {
 
-        for (int32_t i=0 ; i<npoints ; i++, p++) {
+        InterpolateXY xpoints[nxpoints];
+        InterpolateXY* xp = xpoints;
+        xinterpolate(xpoints, x0, y0, x1, y1);
+
+        for (int32_t i=0 ; i<nxpoints ; i++, xp++) {
 
             // draw intermediate points
-            if (y_is_in_view(wtarget, ysize-p->y-1))
-                add_str(wtarget, ysize-p->y-1, p->x, CBLUE, CS_BLOCK);
+            if (y_is_in_view(wtarget, ysize-xp->y-1))
+                add_str(wtarget, ysize-xp->y-1, xp->x, l->color, l->chr);
 
             // draw y interpolated points that are next to eachother
-            yinterpolate(wtarget, prevp->x, prevp->y, p->x, p->y);
+            uint32_t nypoints = abs(xp->y-prevxp->y);
+            InterpolateXY ypoints[nypoints];
+            yinterpolate(ypoints, prevxp->x, prevxp->y, xp->x, xp->y);
 
-            prevp = p;
+            for (int32_t i=0 ; i<nypoints ; i++)
+                add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, l->chr);
+
+            prevxp = xp;
         }
     }
     // interpolate from last intermediate point up to x1/y1
-    yinterpolate(wtarget, prevp->x, prevp->y, x1, y1);
+    uint32_t nypoints = abs(y1-prevxp->y);
+    InterpolateXY ypoints[nypoints];
+    yinterpolate(ypoints, prevxp->x, prevxp->y, x1, y1);
+
+    for (int32_t i=0 ; i<nypoints ; i++)
+        add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, l->chr);
 }
 
-void yaxis_draw_line(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
+void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffset)
 {
     /* itter groups and draw them in plot */
     // start at this xy indices
@@ -248,10 +257,10 @@ void yaxis_draw_line(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
             // map data point from data range to terminal rows range
             int32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
             if (y_is_in_view(wtarget, ysize-iy-1))
-                add_str(wtarget, ysize-iy-1, ix, CGREEN, CS_BLOCK);
+                add_str(wtarget, ysize-iy-1, ix, l->color, l->chr);
 
             if (previx > 0)
-                interpolate(wtarget, previx, previy, ix, iy);
+                interpolate(l, wtarget, previx, previy, ix, iy);
 
             previx = ix;
             previy = iy;
@@ -268,7 +277,7 @@ void yaxis_draw_tickers(Yaxis* a, int32_t yoffset)
     double step = (a->dmax - a->dmin) / a->ysize;
 
     // calculate first column of axis
-    for (int32_t iy ; iy<a->ysize ; iy++) {
+    for (int32_t iy=0 ; iy<a->ysize ; iy++) {
         char buf[50] = {'\0'};
         double ticker = a->dmin + ((iy - yoffset)*step);
         get_tickerstr(buf, ticker, a->xsize, a->nwhole, a->nfrac);
