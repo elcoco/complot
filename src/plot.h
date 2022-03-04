@@ -16,11 +16,6 @@
 #include "legend.h"
 
 
-#define MIN_WINDOW_XSIZE 10
-#define MIN_WINDOW_YSIZE 10
-
-#define LEGEND_MAX_SIZE 200
-#define UTF8_MAX_LEN 3
 
 
 // Node struct represents a cell in the matrix

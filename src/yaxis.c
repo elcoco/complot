@@ -36,6 +36,15 @@ Yaxis* yaxis_init(WINDOW* parent, AxisSide side)
 
 void  yaxis_destroy(Yaxis* a)
 {
+    Line* l = a->line;
+    Line* prev;
+
+    while (l != NULL) {
+        prev = l;
+        l = l->next;
+        line_destroy(prev);
+    }
+
     free(a->ltail);
     free(a);
 }
@@ -64,8 +73,8 @@ GroupContainer* yaxis_get_gc(Yaxis* a)
 
     Line* l = a->line;
     while (l != NULL) {
-        if (l->groups != NULL)
-            return l->groups;
+        if (l->gc != NULL)
+            return l->gc;
 
         l = l->next;
     }
@@ -113,7 +122,7 @@ void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s)
     Line* l = a->line;
     while (l != NULL) {
 
-        GroupContainer* gc = l->groups;
+        GroupContainer* gc = l->gc;
 
         if (gc == NULL) {
             l = l->next;
@@ -154,7 +163,7 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
     add_str(a->win, a->ysize-ilasty-1, 0, CGREEN, buf);
 
     for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++) {
-        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, LINE_CHR);
+        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, YAXIS_LINE_CHR);
     }
 }
 
@@ -294,12 +303,12 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CGREEN, CS_WICK);
+            add_str(win, ysize-y-1, ix, CGREEN, YAXIS_OHLC_WICK);
         }
         for (int y=iopen ; y<=iclose ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CGREEN, CS_BODY);
+            add_str(win, ysize-y-1, ix, CGREEN, YAXIS_OHLC_BODY);
         }
     // RED
     }
@@ -307,12 +316,12 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CRED, CS_WICK);
+            add_str(win, ysize-y-1, ix, CRED, YAXIS_OHLC_WICK);
         }
         for (int y=iclose ; y<=iopen ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CRED, CS_BODY);
+            add_str(win, ysize-y-1, ix, CRED, YAXIS_OHLC_BODY);
 
         }
     }

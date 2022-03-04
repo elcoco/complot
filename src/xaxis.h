@@ -11,9 +11,9 @@
 #include "utils.h"
 #include "index.h"
 #include "ui.h"
+#include "config.h"
 
 // chars inbetween tickers on x axis
-#define XTICK_SPACING 15
 
 
 typedef struct Xaxis Xaxis;

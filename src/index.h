@@ -9,10 +9,8 @@
 #include <pthread.h>
 
 #include "index_groups.h"
+#include "config.h"
 
-
-#define INDEX_DEFAULT_GROW_AMOUNT 2000
-#define INDEX_DEFAULT_SPREAD 5
 
 typedef struct Bin Bin;
 typedef struct Index Index;

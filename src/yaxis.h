@@ -13,12 +13,8 @@
 #include "index.h"
 #include "line.h"
 #include "ui.h"
+#include "config.h"
 
-#define LINE_CHR "─"
-#define CS_BODY "█"
-#define CS_WICK "┃"
-#define EMPTY   " "
-#define CS_BLOCK "█"
 
 typedef struct Yaxis Yaxis;
 

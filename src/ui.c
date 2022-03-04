@@ -94,7 +94,7 @@ bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg)
         if (callback(arg))
             return true;
 
-        usleep(CHECK_INTERVAL);
+        usleep(UI_CHECK_INTERVAL);
     }
     return false;
 }

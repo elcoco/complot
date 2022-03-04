@@ -42,10 +42,9 @@ struct GroupContainer {
     LineID* lineid; 
 };
 
-/* A Group is a slice of the bins array from the Index.
+/* A Group is a slice of the bins array for one line from the Index.
  * It represents a column on the display. */
 struct Group {
-    //Bin** bins;
     double wstart;
     double wend;
 
@@ -62,18 +61,10 @@ struct Group {
 
     // group id, is used to let x tickers follow candles
     uint32_t id;
-    
-    // holds OHLCContainer or LineContainer structs containing y values
-    // *lbins==NULL if line has no data in this group
-    void** gcontainers;
 };
 
-/* Container returned from index_get_grouped().
- * Contains Group linked list and data limit information. */
+/* Container returned from index_get_grouped(). */
 struct Groups {
-    // linked list of groups
-    //Group* group;
-
     // data limits for all data in index
     double dmin;
     double dmax;
@@ -85,9 +76,6 @@ struct Groups {
     // indicate if groups has any data in it or just empty groups
     bool is_empty; 
                    
-    // last datapoint for this lineid
-    //Point* plast;
-
     LineID* lineid; 
     uint32_t nlines;
 

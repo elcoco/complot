@@ -36,6 +36,8 @@ void index_destroy(Index* index)
         bin_destroy(*(index->bins+i), index);
     free(index->bins);
 
+    free(index->lineids);
+
     Point* p = *(index->phead);
     Point* pprev;
     while (p != NULL) {
@@ -44,6 +46,7 @@ void index_destroy(Index* index)
         free(pprev);
     }
 
+    free(index->lineids);
     free(index->phead);
     free(index->ptail);
     free(index);

@@ -156,13 +156,6 @@ Group* group_init(Index* index, int32_t gstart, uint32_t gsize, Group** gtail)
     if (*gtail != NULL)
         group_append(g, gtail);
 
-    //// init line container
-    g->gcontainers = malloc(index->nlines*sizeof(void*));
-
-    //// init void pointer array that will be casted to the appropriate type later
-    for (int i=0 ; i<index->nlines ; i++)
-        g->gcontainers[i] = NULL;
-
     return g;
 }
 

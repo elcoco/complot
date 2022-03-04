@@ -100,7 +100,7 @@ int8_t plot_resize(Plot* pl)
 void plot_draw(Plot* pl, State* s)
 {
     // check if window is too small
-    if (getmaxx(pl->win) < MIN_WINDOW_XSIZE || getmaxy(pl->win) < MIN_WINDOW_YSIZE)
+    if (getmaxx(pl->win) < PLOT_MIN_WINDOW_XSIZE || getmaxy(pl->win) < PLOT_MIN_WINDOW_YSIZE)
         return;
 
     // Handle terminal resize

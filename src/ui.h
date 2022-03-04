@@ -7,8 +7,9 @@
 #include <unistd.h>     // usleep
 
 #include "plot.h"
+#include "config.h"
 
-#define CHECK_INTERVAL 10000
+#define UI_CHECK_INTERVAL 10000
 
 #define CRED     1
 #define CGREEN   2
