@@ -1,0 +1,12 @@
+{
+    "bever" : [ "banaan", ["disko", 166,266,366], [4,5,6]],
+    "banaan": "bevers",
+    "blub2" : true,
+    "blub3" : false,
+    "disko"   : 01234,
+    "blub" : {
+        "diskoboi": 123,
+        "aaaa" : "disko"
+    }
+
+}
