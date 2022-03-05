@@ -90,6 +90,10 @@ void json_print(JSONObject* jo, uint32_t level)
                 printf("[OBJ]\n");
                 json_print(jo->value, level+incr);
                 break;
+
+            case JSON_UNKNOWN:
+                printf("[UNKNOWN]\n");
+                break;
         }
     }
     if (jo->next != NULL)
@@ -272,7 +276,7 @@ JSONStatus json_parse_number(JSONObject* jo, Position* pos)
     jo->dtype = JSON_NUMBER;
     jo->is_number = true;
 
-    if ((c = fforward(pos, ", ]}\n", "0123456789-null", NULL, "\n", tmp)) < 0) {
+    if ((c = fforward(pos, ", ]}\n", "0123456789-null.", NULL, "\n", tmp)) < 0) {
         printf("Error while reading JSON: \"%s\" + \"%c\"\n", tmp, *(pos->c));
         print_error(pos, LINES_CONTEXT);
         return PARSE_ERROR;

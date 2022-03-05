@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define MAX_BUF 500
+#define MAX_BUF 1000
 #define LINES_CONTEXT 100
 
 #define JRESET   "\x1B[0m"
