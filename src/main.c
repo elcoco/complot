@@ -281,7 +281,7 @@ void loop(State* s, Index* index, PlotWin* pw)
 
 void test_json()
 {
-    JSONObject* root = json_load_file("test/test2.json");
+    JSONObject* root = json_load_file("test/json/test2.json");
     //JSONObject* root = json_load_file("test/test.json");
     //JSONObject* root = json_load_file("old/btcusd.json");
     if (root)
@@ -325,11 +325,11 @@ int main(int argc, char **argv)
         return 0;
 
     // start data aggregation thread
-    Args largs = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[0]->lineid, .is_stopped=false, .idt=0, .iy=3};
+    Args largs = {.path="test/csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[0]->lineid, .is_stopped=false, .idt=0, .iy=3};
     pthread_t lthreadid;
     pthread_create(&lthreadid, NULL, read_file_thread, &largs);
 
-    Args ohlcargs = {.path="csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
+    Args ohlcargs = {.path="test/csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
     pthread_t ohlcthreadid;
     pthread_create(&ohlcthreadid, NULL, cs_read_file_thread, &ohlcargs);
 
