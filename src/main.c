@@ -13,6 +13,7 @@
 #include "plot.h"
 #include "ui.h"
 #include "read_thread.h"
+#include "json.h"
 
 #define NLINES 5
 
@@ -278,6 +279,11 @@ void loop(State* s, Index* index, PlotWin* pw)
     }
 }
 
+void test_json()
+{
+    JSONObject* jo = json_load_file("old/btcusd.json");
+}
+
 int main(int argc, char **argv)
 {
     // for UTF8 in curses, messes with atof() see: read_stdin()
@@ -288,6 +294,9 @@ int main(int argc, char **argv)
     memset(&action, 0, sizeof(struct sigaction));
     action.sa_handler = on_sigint;
     sigaction(SIGINT, &action, NULL);
+
+    test_json();
+    return 0;
 
     // init lock
     if (pthread_mutex_init(&lock, NULL) != 0)

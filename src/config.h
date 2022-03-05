@@ -2,7 +2,6 @@
 #define CONFIG_H
 
 #define INDEX_DEFAULT_GROW_AMOUNT 2000
-//#define INDEX_DEFAULT_SPREAD 5
 
 #define LINE_LINE_ICON        "█"
 #define LINE_OHLC_ICON        "┿"
@@ -15,7 +14,7 @@
 
 #define XAXIS_TICK_SPACING 15
 
-#define YAXIS_LINE_CHR "─"
+#define YAXIS_LDATA_LINE_CHR "─"
 #define YAXIS_OHLC_BODY "█"
 #define YAXIS_OHLC_WICK "┃"
 

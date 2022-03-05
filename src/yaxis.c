@@ -163,7 +163,7 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
     add_str(a->win, a->ysize-ilasty-1, 0, CGREEN, buf);
 
     for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++) {
-        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, YAXIS_LINE_CHR);
+        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, YAXIS_LDATA_LINE_CHR);
     }
 }
 
