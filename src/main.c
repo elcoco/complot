@@ -281,7 +281,10 @@ void loop(State* s, Index* index, PlotWin* pw)
 
 void test_json()
 {
-    JSONObject* jo = json_load_file("old/btcusd.json");
+    JSONObject* root = json_load_file("test/test.json");
+    //JSONObject* root = json_load_file("old/btcusd.json");
+    if (root)
+        json_print(root, 0);
 }
 
 int main(int argc, char **argv)
