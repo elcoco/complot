@@ -111,7 +111,7 @@ JSONStatus     json_parse(JSONObject* jo, Position* pos);
 // increment position in json string
 char*       pos_next(Position *pos);
 
-JSONObject* json_object_init();
+JSONObject* json_object_init(JSONObject* parent);
 
 char fforward(Position* pos, char* search_lst, char* expected_lst, char* unwanted_lst, char* ignore_lst, char* buf);
 
