@@ -19,6 +19,15 @@
 #define JCYAN    "\x1B[36m"
 #define JWHITE   "\x1B[37m"
 
+#define JCOL_NUM       JGREEN
+#define JCOL_STR       JBLUE
+#define JCOL_BOOL      JMAGENTA
+#define JCOL_OBJ       JGREEN
+#define JCOL_ARR       JGREEN
+#define JCOL_KEY       JWHITE
+#define JCOL_ARR_INDEX JRED
+#define JCOL_UNKNOWN   JRED
+
 typedef enum JSONDtype JSONDtype;
 typedef enum JSONStatus JSONStatus;
 typedef struct JSONObject JSONObject;

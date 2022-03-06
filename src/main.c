@@ -66,6 +66,7 @@ pthread_mutex_t lock;
 // DONE find a better way to sync line id between index and plot
 // TODO request groups for specific lines
 // TODO draw background colors
+// TODO json free all objects
 
 
 int sigint_caught = 0;

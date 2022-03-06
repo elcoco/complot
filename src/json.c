@@ -39,6 +39,52 @@ void print_error(Position *pos, uint32_t amount) {
     printf("%s%s%c%s<--%s%s\n", lctext, JRED, *(pos->c), JBLUE, JRESET, rctext);
 }
 
+void json_print(JSONObject* jo, uint32_t level)
+{
+    uint8_t incr = 3;
+    char space[level+1];
+    get_spaces(space, level);
+
+    if (jo != NULL) {
+        printf("%s", space);
+        if (jo->parent && jo->index >= 0 && jo->parent->dtype == JSON_ARRAY)
+            printf("%s%d:%s ", JCOL_ARR_INDEX, jo->index, JRESET);
+        if (jo->key)
+            printf("%s%s:%s ", JCOL_KEY, jo->key, JRESET);
+
+        switch (jo->dtype) {
+
+            case JSON_NUMBER:
+                printf("%s%f%s\n", JCOL_NUM, json_get_number(jo), JRESET);
+                break;
+
+            case JSON_STRING:
+                printf("%s\"%s\"%s\n", JCOL_STR, json_get_string(jo), JRESET);
+                break;
+
+            case JSON_BOOL:
+                printf("%s%s%s\n", JCOL_BOOL, json_get_bool(jo) ? "true" : "false", JRESET);
+                break;
+
+            case JSON_ARRAY:
+                printf("%s[ARRAY]%s\n", JCOL_ARR, JRESET);
+                json_print(jo->value, level+incr);
+                break;
+
+            case JSON_OBJECT:
+                printf("%s[OBJECT]%s\n", JCOL_OBJ, JRESET);
+                json_print(jo->value, level+incr);
+                break;
+
+            case JSON_UNKNOWN:
+                printf("%s[UNKNOWN]%s\n", JCOL_UNKNOWN, JRESET);
+                break;
+        }
+    }
+    if (jo->next != NULL)
+        json_print(jo->next, level);
+}
+
 double json_get_number(JSONObject* jo)
 {
     return *((double*)jo->value);
@@ -52,52 +98,6 @@ char* json_get_string(JSONObject* jo)
 bool json_get_bool(JSONObject* jo)
 {
     return *((bool*)jo->value);
-}
-
-void json_print(JSONObject* jo, uint32_t level)
-{
-    uint8_t incr = 3;
-    char space[level+1];
-    get_spaces(space, level);
-
-    if (jo != NULL) {
-        printf("%s", space);
-        if (jo->parent && jo->index >= 0 && jo->parent->dtype == JSON_ARRAY)
-            printf("%s%d:%s ", JRED, jo->index, JRESET);
-        if (jo->key)
-            printf("%s%s:%s ", JWHITE, jo->key, JRESET);
-
-        switch (jo->dtype) {
-
-            case JSON_NUMBER:
-                printf("%s%f%s\n", JGREEN, json_get_number(jo), JRESET);
-                break;
-
-            case JSON_STRING:
-                printf("%s\"%s\"%s\n", JBLUE, json_get_string(jo), JRESET);
-                break;
-
-            case JSON_BOOL:
-                printf("%s%s%s\n", JMAGENTA, json_get_bool(jo) ? "true" : "false", JRESET);
-                break;
-
-            case JSON_ARRAY:
-                printf("%s[ARRAY]%s\n", JGREEN, JRESET);
-                json_print(jo->value, level+incr);
-                break;
-
-            case JSON_OBJECT:
-                printf("%s[OBJECT]%s\n", JGREEN, JRESET);
-                json_print(jo->value, level+incr);
-                break;
-
-            case JSON_UNKNOWN:
-                printf("%s[UNKNOWN]%s\n", JRED, JRESET);
-                break;
-        }
-    }
-    if (jo->next != NULL)
-        json_print(jo->next, level);
 }
 
 /* read file from disk and parse JSON */
@@ -151,50 +151,6 @@ char* pos_next(Position *pos)
     return pos->c;
 }
 
-int json_destroy(JSONObject* jo)
-{
-    if (jo->dtype == JSON_OBJECT || jo->dtype == JSON_ARRAY)
-        json_destroy(jo->value);
-
-    if (jo->parent && (jo->parent->dtype == JSON_OBJECT || jo->parent->dtype == JSON_ARRAY)) {
-
-        JSONObject* tmpobj = jo;
-        while (tmpobj != NULL) {
-            tmpobj = tmpobj->next;
-        }
-
-    }
-
-
-    // TODO iter tree and free objects
-    free(jo);
-    return 0;
-}
-
-JSONObject* json_object_init(JSONObject* parent)
-{
-    JSONObject* jo = malloc(sizeof(JSONObject));
-    jo->parent = parent;
-    jo->children = NULL;
-    jo->prev = NULL;
-    jo->next = NULL;
-
-    jo->length = -1;
-    jo->index = -1;
-
-    jo->dtype = JSON_UNKNOWN;
-
-    jo->key = NULL;
-    jo->value = NULL;
-
-    jo->is_string = false;
-    jo->is_number  = false;
-    jo->is_bool   = false;
-    jo->is_array  = false;
-    jo->is_object = false;
-    return jo;
-}
-
 char fforward(Position* pos, char* search_lst, char* expected_lst, char* unwanted_lst, char* ignore_lst, char* buf)
 {
     /* fast forward until a char from search_lst is found
@@ -237,6 +193,49 @@ char fforward(Position* pos, char* search_lst, char* expected_lst, char* unwante
     return ret;
 }
 
+JSONObject* json_object_init(JSONObject* parent)
+{
+    JSONObject* jo = malloc(sizeof(JSONObject));
+    jo->parent = parent;
+    jo->children = NULL;
+    jo->prev = NULL;
+    jo->next = NULL;
+
+    jo->length = -1;
+    jo->index = -1;
+
+    jo->dtype = JSON_UNKNOWN;
+
+    jo->key = NULL;
+    jo->value = NULL;
+
+    jo->is_string = false;
+    jo->is_number  = false;
+    jo->is_bool   = false;
+    jo->is_array  = false;
+    jo->is_object = false;
+    return jo;
+}
+
+void json_destroy(JSONObject* jo)
+{
+    if (jo->dtype == JSON_OBJECT || jo->dtype == JSON_ARRAY)
+        json_destroy(jo->value);
+
+    if (jo->parent && (jo->parent->dtype == JSON_OBJECT || jo->parent->dtype == JSON_ARRAY)) {
+
+        JSONObject* tmpobj = jo;
+        while (tmpobj != NULL) {
+            tmpobj = tmpobj->next;
+        }
+
+    }
+
+    // TODO iter tree and free objects
+    free(jo);
+}
+
+
 JSONStatus json_parse_number(JSONObject* jo, Position* pos)
 {
     /* All numbers are floats */
@@ -247,7 +246,6 @@ JSONStatus json_parse_number(JSONObject* jo, Position* pos)
     jo->is_number = true;
 
     if ((c = fforward(pos, ", ]}\n", "0123456789-null.", NULL, "\n", tmp)) < 0) {
-        printf("Error while reading JSON: \"%s\" + \"%c\"\n", tmp, *(pos->c));
         print_error(pos, LINES_CONTEXT);
         return PARSE_ERROR;
     }
@@ -267,7 +265,6 @@ JSONStatus json_parse_bool(JSONObject* jo, Position* pos)
     jo->is_bool = true;
 
     if ((c = fforward(pos, ", ]}\n", "truefalse", NULL, "\n", tmp)) < 0) {
-        printf("Error while reading JSON: \"%s\" + \"%c\"\n", tmp, *(pos->c));
         print_error(pos, LINES_CONTEXT);
         return PARSE_ERROR;
     }
@@ -292,30 +289,33 @@ JSONStatus json_parse_key(JSONObject* jo, Position* pos)
 
     // skip to start of key
     if ((c = fforward(pos, "\"'}", ", \n", NULL, "\n", NULL)) < 0) {
-        printf("Error while reading JSON: \"%c\"\n", *(pos->c));
         print_error(pos, LINES_CONTEXT);
         return PARSE_ERROR;
     }
-    if (c == '}')
+    if (c == '}') {
+        pos_next(pos);
         return END_OF_OBJECT;
+    }
 
     pos_next(pos);
 
     // read key
-    if ((c = fforward(pos, "\"'\n", NULL, NULL, "\n", key)) < 0) {
-        printf("Error while reading JSON: \"%s\" + \"%c\"\n", key, *(pos->c));
+    if ((c = fforward(pos, "\"'", NULL, NULL, "\n", key)) < 0) {
+        printf("Error while parsing key\n");
         print_error(pos, LINES_CONTEXT);
         return PARSE_ERROR;
     }
-    if (c == '}')
+    if (c == '}') {
+        pos_next(pos);
         return END_OF_OBJECT;
+    }
     
     // skip over "
     pos_next(pos);
 
     // find colon
     if ((c = fforward(pos, ":", " \n", NULL, "\n", NULL)) < 0) {
-        printf("Error while reading JSON: \"%c\"\n", *(pos->c));
+        printf("Error while parsing key\n");
         print_error(pos, LINES_CONTEXT);
         return PARSE_ERROR;
     }
@@ -324,6 +324,28 @@ JSONStatus json_parse_key(JSONObject* jo, Position* pos)
     pos_next(pos);
 
     jo->key = strdup(key);
+    return STATUS_SUCCESS;
+}
+
+JSONStatus json_parse_string(JSONObject* jo, Position* pos)
+{
+    char tmp[MAX_BUF] = {'\0'};
+    char c;
+
+    jo->dtype = JSON_STRING;
+    jo->is_string = true;
+
+    if ((c = fforward(pos, "\"'\n", NULL, NULL, "\n", tmp)) < 0) {
+        printf("Error while parsing string, Failed to find closing quotes\n");
+        print_error(pos, LINES_CONTEXT);
+        return PARSE_ERROR;
+    }
+    jo->value = strdup(tmp);
+
+
+    // step over " char
+    pos_next(pos);
+
     return STATUS_SUCCESS;
 }
 
@@ -343,6 +365,13 @@ JSONStatus json_parse_array(JSONObject* jo, Position* pos)
             return ret;
         else if (ret == END_OF_ARRAY)
             break;
+
+        // look for comma or array end
+        if (fforward(pos, ",]", "\n ", NULL, "\n", NULL) < 0) {
+            printf("Error while parsing array\n");
+            print_error(pos, LINES_CONTEXT);
+            return PARSE_ERROR;
+        }
 
         if (head == NULL) {
             head = child;
@@ -389,10 +418,15 @@ JSONStatus json_parse_object(JSONObject* jo, Position* pos)
 
         // parse the value
         JSONStatus ret_value = json_parse(child, pos);
-        if (ret_value < 0)
-            return ret_value;
-        else if (ret_value == END_OF_OBJECT)
-            break;
+        if (ret_value != STATUS_SUCCESS)
+            return PARSE_ERROR;
+
+        // look for comma or object end
+        if (fforward(pos, ",}", "\n ", NULL, "\n", NULL) < 0) {
+            printf("Error while parsing object\n");
+            print_error(pos, LINES_CONTEXT);
+            return PARSE_ERROR;
+        }
 
         if (head == NULL) {
             head = child;
@@ -421,27 +455,6 @@ JSONStatus json_parse_object(JSONObject* jo, Position* pos)
     return STATUS_SUCCESS;
 }
 
-JSONStatus json_parse_string(JSONObject* jo, Position* pos)
-{
-    char tmp[MAX_BUF] = {'\0'};
-    char c;
-
-    jo->dtype = JSON_STRING;
-    jo->is_string = true;
-
-    if ((c = fforward(pos, "\"'\n", NULL, NULL, "\n", tmp)) < 0) {
-        printf("Error while reading JSON: \"%s\" + \"%c\"\n", tmp, *(pos->c));
-        print_error(pos, LINES_CONTEXT);
-        return PARSE_ERROR;
-    }
-    jo->value = strdup(tmp);
-
-    // step over " char
-    pos_next(pos);
-
-    return STATUS_SUCCESS;
-}
-
 JSONStatus json_parse(JSONObject* jo, Position* pos)
 {
     char tmp[MAX_BUF] = {'\0'};
@@ -449,7 +462,6 @@ JSONStatus json_parse(JSONObject* jo, Position* pos)
 
     // detect type
     if ((c = fforward(pos, "\"[{1234567890-n.tf}]", NULL, NULL, "\n", tmp)) < 0) {
-        printf("Error while reading JSON: \"%s\" + \"%c\"\n", tmp, *(pos->c));
         print_error(pos, LINES_CONTEXT);
         return PARSE_ERROR;
     }
