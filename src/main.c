@@ -14,6 +14,7 @@
 #include "ui.h"
 #include "read_thread.h"
 #include "json.h"
+#include "request.h"
 
 #define NLINES 5
 
@@ -282,11 +283,27 @@ void loop(State* s, Index* index, PlotWin* pw)
 
 void test_json()
 {
-    JSONObject* root = json_load_file("test/json/test2.json");
-    //JSONObject* root = json_load_file("test/test.json");
-    //JSONObject* root = json_load_file("old/btcusd.json");
-    if (root)
-        json_print(root, 0);
+    char buf[5000] = {'\0'};
+    int res = do_req("https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=7", buf);
+    if (res < 0)
+        return;
+
+    printf("\nRESULT: %s\n", buf);
+    JSONObject* root = json_load(buf);
+
+    //JSONObject* root = json_load_file("test/json/test2.json");
+    //JSONObject* root = json_load_file("test/json/test.json");
+    //JSONObject* root = json_load_file("test/json/tickers.json");
+    //JSONObject* root = json_load_file("test/json/btcusd.json");
+    if (!root)
+        return;
+
+    json_print(root, 0);
+    //printf("3rd: %f\n", json_get_number(root->children[1]->children[1]));
+    //JSONObject* obj = root->children[2];
+    //for (int i=0 ; i<obj->length ; i++)
+    //    printf("%d: %f\n", i, json_get_number(obj->children[i]));
+    //json_print(obj, 0);
 }
 
 int main(int argc, char **argv)

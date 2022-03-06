@@ -511,7 +511,7 @@ JSONObject* json_load(char* buf)
     JSONStatus ret = json_parse(root, pos);
 
     // cleanup
-    free(pos->json);
+    //free(pos->json);
     free(pos);
 
     return (ret < 0) ? NULL : root;
