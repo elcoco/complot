@@ -27,7 +27,8 @@ struct Args {
     pthread_mutex_t* lock;
     bool is_stopped;
     LineID* lineid;
-    char path[500];
+    char* path;
+    //char path[1000];
 };
 
 //void* read_stdin_thread(void* args);

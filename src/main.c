@@ -281,29 +281,41 @@ void loop(State* s, Index* index, PlotWin* pw)
     }
 }
 
-void test_json()
+int8_t load_from_url(Args* args)
 {
-    char buf[5000] = {'\0'};
-    int res = do_req("https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=7", buf);
-    if (res < 0)
-        return;
+    char* buf = do_req(args->path, buf);
+    if (buf == NULL)
+        return -1;
 
-    printf("\nRESULT: %s\n", buf);
     JSONObject* root = json_load(buf);
+    free(buf);
 
-    //JSONObject* root = json_load_file("test/json/test2.json");
-    //JSONObject* root = json_load_file("test/json/test.json");
-    //JSONObject* root = json_load_file("test/json/tickers.json");
-    //JSONObject* root = json_load_file("test/json/btcusd.json");
-    if (!root)
-        return;
+    if (root == NULL)
+        return -1;
 
-    json_print(root, 0);
-    //printf("3rd: %f\n", json_get_number(root->children[1]->children[1]));
-    //JSONObject* obj = root->children[2];
-    //for (int i=0 ; i<obj->length ; i++)
-    //    printf("%d: %f\n", i, json_get_number(obj->children[i]));
-    //json_print(obj, 0);
+    JSONObject* jo = root->children[0];
+    int i = 0;
+    debug("Received %d points\n", root->length);
+    while (jo != NULL) {
+
+        if (jo->length != 5)
+            return -1;
+
+        double dt    = json_get_number(jo->children[0]);
+        double open  = json_get_number(jo->children[1]);
+        double high  = json_get_number(jo->children[2]);
+        double low   = json_get_number(jo->children[3]);
+        double close = json_get_number(jo->children[4]);
+
+        pthread_mutex_lock(args->lock);
+        debug("%d: %f, %f, %f, %f, %f\n", i, dt, open, high, low, close);
+        point_create_cspoint(args->index, args->lineid, dt, open, high, low, close);
+        pthread_mutex_unlock(args->lock);
+
+        i++;
+        jo = jo->next;
+    }
+    debug("END\n");
 }
 
 int main(int argc, char **argv)
@@ -316,9 +328,6 @@ int main(int argc, char **argv)
     memset(&action, 0, sizeof(struct sigaction));
     action.sa_handler = on_sigint;
     sigaction(SIGINT, &action, NULL);
-
-    test_json();
-    return 0;
 
     // init lock
     if (pthread_mutex_init(&lock, NULL) != 0)
@@ -342,22 +351,29 @@ int main(int argc, char **argv)
     if ((index = index_init(NLINES)) == NULL)
         return 0;
 
-    // start data aggregation thread
-    Args largs = {.path="test/csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[0]->lineid, .is_stopped=false, .idt=0, .iy=3};
-    pthread_t lthreadid;
-    pthread_create(&lthreadid, NULL, read_file_thread, &largs);
 
-    Args ohlcargs = {.path="test/csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
-    pthread_t ohlcthreadid;
-    pthread_create(&ohlcthreadid, NULL, cs_read_file_thread, &ohlcargs);
+    // TODO index in not accessible when changing days to 30 XD
+    //Args args = {.path="https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=7", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iy=3};
+    Args args = {.path="https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=30", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iy=3};
+    //Args args = {.path="https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=30", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iy=3};
+    load_from_url(&args);
+
+    // start data aggregation thread
+    //Args largs = {.path="test/csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[0]->lineid, .is_stopped=false, .idt=0, .iy=3};
+    //pthread_t lthreadid;
+    //pthread_create(&lthreadid, NULL, read_file_thread, &largs);
+
+    //Args ohlcargs = {.path="test/csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
+    //pthread_t ohlcthreadid;
+    //pthread_create(&ohlcthreadid, NULL, cs_read_file_thread, &ohlcargs);
 
     loop(&s, index, &pw0);
 
-    largs.is_stopped = true;
-    ohlcargs.is_stopped = true;
+    //largs.is_stopped = true;
+    //ohlcargs.is_stopped = true;
 
-    pthread_join(lthreadid, NULL);
-    pthread_join(ohlcthreadid, NULL);
+    //pthread_join(lthreadid, NULL);
+    //pthread_join(ohlcthreadid, NULL);
 
     //for (int i=0 ; i<MAX_LINES ; i++)
     //    line_destroy(pw0.lines[i]);

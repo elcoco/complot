@@ -3,16 +3,17 @@
 
 Index* index_init(uint8_t nlines)
 {
-    Index* index = (Index*)malloc(sizeof(Index));
-    index->bins = (Bin**)malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
+    Index* index = malloc(sizeof(Index));
+    index->bins = malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
 
-    index->phead = (Point**)malloc(sizeof(Point*));
-    index->ptail = (Point**)malloc(sizeof(Point*));
+    index->phead = malloc(sizeof(Point*));
+    index->ptail = malloc(sizeof(Point*));
     *(index->phead) = NULL;
     *(index->ptail) = NULL;
 
     // data distance inbetween aray indices
     index->spread = -1;
+    index->npoints = 0;
 
     index->grow_amount = INDEX_DEFAULT_GROW_AMOUNT;
     index->isize = INDEX_DEFAULT_GROW_AMOUNT;
@@ -116,7 +117,7 @@ void index_set_data_limits(Index* index, Point* p)
 void index_reindex(Index* index)
 {
     /* After updating spread, recreate all bins from points linked list. */
-    //printf("Reindexing index with spread: %f\n", index->spread);
+    debug("Reindexing index with %d points, spread: %f\n", index->npoints, index->spread);
 
     if (index->is_initialized) {
         // destroy old bins
@@ -127,6 +128,8 @@ void index_reindex(Index* index)
 
     // create new bins
     index->bins = (Bin**)malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
+
+    // trigger bin recreation when reinserting points
     index->is_initialized = false;
 
     Point* p = *index->phead;
@@ -160,8 +163,11 @@ int8_t index_insert(Index* index, Point* p)
 
     // check if index is too smoll to hold data
     if (ix > index->isize-1) {
-        if (index_extend(index) < 0)
+        if (index_extend(index) < 0) {
+            debug("Failed to extend index!\n");
             return -1;
+        }
+
 
     } else if (ix < 0) {
         printf("Out of bounds, grow to left not implemented...\n");
@@ -237,13 +243,15 @@ void bin_destroy(Bin* b, Index* index)
 
 void point_print(Point* p)
 {
-    printf("%f => [%f, %f, %f, %f]\n", p->x, p->open, p->high, p->low, p->close);
+    debug("%f => [%f, %f, %f, %f]\n", p->x, p->open, p->high, p->low, p->close);
 }
 
 Point* point_init(Index* index)
 {
     /* Create a new point struct, don't call directly, use point_create_point() or point_create_cspoint() */
-    Point* p = (Point*)malloc(sizeof(Point));
+    Point* p = malloc(sizeof(Point));
+    p->prev = NULL;
+    p->next = NULL;
 
     index->npoints++;
 
@@ -321,6 +329,7 @@ void point_append(Point* p, Point** tail)
     *tail = p;
     prev->next = p;
     p->prev = prev;
+    p->next = NULL;
 }
 
 void line_add_ohlc_point(OHLCContainer** lc, Point* p)

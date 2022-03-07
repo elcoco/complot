@@ -18,7 +18,7 @@ size_t write_callback(char *data, size_t size, size_t nmemb, void *userdata)
     return realsize;
 }
 
-int32_t do_req(char* url, char* buf)
+char* do_req(char* url, char* buf)
 {
     CURL *curl;
     CURLcode status;
@@ -29,7 +29,7 @@ int32_t do_req(char* url, char* buf)
 
     if(!curl) {
         curl_global_cleanup();
-        return -1;
+        return NULL;
     }
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -41,13 +41,13 @@ int32_t do_req(char* url, char* buf)
     if(status != CURLE_OK) {
         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(status));
         curl_global_cleanup();
-        return -1;
+        return NULL;
     }
 
     curl_global_cleanup();
-    strcpy(buf, res.response);
-    free(res.response);
-    return 0;
+    //strcpy(buf, res.response);
+    //free(res.response);
+    return res.response;
 }
 
 

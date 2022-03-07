@@ -251,6 +251,10 @@ JSONStatus json_parse_number(JSONObject* jo, Position* pos)
     }
     //jo->value = strdup(tmp);
     double* value = malloc(sizeof(double));
+
+    // need to set locale because atof needs to know what char is the decimal points/comma
+    setlocale(LC_NUMERIC,"C");
+
     *value = atof(tmp);
     jo->value = value;
     return STATUS_SUCCESS;

@@ -14,6 +14,6 @@ typedef struct Response {
     size_t size;
 } Response;
 
-int32_t do_req(char* url, char* buf);
+char* do_req(char* url, char* buf);
 
 #endif
