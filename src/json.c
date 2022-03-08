@@ -46,43 +46,44 @@ void json_print(JSONObject* jo, uint32_t level)
     get_spaces(space, level);
 
     if (jo != NULL) {
-        printf("%s", space);
+        debug("%s", space);
         if (jo->parent && jo->index >= 0 && jo->parent->dtype == JSON_ARRAY)
-            printf("%s%d:%s ", JCOL_ARR_INDEX, jo->index, JRESET);
+            debug("%s%d:%s ", JCOL_ARR_INDEX, jo->index, JRESET);
         if (jo->key)
-            printf("%s%s:%s ", JCOL_KEY, jo->key, JRESET);
+            debug("%s%s:%s ", JCOL_KEY, jo->key, JRESET);
 
         switch (jo->dtype) {
 
             case JSON_NUMBER:
-                printf("%s%f%s\n", JCOL_NUM, json_get_number(jo), JRESET);
+                debug("%s%f%s\n", JCOL_NUM, json_get_number(jo), JRESET);
                 break;
 
             case JSON_STRING:
-                printf("%s\"%s\"%s\n", JCOL_STR, json_get_string(jo), JRESET);
+                debug("%s\"%s\"%s\n", JCOL_STR, json_get_string(jo), JRESET);
                 break;
 
             case JSON_BOOL:
-                printf("%s%s%s\n", JCOL_BOOL, json_get_bool(jo) ? "true" : "false", JRESET);
+                debug("%s%s%s\n", JCOL_BOOL, json_get_bool(jo) ? "true" : "false", JRESET);
                 break;
 
             case JSON_ARRAY:
-                printf("%s[ARRAY]%s\n", JCOL_ARR, JRESET);
+                debug("%s[ARRAY]%s\n", JCOL_ARR, JRESET);
                 json_print(jo->value, level+incr);
                 break;
 
             case JSON_OBJECT:
-                printf("%s[OBJECT]%s\n", JCOL_OBJ, JRESET);
+                debug("%s[OBJECT]%s\n", JCOL_OBJ, JRESET);
                 json_print(jo->value, level+incr);
                 break;
 
             case JSON_UNKNOWN:
-                printf("%s[UNKNOWN]%s\n", JCOL_UNKNOWN, JRESET);
+                debug("%s[UNKNOWN]%s\n", JCOL_UNKNOWN, JRESET);
                 break;
         }
+
+        if (jo->next != NULL)
+            json_print(jo->next, level);
     }
-    if (jo->next != NULL)
-        json_print(jo->next, level);
 }
 
 double json_get_number(JSONObject* jo)
@@ -145,7 +146,7 @@ char* pos_next(Position *pos)
     // NOTE: EOF should not be reached under normal conditions.
     //       This indicates corrupted JSON
     if (pos->npos >= pos->length) {
-        printf(">>>>>>>>>> EOL @ c=%c, pos: %d, %d,%d\n", *(pos->c), pos->npos, pos->cols, pos->rows);
+        debug(">>>>>>>>>> EOL @ c=%c, pos: %d, %d,%d\n", *(pos->c), pos->npos, pos->cols, pos->rows);
         return NULL;
     }
     return pos->c;
@@ -389,7 +390,7 @@ JSONStatus json_parse_array(JSONObject* jo, Position* pos)
         jo->length++;
     }
     jo->value = head;
-    tail->next = NULL;
+    //tail->next = NULL;
 
     // we know the index length now so lets create the array
     jo->children = malloc(jo->length * sizeof(JSONObject));
@@ -445,7 +446,7 @@ JSONStatus json_parse_object(JSONObject* jo, Position* pos)
 
     }
     jo->value = head;
-    tail->next = NULL;
+    //tail->next = NULL;
 
     // we know the index length now so lets create the array
     jo->children = malloc(jo->length * sizeof(JSONObject));

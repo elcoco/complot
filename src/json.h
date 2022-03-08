@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <locale.h>     // for utf8 in curses
+                        //
+#include "utils.h"
 
 #define MAX_BUF 1000
 #define LINES_CONTEXT 100

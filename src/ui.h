@@ -9,8 +9,6 @@
 #include "plot.h"
 #include "config.h"
 
-#define UI_CHECK_INTERVAL 10000
-
 #define CRED     1
 #define CGREEN   2
 #define CYELLOW  3
@@ -25,7 +23,6 @@
 int init_ui();
 void cleanup_ui();
 void init_colors();
-bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg);
 int set_status(uint32_t lineno, char* fmt, ...);
 int add_str(WINDOW* win, uint32_t y, uint32_t x, uint32_t color, char* fmt, ...);
 int add_chr(WINDOW* win, uint32_t y, uint32_t x, uint32_t color, char c);

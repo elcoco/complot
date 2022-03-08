@@ -18,7 +18,7 @@ size_t write_callback(char *data, size_t size, size_t nmemb, void *userdata)
     return realsize;
 }
 
-char* do_req(char* url, char* buf)
+char* do_req(char* url)
 {
     CURL *curl;
     CURLcode status;
@@ -45,9 +45,100 @@ char* do_req(char* url, char* buf)
     }
 
     curl_global_cleanup();
-    //strcpy(buf, res.response);
-    //free(res.response);
     return res.response;
 }
+
+JSONObject* do_binance_req(char* symbol, BinanceInterval interval, int64_t tstart, uint32_t limit)
+{
+    /* limit is: default=500, max=1000
+     * tstart is last close time unixtime integer
+     *   if tstart = -1, use default
+     * interval is BinanceInterval enum that will be mapped to a string */
+    char interval_str[10] = {'\0'};
+    strcpy(interval_str, binance_interval_map[interval]);
+
+    char url[500] = {'\0'};
+    sprintf(url, binance_url_fmt, symbol, interval_str, limit);
+    char tstart_str[100] = {'\0'};
+
+    if (tstart >= 0) {
+        sprintf(tstart_str, "&startTime=%ld", tstart);
+        strcat(url, tstart_str);
+    }
+
+    char* data = do_req(url);
+    if (data == NULL)
+        return NULL;
+
+    JSONObject* rn = json_load(data);
+    
+    free(data);
+    return rn;
+}
+
+
+bool check_exit_callback(void* stopped)
+{
+    return *((bool*)stopped);
+}
+
+void* binance_read_thread(void* thread_args)
+{
+    // TODO needs non blocking sleep
+    // Cast thread arguments to correct type
+    RequestArgs* args = thread_args;
+    int64_t tstart = -1;
+
+    while (!args->is_stopped) {
+
+        JSONObject* rn = do_binance_req(args->symbol, args->OHLCinterval, tstart, args->limit);
+
+        if (rn == NULL) {
+            debug("Failed to get data from binance\n");
+            usleep(10000000);
+            continue;
+        }
+
+        json_print(rn, 0);
+
+        debug("Got %d OHCL datapoints\n", rn->length);
+
+        double dt_open, dt_close, open, high, low, close;
+
+        for (int i=0 ; i<rn->length ; i++) {
+            JSONObject* dp = rn->children[i];
+
+            if (dp->length != 12) {
+                debug("Received invalid datapoint\n");
+                dp = dp->next;
+                continue;
+            }
+
+            dt_open  = json_get_number(dp->children[0]);
+            dt_close = json_get_number(dp->children[6]);
+            open     = atof(json_get_string(dp->children[1]));
+            high     = atof(json_get_string(dp->children[2]));
+            low      = atof(json_get_string(dp->children[3]));
+            close    = atof(json_get_string(dp->children[4]));
+
+            pthread_mutex_lock(args->lock);
+            //debug("%d: %f, %f, %f, %f, %f\n", i, dt_open, open, high, low, close);
+            point_create_cspoint(args->index, args->lineid, dt_open, open, high, low, close);
+            pthread_mutex_unlock(args->lock);
+
+            if (i == rn->length-1)
+                tstart = (int64_t)dt_close;
+        }
+
+        // do non blocking sleep
+        if (non_blocking_sleep(args->timeout, &check_exit_callback, &(args->is_stopped)))
+            return NULL;
+
+    }
+    return NULL;
+
+
+}
+
 
 

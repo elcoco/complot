@@ -99,3 +99,23 @@ void debug(char* fmt, ...)
     fputs(buf, fp);
     fclose(fp);
 }
+
+bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg)
+{
+    /* Do a non blocking sleep that checks for user input */
+    struct timeval t_start, t_end;
+    gettimeofday(&t_start, NULL);
+
+    while (1) {
+        gettimeofday(&t_end, NULL);
+        if ((t_end.tv_sec*1000000 + t_end.tv_usec) - (t_start.tv_sec*1000000 + t_start.tv_usec) >= interval)
+            break;
+
+        if (callback(arg))
+            return true;
+
+        usleep(SLEEP_CHECK_INTERVAL);
+    }
+    return false;
+}
+

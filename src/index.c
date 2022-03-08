@@ -47,7 +47,6 @@ void index_destroy(Index* index)
         free(pprev);
     }
 
-    free(index->lineids);
     free(index->phead);
     free(index->ptail);
     free(index);

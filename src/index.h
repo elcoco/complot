@@ -8,6 +8,7 @@
 #include <math.h>
 #include <pthread.h>
 
+#include "utils.h"
 #include "index_groups.h"
 #include "config.h"
 

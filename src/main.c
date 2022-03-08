@@ -226,7 +226,6 @@ int8_t update(State* s, Index* index)
         return 0;
     }
 
-
     pl->lyaxis->autorange = s->set_autorange;
     pl->ryaxis->autorange = s->set_autorange;
     pl->lyaxis->is_empty = true;
@@ -283,7 +282,7 @@ void loop(State* s, Index* index, PlotWin* pw)
 
 int8_t load_from_url(Args* args)
 {
-    char* buf = do_req(args->path, buf);
+    char* buf = do_req(args->path);
     if (buf == NULL)
         return -1;
 
@@ -316,6 +315,7 @@ int8_t load_from_url(Args* args)
         jo = jo->next;
     }
     debug("END\n");
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -351,29 +351,23 @@ int main(int argc, char **argv)
     if ((index = index_init(NLINES)) == NULL)
         return 0;
 
+    RequestArgs args;
+    args.index        = index;
+    args.lineid       = pw0.lines[1]->lineid;
+    args.lock         = &lock;
+    args.is_stopped   = false;
+    args.OHLCinterval = BINANCE_5_MINUTES;
+    args.limit        = 500;
+    args.timeout      = 60 * 1000 * 1000;
+    strcpy(args.symbol, "BTCBUSD");
 
-    // TODO index in not accessible when changing days to 30 XD
-    //Args args = {.path="https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=7", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iy=3};
-    Args args = {.path="https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=30", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iy=3};
-    //Args args = {.path="https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=30", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iy=3};
-    load_from_url(&args);
-
-    // start data aggregation thread
-    //Args largs = {.path="test/csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[0]->lineid, .is_stopped=false, .idt=0, .iy=3};
-    //pthread_t lthreadid;
-    //pthread_create(&lthreadid, NULL, read_file_thread, &largs);
-
-    //Args ohlcargs = {.path="test/csv/XMRBTC_1m_distance.csv", .index=index, .lock=&lock, .lineid=pw0.lines[1]->lineid, .is_stopped=false, .idt=0, .iopen=2, .ihigh=3, .ilow=4, .iclose=5};
-    //pthread_t ohlcthreadid;
-    //pthread_create(&ohlcthreadid, NULL, cs_read_file_thread, &ohlcargs);
+    pthread_t rthreadid;
+    pthread_create(&rthreadid, NULL, binance_read_thread, &args);
 
     loop(&s, index, &pw0);
 
-    //largs.is_stopped = true;
-    //ohlcargs.is_stopped = true;
-
-    //pthread_join(lthreadid, NULL);
-    //pthread_join(ohlcthreadid, NULL);
+    args.is_stopped = true;
+    pthread_join(rthreadid, NULL);
 
     //for (int i=0 ; i<MAX_LINES ; i++)
     //    line_destroy(pw0.lines[i]);

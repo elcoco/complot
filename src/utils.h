@@ -6,11 +6,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <math.h>
 #include <time.h>
+#include <sys/time.h>   // for non blocking sleep
 #include <curses.h>
 
-#include "index.h"
+#include "index_groups.h"
 
 
 #define B_TL "┌"
@@ -19,6 +21,10 @@
 #define B_BR "┘"
 #define B_H  '-'
 #define B_V  '|'
+
+#define SLEEP_CHECK_INTERVAL 10000
+
+typedef struct Group Group;
 
 typedef struct {
     bool is_paused;
@@ -60,5 +66,6 @@ void fill_win(WINDOW* w, char c);
 Group* fast_forward_groups(Group* g, uint32_t amount);
 
 void debug(char* fmt, ...);
+bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg);
 
 #endif
