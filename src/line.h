@@ -22,6 +22,7 @@ typedef struct Yaxis Yaxis;
 /* Represents a line. Lineid is the index for lineid in the indexer */
 struct Line {
     char* name;
+    bool  is_enabled;
 
     // unicode character takes at most 4 bytes
     char icon[5];

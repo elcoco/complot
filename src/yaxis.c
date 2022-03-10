@@ -120,7 +120,7 @@ void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s)
     yaxis_draw_tickers(a, s->pany);
 
     Line* l = a->line;
-    while (l != NULL) {
+    while (l != NULL && l->is_enabled) {
 
         GroupContainer* gc = l->gc;
 

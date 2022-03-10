@@ -19,6 +19,11 @@
 #define YAXIS_OHLC_WICK "┃"
 
 
+#define DEFAULT_GROUP_SIZE 1
+#define DEFAULT_PAN_STEPS 3
+#define DEFAULT_PAN_BIG_STEPS 5
+
+#define MAX_LINES 10
 
 
 #endif

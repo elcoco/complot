@@ -12,6 +12,10 @@
 #include "json.h"
 #include "index.h"
 #include "utils.h"
+#include "plotwin.h"
+
+// forward declare
+typedef struct PlotWin PlotWin;
 
 typedef struct Response {
     char* response;
@@ -39,7 +43,8 @@ typedef enum BinanceInterval {
 
 typedef struct RequestArgs {
     Index* index;
-    LineID* lineid;
+    LineID* llineid;
+    LineID* rlineid;
     pthread_mutex_t* lock;
     bool is_stopped;
     char symbol[50];

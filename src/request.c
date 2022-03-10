@@ -86,12 +86,12 @@ void* binance_read_thread(void* thread_args)
 {
     // TODO needs non blocking sleep
     // Cast thread arguments to correct type
-    RequestArgs* args = thread_args;
+    PlotWin* args = thread_args;
     int64_t tstart = -1;
 
     while (!args->is_stopped) {
 
-        JSONObject* rn = do_binance_req(args->symbol, args->OHLCinterval, tstart, args->limit);
+        JSONObject* rn = do_binance_req(args->symbol, *(args->OHLCinterval), tstart, args->limit);
 
         if (rn == NULL) {
             debug("Failed to get data from binance\n");
@@ -103,7 +103,7 @@ void* binance_read_thread(void* thread_args)
 
         debug("Got %d OHCL datapoints\n", rn->length);
 
-        double dt_open, dt_close, open, high, low, close;
+        double dt_open, dt_close, open, high, low, close, volume;
 
         for (int i=0 ; i<rn->length ; i++) {
             JSONObject* dp = rn->children[i];
@@ -120,10 +120,17 @@ void* binance_read_thread(void* thread_args)
             high     = atof(json_get_string(dp->children[2]));
             low      = atof(json_get_string(dp->children[3]));
             close    = atof(json_get_string(dp->children[4]));
+            volume   = atof(json_get_string(dp->children[5]));
 
             pthread_mutex_lock(args->lock);
             //debug("%d: %f, %f, %f, %f, %f\n", i, dt_open, open, high, low, close);
-            point_create_cspoint(args->index, args->lineid, dt_open, open, high, low, close);
+            //
+            Line* l_vol = args->lines[0];
+            Line* l_ohlc = args->lines[1];
+
+            point_create_point(args->index, l_vol->lineid, dt_open, volume);
+            point_create_cspoint(args->index, l_ohlc->lineid, dt_open, open, high, low, close);
+
             pthread_mutex_unlock(args->lock);
 
             if (i == rn->length-1)

@@ -23,6 +23,7 @@
 #define B_V  '|'
 
 #define SLEEP_CHECK_INTERVAL 10000
+#define MAX_SYMBOL_SIZE 10
 
 typedef struct Group Group;
 
@@ -45,6 +46,9 @@ typedef struct {
     double dmax;
     bool fit_all;
     int32_t gsize;
+    bool* lines_enabled;
+    bool line_changed;
+    char symbol[MAX_SYMBOL_SIZE];
 } State;
 
 
@@ -64,6 +68,8 @@ void die(char* msg);
 void draw_border(WINDOW* w);
 void fill_win(WINDOW* w, char c);
 Group* fast_forward_groups(Group* g, uint32_t amount);
+
+State* state_init();
 
 void debug(char* fmt, ...);
 bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg);

@@ -15,68 +15,18 @@
 #include "read_thread.h"
 #include "json.h"
 #include "request.h"
+#include "plotwin.h"
 
 #define NLINES 5
 
 #define SLEEP_MS 100*1000
 
-#define DEFAULT_GROUP_SIZE 1
-#define DEFAULT_PAN_STEPS 3
-#define DEFAULT_PAN_BIG_STEPS 5
-
 
 // thread lock
 pthread_mutex_t lock;
 
-// DONE extend index when out of bounds
-// DONE get groups x amount of groups from last known data
-// DONE create points linked list
-// DONE create CSV file reader
-// DONE add xwin dimension to group
-// DONE draw candlesticks
-// DONE return groups as linked list
-// DONE keep track of data min and max. we need this info when drawing candlesticks
-// DONE segfault when GROUP_SIZE = 1 or 2
-// DONE now index data limits are used, but group data limits allows for auto scale
-// DONE dataleak for Points, Viewport and groups
-// DONE option disable autoscale
-//
-// TODO find a way to decide on the precision of tickers on axis
-// DONE x tickers should follow data not columns
-// DONE reindex on second datapoint and calculate spread dynamically
-// DONE on reindex first point is added to linked list again
-// DONE create update function in index
-// DONE rename component to plot oid
-// DONE write better makefile
-// DONE x should also be double
-// DONE plot should have axis and line structs to organize what should be drawn where
-// DONE rename pl (plot) to p and p (point) to pnt
-// DONE rename pl_ function names to plot_
-// DONE don't recreate plot on every iteration, not pretty
-// DONE draw legend from axis
-// TODO when not using autoscale, it should not change axis scale
-// DONE nasty bug in index_get_grouped where we're trying to access a non existing group
-// DONE auto resize plot
-// DONE status window
-// DONE x axis window/struct
-// DONE rename axis to yaxis (a -> ya)
-// DONE create non candlestick lines
-// TODO write a bit of documentation about the way the indexer works before i forget all of it
-// DONE test multiple lines on multiple axis
-// DONE request many lines from index so we can process them at once in the draw function
-// DONE find a better way to sync line id between index and plot
-// TODO request groups for specific lines
-// TODO draw background colors
-// TODO json free all objects
-
-
 int sigint_caught = 0;
-#define MAX_LINES 5
 
-typedef struct PlotWin {
-    Plot* plot;
-    Line* lines[MAX_LINES];
-} PlotWin;
 
 PlotWin pw0;
 PlotWin pw1;
@@ -84,24 +34,6 @@ PlotWin pw1;
 void on_sigint(int signum)
 {
     sigint_caught = 1;
-}
-
-void set_defaults(State* s)
-{
-    s->is_paused = false;
-    s->is_stopped = false;
-    s->panx = 0;
-    s->pany = 0;
-    s->is_pan_changed = false;
-    s->set_autorange = true;
-    s->fit_all = false;
-
-    s->dmin = -1;
-    s->dmax = -1;
-
-    // amount of bins in a group
-    s->gsize = DEFAULT_GROUP_SIZE;
-    s->is_resized = false;
 }
 
 bool check_user_input(void* arg)
@@ -186,6 +118,10 @@ bool check_user_input(void* arg)
             case ' ':
                 s->is_paused = !s->is_paused;
                 break;
+            case '0' ... '9':
+                s->lines_enabled[c-'0'] = !s->lines_enabled[c-'0'];
+                s->line_changed = true;
+                break;
             //case KEY_MOUSE:
             //    if (getmouse(&event) == OK) {
             //        if(event.bstate & BUTTON1_CLICKED) {
@@ -208,17 +144,64 @@ bool check_user_input(void* arg)
     return false;
 }
 
-int8_t update(State* s, Index* index)
+void print_usage()
+{
+    printf("CGOL :: Game of life written in C!\n");
+    //printf("\nMandatory arguments:\n");
+    printf("\nOptional arguments:\n");
+    printf("    -f SEED_FILE  Set seed file\n");
+    printf("    -s SPEED_MS   Transition speed, Default=1000\n");
+    printf("    -S            Set shading\n");
+    printf("    -r            Set random seed\n");
+    printf("    -w            Set wrapping edges\n");
+}
+
+bool parse_args(State* s, int argc, char** argv)
+{
+    int option;
+
+    while((option = getopt(argc, argv, "s:")) != -1){ //get option from the getopt() method
+        switch (option) {
+            case 's':
+                strcpy(s->symbol, optarg);
+                break;
+            case ':': 
+                printf("option needs a value\n"); 
+                return false;
+            case '?': 
+                print_usage();
+                return false;
+       }
+    }
+    if (argc == 1) {
+        print_usage();
+        return false;
+    }
+    return true;
+}
+
+int8_t update(PlotWin* pw)
 {
     // check if data or exit early
-    if (index->npoints == 0)
+    if (pw->index->npoints == 0)
         return 0;
         
+    Plot* pl = pw->plot;
+    Line* l0 = pw->lines[0];
+    Line* l1 = pw->lines[1];
+    Index* index = pw->index;
+    State* s = pw->state;
+
     pthread_mutex_lock(&lock);
 
-    Plot* pl = pw0.plot;
-    Line* l0 = pw0.lines[0];
-    Line* l1 = pw0.lines[1];
+    // set the changed enabled state
+    if (s->line_changed) {
+        for (int i=0 ; i<index->nlines ; i++) {
+            if (pw->lines[i] != NULL)
+                pw->lines[i]->is_enabled = s->lines_enabled[i];
+        }
+        s->line_changed = false;
+    }
 
     Groups* groups;
     if ((groups = index_get_grouped(index, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
@@ -257,65 +240,27 @@ int8_t update(State* s, Index* index)
     return 0;
 }
 
-void loop(State* s, Index* index, PlotWin* pw)
+void loop(PlotWin* pw)
 {
-    while (!s->is_stopped && !sigint_caught) {
+    while (!pw->state->is_stopped && !sigint_caught) {
 
         // is also done in plot_draw but this is faster
-        if (s->is_resized) {
-            s->is_resized = false;
+        if (pw->state->is_resized) {
+            pw->state->is_resized = false;
             if (plot_resize(pw->plot) < 0)
                 continue;
         }
 
-        if (! s->is_paused && index_has_new_data(index)) {
-            if (update(s, index) < 0)
+        if (! pw->state->is_paused && index_has_new_data(pw->index)) {
+            if (update(pw) < 0)
                 break;
         }
         // update on user input
-        if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
-            if (update(s, index) < 0)
+        if (non_blocking_sleep(SLEEP_MS, &check_user_input, pw->state)) {
+            if (update(pw) < 0)
                 break;
         }
     }
-}
-
-int8_t load_from_url(Args* args)
-{
-    char* buf = do_req(args->path);
-    if (buf == NULL)
-        return -1;
-
-    JSONObject* root = json_load(buf);
-    free(buf);
-
-    if (root == NULL)
-        return -1;
-
-    JSONObject* jo = root->children[0];
-    int i = 0;
-    debug("Received %d points\n", root->length);
-    while (jo != NULL) {
-
-        if (jo->length != 5)
-            return -1;
-
-        double dt    = json_get_number(jo->children[0]);
-        double open  = json_get_number(jo->children[1]);
-        double high  = json_get_number(jo->children[2]);
-        double low   = json_get_number(jo->children[3]);
-        double close = json_get_number(jo->children[4]);
-
-        pthread_mutex_lock(args->lock);
-        debug("%d: %f, %f, %f, %f, %f\n", i, dt, open, high, low, close);
-        point_create_cspoint(args->index, args->lineid, dt, open, high, low, close);
-        pthread_mutex_unlock(args->lock);
-
-        i++;
-        jo = jo->next;
-    }
-    debug("END\n");
-    return 0;
 }
 
 int main(int argc, char **argv)
@@ -333,45 +278,38 @@ int main(int argc, char **argv)
     if (pthread_mutex_init(&lock, NULL) != 0)
         die("\nMutex init failed\n");
 
-    // program state
-    State s;
-    set_defaults(&s);
+    //if (!parse_args(&s, argc, argv))
+    //    return 1;
 
     init_ui();
-
-    pw0.plot = plot_init(stdscr);
-    pw0.lines[0] = line_line_init("Left");
-    pw0.lines[0]->color = CBLUE;
-    pw0.lines[1] = line_ohlc_init("Right");
-    yaxis_add_line(pw0.plot->lyaxis, pw0.lines[0]);
-    yaxis_add_line(pw0.plot->ryaxis, pw0.lines[1]);
 
     // index holds all data normalized into bins
     Index* index;
     if ((index = index_init(NLINES)) == NULL)
         return 0;
 
-    RequestArgs args;
-    args.index        = index;
-    args.lineid       = pw0.lines[1]->lineid;
-    args.lock         = &lock;
-    args.is_stopped   = false;
-    args.OHLCinterval = BINANCE_5_MINUTES;
-    args.limit        = 500;
-    args.timeout      = 60 * 1000 * 1000;
-    strcpy(args.symbol, "BTCBUSD");
+    WINDOW* sw0 = newwin(LINES/2, 0, 0, 0);
+    WINDOW* sw1 = newwin(0, 0, LINES/2, 0);
+    //WINDOW* sw1 = newwin(getmaxy(stdscr)/2, getmaxx(stdscr), getmaxy(stdscr)/2, 0);
 
-    pthread_t rthreadid;
-    pthread_create(&rthreadid, NULL, binance_read_thread, &args);
+    fill_win(sw1, '#');
+    wrefresh(sw0);
+    wrefresh(sw1);
 
-    loop(&s, index, &pw0);
+    PlotWin* pw0 = pw_init(sw0, index, "BTCBUSD", &lock);
+    //PlotWin* pw1 = pw_init(sw1, index, "ADABUSD", &lock);
 
-    args.is_stopped = true;
-    pthread_join(rthreadid, NULL);
+    loop(pw0);
 
-    //for (int i=0 ; i<MAX_LINES ; i++)
-    //    line_destroy(pw0.lines[i]);
-    plot_destroy(pw0.plot);
+    pw0->is_stopped = true;
+    //pw1->is_stopped = true;
+
+    pthread_join(pw0->threadid, NULL);
+    //pthread_join(pw1->threadid, NULL);
+
+    plot_destroy(pw0->plot);
+    //plot_destroy(pw1->plot);
+
     index_destroy(index);
 
     cleanup_ui();

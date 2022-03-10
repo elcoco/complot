@@ -13,6 +13,7 @@ Line* line_init(char* name)
     l->lineid = malloc(sizeof(LineID));
     l->lineid->id = linei++;
     l->color = CGREEN;
+    l->is_enabled = true;
     return l;
 }
 
