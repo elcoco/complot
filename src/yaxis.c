@@ -100,12 +100,18 @@ int8_t yaxis_set_window_width(Yaxis* a)
     // resize axis window to new ticker width if changed
     if (a->xsize != new_xsize) {
         a->xsize = new_xsize;
+        assert(a->parent != NULL);
 
         delwin(a->win);
-        if (a->side == AXIS_LEFT)
-            a->win = subwin(a->parent, a->ysize, a->xsize, 1, 0);
-        else
-            a->win = subwin(a->parent, a->ysize, a->xsize, 1, getmaxx(a->parent)-new_xsize);
+        if (a->side == AXIS_LEFT) {
+            a->win = derwin(a->parent, a->ysize, a->xsize, 1, 0);
+            debug("Creating left win srcyx: %dx%d subwinyx: %dx%d\n", getmaxy(a->parent), getmaxx(a->parent), a->ysize, a->xsize);
+            assert(a->win && "Failed to create left axis window");
+        }
+        else {
+            a->win = derwin(a->parent, a->ysize, a->xsize, 1, getmaxx(a->parent)-new_xsize);
+            assert(a->win && "Failed to create right axis window");
+        }
         return 1;
     }
     return 0;
@@ -252,6 +258,7 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
     //TODO COLS is not necessarily the width of the parent window!!!!
     // we have to get more groups from index than we actually need so we need to skip the groups that don't fit in plot
     uint32_t goffset = COLS - getmaxx(wtarget);
+    //uint32_t goffset = getmaxx(a->win) - getmaxx(wtarget);
     while (goffset != 0) {
         g = g->next;
         goffset--;

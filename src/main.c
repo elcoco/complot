@@ -217,11 +217,13 @@ int8_t update(PlotWin* pw)
     if (line_set_data(l0, groups->lines[l0->lineid->id]) < 0) {
         pthread_mutex_unlock(&lock);
         groups_destroy(groups);
+        debug("Failed to set data for line 0\n");
         return -1;
     }
     if (line_set_data(l1, groups->lines[l1->lineid->id]) < 0) {
         pthread_mutex_unlock(&lock);
         groups_destroy(groups);
+        debug("Failed to set data for line 1\n");
         return -1;
     }
 
@@ -240,27 +242,58 @@ int8_t update(PlotWin* pw)
     return 0;
 }
 
-void loop(PlotWin* pw)
+void loop(PlotWin** pws, uint32_t length)
 {
-    while (!pw->state->is_stopped && !sigint_caught) {
+    PlotWin* pw = *pws;
+    bool is_stopped = false;
 
-        // is also done in plot_draw but this is faster
-        if (pw->state->is_resized) {
-            pw->state->is_resized = false;
-            if (plot_resize(pw->plot) < 0)
-                continue;
-        }
+    while (!sigint_caught) {
+        for (int i=0 ; i<length ; i++) {
+            PlotWin* pw = pws[i];
 
-        if (! pw->state->is_paused && index_has_new_data(pw->index)) {
-            if (update(pw) < 0)
-                break;
-        }
-        // update on user input
-        if (non_blocking_sleep(SLEEP_MS, &check_user_input, pw->state)) {
-            if (update(pw) < 0)
-                break;
+            if (pw->state->is_stopped)
+                return;
+
+            // is also done in plot_draw but this is faster
+            if (pw->state->is_resized) {
+                pw->state->is_resized = false;
+                if (plot_resize(pw->plot) < 0)
+                    continue;
+            }
+
+            if (! pw->state->is_paused && index_has_new_data(pw->index)) {
+                if (update(pw) < 0)
+                    break;
+            }
+            // update on user input
+            if (non_blocking_sleep(SLEEP_MS, &check_user_input, pw->state)) {
+                if (update(pw) < 0)
+                    break;
+            }
+
         }
     }
+
+    //while (!pw->state->is_stopped && !sigint_caught) {
+
+
+    //    // is also done in plot_draw but this is faster
+    //    if (pw->state->is_resized) {
+    //        pw->state->is_resized = false;
+    //        if (plot_resize(pw->plot) < 0)
+    //            continue;
+    //    }
+
+    //    if (! pw->state->is_paused && index_has_new_data(pw->index)) {
+    //        if (update(pw) < 0)
+    //            break;
+    //    }
+    //    // update on user input
+    //    if (non_blocking_sleep(SLEEP_MS, &check_user_input, pw->state)) {
+    //        if (update(pw) < 0)
+    //            break;
+    //    }
+    //}
 }
 
 int main(int argc, char **argv)
@@ -293,22 +326,25 @@ int main(int argc, char **argv)
     //WINDOW* sw1 = newwin(getmaxy(stdscr)/2, getmaxx(stdscr), getmaxy(stdscr)/2, 0);
 
     fill_win(sw1, '#');
-    wrefresh(sw0);
+    //wrefresh(sw0);
+    //usleep(10000000000);
+    refresh();
     wrefresh(sw1);
 
     PlotWin* pw0 = pw_init(sw0, index, "BTCBUSD", &lock);
-    //PlotWin* pw1 = pw_init(sw1, index, "ADABUSD", &lock);
+    PlotWin* pw1 = pw_init(sw1, index, "ADABUSD", &lock);
+    PlotWin* pws[] = {pw0, pw1};
 
-    loop(pw0);
+    loop(pws, 2);
 
     pw0->is_stopped = true;
-    //pw1->is_stopped = true;
+    pw1->is_stopped = true;
 
     pthread_join(pw0->threadid, NULL);
-    //pthread_join(pw1->threadid, NULL);
+    pthread_join(pw1->threadid, NULL);
 
     plot_destroy(pw0->plot);
-    //plot_destroy(pw1->plot);
+    plot_destroy(pw1->plot);
 
     index_destroy(index);
 

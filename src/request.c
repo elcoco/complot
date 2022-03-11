@@ -95,11 +95,12 @@ void* binance_read_thread(void* thread_args)
 
         if (rn == NULL) {
             debug("Failed to get data from binance\n");
-            usleep(10000000);
+            if (non_blocking_sleep(args->timeout, &check_exit_callback, &(args->is_stopped)))
+                return NULL;
             continue;
         }
 
-        json_print(rn, 0);
+        //json_print(rn, 0);
 
         debug("Got %d OHCL datapoints\n", rn->length);
 
