@@ -141,7 +141,12 @@ int8_t state_add_pw(State* s, PlotWin* pw)
     // resize windows to fit in rows
     for (uint32_t i=0 ; i<s->pw_length ; i++) {
         PlotWin* p = s->pws[i];
-        wresize(p->plot->win, wheight, COLS);
+
+        if (i == s->pw_length-1)
+            wresize(p->plot->win, LINES-(i*wheight), COLS);
+        else
+            wresize(p->plot->win, wheight, COLS);
+
         mvwin(p->plot->win, i*wheight, 0);
         plot_resize(p->plot);
         wrefresh(p->plot->win);

@@ -52,8 +52,6 @@ int8_t plot_resize(Plot* pl)
      * Since maintaining proper window (re)sizes is difficult,
      * i centralized all of it to make things a bit more managable */
 
-    debug("Resizing plot\n");
-
     pl->xsize = getmaxx(pl->win);
     pl->ysize = getmaxy(pl->win);
 
@@ -109,53 +107,48 @@ int8_t plot_resize(Plot* pl)
     return 0;
 }
 
-int32_t plot_draw(Plot* pl, State* s)
+void plot_show_error(WINDOW* win, char* msg)
+{
+    clear_win(win);
+    add_str(win, 0, 0, CRED, msg);
+    wrefresh(win);
+}
+
+PlotError plot_draw(Plot* pl, State* s)
 {
     if(pl->lyaxis->is_empty || pl->ryaxis->is_empty) {
-        debug("No data, abort\n");
-        return -1;
+        plot_show_error(pl->win, "NO DATA!");
+        return PLOT_ERR_NO_DATA;
     }
 
-    // check if window is too small
-    if (getmaxx(pl->win) < PLOT_MIN_WINDOW_XSIZE || getmaxy(pl->win) < PLOT_MIN_WINDOW_YSIZE) {
-        debug("window too small\n");
-        return -1;
+    // Check if terminal is too narrow to fit windows
+    uint32_t min_xsize = pl->lyaxis->xsize + pl->ryaxis->xsize + GRAPH_MIN_SIZE;
+    if (min_xsize > getmaxx(pl->win))  {
+        plot_show_error(pl->win, "WINDOW TOO SMOLL!");
+        return PLOT_ERR_TOO_SMALL;
     }
 
     // Handle terminal resize
     if (pl->xsize != getmaxx(pl->win) || pl->ysize != getmaxy(pl->win)) {
-        if (plot_resize(pl) < 0) {
-            debug("plot resize failed\n");
-            return -1;
-        }
+        if (plot_resize(pl) < 0)
+            return PLOT_ERR_RESIZE_FAILED;
     }
-
     
-    // Check if terminal is too narrow to fit windows
-    uint32_t min_xsize = pl->lyaxis->xsize + pl->ryaxis->xsize + 15;
-    if (min_xsize > getmaxx(pl->win))  {
-        debug("Terminal too narrow\n");
-        return -1;
+    // Find the window width of the yaxis so we can calculate the graph width
+    int8_t res;
+    if ((res = yaxis_set_window_width(pl->lyaxis)) < 0) {
+        return PLOT_ERR_RESIZE_FAILED;
+    } else if (res > 0) {
+        if (plot_resize(pl) < 0)
+            return PLOT_ERR_RESIZE_FAILED;
     }
 
-    // Find the window width of the yaxis so we can calculate the graph width
-    if (yaxis_set_window_width(pl->lyaxis) >=0)
-        plot_resize(pl);
-    else
-        return -1;
-
-    if (yaxis_set_window_width(pl->ryaxis) >=0)
-        plot_resize(pl);
-    else
-        return -1;
-
-    assert(pl->win);
-    assert(pl->lyaxis->win && "Failed to create lyaxis window");
-    assert(pl->ryaxis->win && "Failed to create ryaxis window");
-    assert(pl->xaxis->win  && "Failed to create xaxis window");
-    assert(pl->status->win && "Failed to create status window");
-    assert(pl->graph->win  && "Failed to create graph window");
-
+    if ((res = yaxis_set_window_width(pl->ryaxis)) < 0) {
+        return PLOT_ERR_RESIZE_FAILED;
+    } else if (res > 0) {
+        if (plot_resize(pl) < 0)
+            return PLOT_ERR_RESIZE_FAILED;
+    }
 
     clear_win(pl->graph->win);
     clear_win(pl->xaxis->win);
@@ -183,5 +176,5 @@ int32_t plot_draw(Plot* pl, State* s)
     touchwin(pl->win);
     refresh();
     wrefresh(pl->win);
-    return 0;
+    return PLOT_SUCCESS;
 }

@@ -107,14 +107,13 @@ int8_t yaxis_set_window_width(Yaxis* a)
         delwin(a->win);
         if (a->side == AXIS_LEFT) {
             a->win = derwin(a->parent, a->ysize, a->xsize, 1, 0);
-            debug("Creating left win srcyx: %dx%d subwinyx: %dx%d\n", getmaxy(a->parent), getmaxx(a->parent), a->ysize, a->xsize);
             assert(a->win && "Failed to create left axis window");
         }
         else {
             a->win = derwin(a->parent, a->ysize, a->xsize, 1, getmaxx(a->parent)-new_xsize);
             assert(a->win && "Failed to create right axis window");
         }
-        return 0;
+        return 1;
     }
     return 0;
 }

@@ -25,5 +25,7 @@
 
 #define MAX_LINES 10
 
+#define GRAPH_MIN_SIZE 5
+
 
 #endif

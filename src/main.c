@@ -125,10 +125,10 @@ void loop(State* s, Index* index)
         // triggered by KEY_RESIZE
         if (s->is_resized) {
             s->is_resized = false;
-            for (int i=0 ; i<s->pw_length ; i++) {
-                if (plot_resize(s->pws[i]->plot) < 0)
-                    continue;
-            }
+            //for (int i=0 ; i<s->pw_length ; i++) {
+            //    if (plot_resize(s->pws[i]->plot) < 0)
+            //        continue;
+            //}
             if (pw_update_all(s->pws, s->pw_length, &lock))
                 break;
         }

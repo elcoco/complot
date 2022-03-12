@@ -54,10 +54,17 @@ struct Plot {
     int ysize;
 };
 
+typedef enum PlotError {
+    PLOT_ERR_NO_DATA          = -3,
+    PLOT_ERR_TOO_SMALL        = -2,
+    PLOT_ERR_RESIZE_FAILED    = -1,
+    PLOT_SUCCESS              = 0
+} PlotError;
+
 
 Plot*  plot_init(WINDOW* parent);
 void   plot_destroy(Plot* pl);
-int32_t plot_draw(Plot* pl, State* s);
+PlotError plot_draw(Plot* pl, State* s);
 int8_t plot_resize(Plot* pl);
 void   plot_draw_xaxis(Plot* pl, Group* g);
 
