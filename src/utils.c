@@ -119,27 +119,4 @@ bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg)
     return false;
 }
 
-State* state_init()
-{
-    State* s = malloc(sizeof(State));
-    s->is_paused = false;
-    s->is_stopped = false;
-    s->panx = 0;
-    s->pany = 0;
-    s->is_pan_changed = false;
-    s->set_autorange = true;
-    s->fit_all = false;
-
-    s->dmin = -1;
-    s->dmax = -1;
-
-    // amount of bins in a group
-    s->gsize = DEFAULT_GROUP_SIZE;
-    s->is_resized = false;
-
-    s->lines_enabled = malloc(MAX_LINES * sizeof(bool));
-    memset(s->lines_enabled, true, MAX_LINES);
-    s->line_changed = false;
-    return s;
-}
 

@@ -14,12 +14,14 @@
 #include "line.h"
 #include "ui.h"
 #include "config.h"
+#include "plotwin.h"
 
 
 typedef struct Yaxis Yaxis;
 
-// forward declare from plot.h
+// forward declare
 typedef struct Line Line;
+typedef struct State State;
 
 typedef enum AxisSide {
     AXIS_LEFT,

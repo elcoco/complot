@@ -79,6 +79,7 @@ JSONObject* do_binance_req(char* symbol, BinanceInterval interval, int64_t tstar
 
 bool check_exit_callback(void* stopped)
 {
+    /* Used by non_blocking_sleep to signal the stopped state and trigger thread/program exit to main process */
     return *((bool*)stopped);
 }
 
@@ -86,23 +87,28 @@ void* binance_read_thread(void* thread_args)
 {
     // TODO needs non blocking sleep
     // Cast thread arguments to correct type
-    PlotWin* args = thread_args;
+    Request* args = thread_args;
+    //PlotWin* args = thread_args;
     int64_t tstart = -1;
 
-    while (!args->is_stopped) {
+    while (!*(args->is_stopped)) {
 
-        JSONObject* rn = do_binance_req(args->symbol, *(args->OHLCinterval), tstart, args->limit);
+        debug("symbol: %s\n", args->symbol);
+        assert(args->index);
+        assert(args->symbol);
+        JSONObject* rn = do_binance_req(args->symbol, (args->OHLCinterval), tstart, args->limit);
 
         if (rn == NULL) {
             debug("Failed to get data from binance\n");
-            if (non_blocking_sleep(args->timeout, &check_exit_callback, &(args->is_stopped)))
+            if (non_blocking_sleep(args->timeout, &check_exit_callback, args->is_stopped))
                 return NULL;
             continue;
         }
 
         //json_print(rn, 0);
 
-        debug("Got %d OHCL datapoints\n", rn->length);
+        if (rn->length > 0)
+            debug("Got %d OHCL datapoints\n", rn->length);
 
         double dt_open, dt_close, open, high, low, close, volume;
 
@@ -128,6 +134,7 @@ void* binance_read_thread(void* thread_args)
             //
             Line* l_vol = args->lines[0];
             Line* l_ohlc = args->lines[1];
+            debug("%s: Inserting points for lines: %d, %d\n", args->symbol, l_vol->lineid->id, l_ohlc->lineid->id);
 
             point_create_point(args->index, l_vol->lineid, dt_open, volume);
             point_create_cspoint(args->index, l_ohlc->lineid, dt_open, open, high, low, close);

@@ -402,8 +402,6 @@ int8_t line_add_point(Bin* b, Point* p)
         LineContainer** lc = (LineContainer**)(&(b->lcontainers[p->lineid->id]));
         line_add_line_point(lc, p);
     }
-    else
-        return -1;
 
     return 1;
 }

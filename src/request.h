@@ -13,9 +13,14 @@
 #include "index.h"
 #include "utils.h"
 #include "plotwin.h"
+#include "line.h"
+
+
+//#define MAX_SYMBOL_SIZE 20
 
 // forward declare
 typedef struct PlotWin PlotWin;
+typedef struct Line Line;
 
 typedef struct Response {
     char* response;
@@ -41,20 +46,19 @@ typedef enum BinanceInterval {
     BINANCE_1_MONTH
 } BinanceInterval;
 
-typedef struct RequestArgs {
+typedef struct Request {
     Index* index;
-    LineID* llineid;
-    LineID* rlineid;
+    Line**  lines;
     pthread_mutex_t* lock;
-    bool is_stopped;
-    char symbol[50];
+    bool* is_stopped;
+    char symbol[MAX_SYMBOL_SIZE];
     uint32_t timeout;
     BinanceInterval OHLCinterval;
     uint32_t limit;
 } RequestArgs;
 
-static char binance_interval_map[][4] = { "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M" };
-static char binance_url_fmt[] = "https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d";
+const static char binance_interval_map[][4] = { "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M" };
+const static char binance_url_fmt[] = "https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d";
 
 char* do_req(char* url);
 

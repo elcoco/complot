@@ -84,8 +84,10 @@ GroupContainer* yaxis_get_gc(Yaxis* a)
 int8_t yaxis_set_window_width(Yaxis* a)
 {
     /* Find window width of y tickers. Return 1 if size has changed since last check */
-    if (a->is_empty)
+    if (a->is_empty) {
+        debug("Failed to set yaxis window width, no data\n");
         return -1;
+    }
 
     if (a->autorange) {
         a->dmin = a->vdmin;
@@ -112,7 +114,7 @@ int8_t yaxis_set_window_width(Yaxis* a)
             a->win = derwin(a->parent, a->ysize, a->xsize, 1, getmaxx(a->parent)-new_xsize);
             assert(a->win && "Failed to create right axis window");
         }
-        return 1;
+        return 0;
     }
     return 0;
 }

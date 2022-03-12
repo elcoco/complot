@@ -14,9 +14,7 @@
 #include "index.h"
 #include "status.h"
 #include "legend.h"
-
-
-
+#include "plotwin.h"
 
 // Node struct represents a cell in the matrix
 typedef struct Plot Plot;
@@ -40,8 +38,6 @@ struct Graph {
 // Represents the nodes that are visible on screen
 // Holds a subset of Matrix->nodes,
 struct Plot {
-    WINDOW* parent;
-
     // main window containing the subwindows
     WINDOW* win;
 
@@ -61,7 +57,7 @@ struct Plot {
 
 Plot*  plot_init(WINDOW* parent);
 void   plot_destroy(Plot* pl);
-void   plot_draw(Plot* pl, State* s);
+int32_t plot_draw(Plot* pl, State* s);
 int8_t plot_resize(Plot* pl);
 void   plot_draw_xaxis(Plot* pl, Group* g);
 
