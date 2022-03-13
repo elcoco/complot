@@ -31,6 +31,8 @@ Yaxis* yaxis_init(WINDOW* parent, AxisSide side)
     a->is_empty = true;
     a->autorange = true;
 
+    a->bgcol = CDEFAULT;
+
     return a;
 }
 
@@ -81,7 +83,7 @@ GroupContainer* yaxis_get_gc(Yaxis* a)
     return NULL;
 }
 
-int8_t yaxis_set_window_width(Yaxis* a)
+int8_t yaxis_set_window_width(Yaxis* a, uint32_t yoffset)
 {
     /* Find window width of y tickers. Return 1 if size has changed since last check */
     if (a->is_empty) {
@@ -106,11 +108,11 @@ int8_t yaxis_set_window_width(Yaxis* a)
 
         delwin(a->win);
         if (a->side == AXIS_LEFT) {
-            a->win = derwin(a->parent, a->ysize, a->xsize, 1, 0);
+            a->win = derwin(a->parent, a->ysize, a->xsize, yoffset, 0);
             assert(a->win && "Failed to create left axis window");
         }
         else {
-            a->win = derwin(a->parent, a->ysize, a->xsize, 1, getmaxx(a->parent)-new_xsize);
+            a->win = derwin(a->parent, a->ysize, a->xsize, yoffset, getmaxx(a->parent)-new_xsize);
             assert(a->win && "Failed to create right axis window");
         }
         return 1;
@@ -167,10 +169,10 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
 
     char buf[50] = {'\0'};
     get_tickerstr(buf, lasty, a->xsize, a->nwhole, a->nfrac);
-    add_str(a->win, a->ysize-ilasty-1, 0, CGREEN, buf);
+    add_str(a->win, a->ysize-ilasty-1, 0, CGREEN, a->bgcol, buf);
 
     for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++) {
-        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, YAXIS_LDATA_LINE_CHR);
+        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, a->bgcol, YAXIS_LDATA_LINE_CHR);
     }
 }
 
@@ -226,7 +228,7 @@ void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, i
 
             // draw intermediate points
             if (y_is_in_view(wtarget, ysize-xp->y-1))
-                add_str(wtarget, ysize-xp->y-1, xp->x, l->color, l->chr);
+                add_str(wtarget, ysize-xp->y-1, xp->x, l->color, CDEFAULT, l->chr);
 
             // draw y interpolated points that are next to eachother
             uint32_t nypoints = abs(xp->y-prevxp->y);
@@ -234,7 +236,7 @@ void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, i
             yinterpolate(ypoints, prevxp->x, prevxp->y, xp->x, xp->y);
 
             for (int32_t i=0 ; i<nypoints ; i++)
-                add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, l->chr);
+                add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
 
             prevxp = xp;
         }
@@ -245,7 +247,7 @@ void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, i
     yinterpolate(ypoints, prevxp->x, prevxp->y, x1, y1);
 
     for (int32_t i=0 ; i<nypoints ; i++)
-        add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, l->chr);
+        add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
 }
 
 void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffset)
@@ -274,7 +276,7 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
             // map data point from data range to terminal rows range
             int32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
             if (y_is_in_view(wtarget, ysize-iy-1))
-                add_str(wtarget, ysize-iy-1, ix, l->color, l->chr);
+                add_str(wtarget, ysize-iy-1, ix, l->color, a->bgcol, l->chr);
 
             if (previx > 0)
                 interpolate(l, wtarget, previx, previy, ix, iy);
@@ -298,7 +300,7 @@ void yaxis_draw_tickers(Yaxis* a, int32_t yoffset)
         char buf[50] = {'\0'};
         double ticker = a->dmin + ((iy - yoffset)*step);
         get_tickerstr(buf, ticker, a->xsize, a->nwhole, a->nfrac);
-        add_str(a->win, a->ysize-iy-1, 0, CWHITE, buf);
+        add_str(a->win, a->ysize-iy-1, 0, CWHITE, a->bgcol, buf);
     }
 }
 
@@ -311,12 +313,12 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CGREEN, YAXIS_OHLC_WICK);
+            add_str(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_WICK);
         }
         for (int y=iopen ; y<=iclose ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CGREEN, YAXIS_OHLC_BODY);
+            add_str(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_BODY);
         }
     // RED
     }
@@ -324,12 +326,12 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CRED, YAXIS_OHLC_WICK);
+            add_str(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_WICK);
         }
         for (int y=iclose ; y<=iopen ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CRED, YAXIS_OHLC_BODY);
+            add_str(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_BODY);
 
         }
     }

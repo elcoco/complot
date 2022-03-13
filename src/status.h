@@ -27,7 +27,8 @@ struct StatusBar {
     uint32_t length;    // kv array length
     StatusItem** kv;
     bool is_changed;
-    uint32_t color;
+    uint32_t fgcol;
+    uint32_t bgcol;
 };
 
 StatusBar*  status_init();

@@ -34,22 +34,22 @@ void cleanup_ui()
     //refresh();
 }
 
-int add_chr(WINDOW* win, uint32_t y, uint32_t x, uint32_t color, char c)
+int add_chr(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol, char c)
 {
-    wattrset(win, COLOR_PAIR(color));
+    set_color(win, fgcol, bgcol);
     mvwaddch(win, y, x, c);
-    wattroff(win, COLOR_PAIR(color));
+    unset_color(win, fgcol, bgcol);
     return 0;
 }
 
-int add_str(WINDOW* win, uint32_t y, uint32_t x, uint32_t color, char* fmt, ...)
+int add_str(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol, char* fmt, ...)
 {
     va_list ptr;
     va_start(ptr, fmt);
 
-    wattrset(win, COLOR_PAIR(color));
+    set_color(win, fgcol, bgcol);
     mvwprintw(win, y, x, fmt, ptr);
-    wattroff(win, COLOR_PAIR(color));
+    unset_color(win, fgcol, bgcol);
     va_end(ptr);
 
     return 0;
@@ -61,15 +61,10 @@ void init_colors()
 
     if(has_colors()) {
         if(start_color() == OK) {
-            init_pair(CRED,     COLOR_RED,     -1);
-            init_pair(CGREEN,   COLOR_GREEN,   -1);
-            init_pair(CYELLOW,  COLOR_YELLOW,  -1);
-            init_pair(CBLUE,    COLOR_BLUE,    -1);
-            init_pair(CMAGENTA, COLOR_MAGENTA, -1);
-            init_pair(CCYAN,    COLOR_CYAN,    -1);
-            init_pair(CWHITE,   COLOR_WHITE,   -1);
-            init_pair(CBLACK,   COLOR_BLACK,   -1);
-
+            for (uint32_t bg=0 ; bg<ncolors ; bg++) {
+                for (uint32_t fg=0 ; fg<ncolors ; fg++)
+                    init_pair((fg+1)+(bg*ncolors), ccolors[fg], ccolors[bg]);
+            }
         } else {
             addstr("Cannot start colours\n");
             refresh();
@@ -78,7 +73,17 @@ void init_colors()
         addstr("Not colour capable\n");
         refresh();
     }
-} 
+}
+
+void set_color(WINDOW* win, uint32_t fgcolor, uint32_t bgcolor)
+{
+    wattrset(win, COLOR_PAIR(fgcolor + ((bgcolor-1)*ncolors)));
+    debug("setting color: %d\n", fgcolor*bgcolor);
+}
+void unset_color(WINDOW* win, uint32_t fgcolor, uint32_t bgcolor)
+{
+    wattroff(win, COLOR_PAIR(fgcolor + (bgcolor*ncolors)));
+}
 
 void clear_win(WINDOW* win)
 {

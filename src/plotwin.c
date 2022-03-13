@@ -24,7 +24,7 @@ PlotWin* pw_init(WINDOW* win, Index* index, State* state, char* symbol, pthread_
     pw->request->lines           = pw->lines;
     pw->request->lock            = lock;
     pw->request->is_stopped      = &(state->is_stopped);
-    pw->request->OHLCinterval    = BINANCE_5_MINUTES;
+    pw->request->OHLCinterval    = BINANCE_1_MINUTES;
     pw->request->limit           = 500;
     pw->request->timeout         = 60 * 1000 * 1000;
     strcpy(pw->request->symbol, symbol);
@@ -38,6 +38,10 @@ int8_t pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock)
     for (int i=0 ; i<length ; i++) {
         if (pw_update(pws[i], lock) < 0)
             return -1;
+        if (i == pws[i]->state->cur_pw) {
+            add_str(pws[i]->plot->win, 0, 0, CRED, CDEFAULT, "x");
+            wrefresh(pws[i]->plot->win);
+        }
     }
     return 0;
 }
@@ -122,7 +126,8 @@ State* state_init()
     s->is_resized = false;
 
     s->pws = NULL;
-    s->pw_length = 0;
+    s->pws_length = 0;
+    s->cur_pw = 0;
 
     return s;
 }
@@ -130,19 +135,19 @@ State* state_init()
 int8_t state_add_pw(State* s, PlotWin* pw)
 {
     /* Add a PlotWin struct to the state->pws array */
-    s->pw_length++;
-    s->pws = realloc(s->pws, s->pw_length * sizeof(PlotWin*));
-    s->pws[s->pw_length-1] = pw;
+    s->pws_length++;
+    s->pws = realloc(s->pws, s->pws_length * sizeof(PlotWin*));
+    s->pws[s->pws_length-1] = pw;
 
     refresh();
 
-    uint32_t wheight = LINES/s->pw_length;
+    uint32_t wheight = LINES/s->pws_length;
 
     // resize windows to fit in rows
-    for (uint32_t i=0 ; i<s->pw_length ; i++) {
+    for (uint32_t i=0 ; i<s->pws_length ; i++) {
         PlotWin* p = s->pws[i];
 
-        if (i == s->pw_length-1)
+        if (i == s->pws_length-1)
             wresize(p->plot->win, LINES-(i*wheight), COLS);
         else
             wresize(p->plot->win, wheight, COLS);

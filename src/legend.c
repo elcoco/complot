@@ -5,6 +5,7 @@ Legend* legend_init(Yaxis* ya)
     Legend* le = malloc(sizeof(Legend));
     le->ysize = 1;
     le->yaxis = ya;
+    le->bgcol = CDEFAULT;
     return le;
 }
 
@@ -22,7 +23,7 @@ void legend_draw(Legend* le)
         if (l->next != NULL)
             strcat(buf, ", ");
 
-        add_str(le->win, 0, xpos, l->color, buf);
+        add_str(le->win, 0, xpos, l->color, le->bgcol, buf);
 
         // can't do strlen on buf because the icon is a multi byte unicode character
         xpos += strlen(l->name) + 6;

@@ -146,7 +146,7 @@ char* pos_next(Position *pos)
     // NOTE: EOF should not be reached under normal conditions.
     //       This indicates corrupted JSON
     if (pos->npos >= pos->length) {
-        debug(">>>>>>>>>> EOL @ c=%c, pos: %d, %d,%d\n", *(pos->c), pos->npos, pos->cols, pos->rows);
+        debug("EOL @ c=%c, pos: %d, %d,%d\n", *(pos->c), pos->npos, pos->cols, pos->rows);
         return NULL;
     }
     return pos->c;
@@ -202,7 +202,7 @@ JSONObject* json_object_init(JSONObject* parent)
     jo->prev = NULL;
     jo->next = NULL;
 
-    jo->length = -1;
+    jo->length = 0;
     jo->index = -1;
 
     jo->dtype = JSON_UNKNOWN;

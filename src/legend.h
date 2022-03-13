@@ -19,6 +19,7 @@ struct Legend {
     int xsize;
     int ysize;
     Yaxis* yaxis;
+    uint32_t bgcol;
 };
 
 Legend* legend_init(Yaxis* ya);

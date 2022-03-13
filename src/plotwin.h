@@ -34,8 +34,12 @@ typedef struct State {
 
     // pointer array to all plot wins and current selected PlotWin
     PlotWin** pws;
-    PlotWin*  cur_pw;
-    uint32_t pw_length;
+
+    // index to current PlotWin
+    uint32_t  cur_pw;
+
+    // pws array length
+    uint32_t pws_length;
 } State;
 
 typedef struct PlotWin {

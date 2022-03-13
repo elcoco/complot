@@ -23,6 +23,9 @@ struct Xaxis {
 
     int xsize;
     int ysize;
+
+    uint32_t fgcol;
+    uint32_t bgcol;
 };
 
 Xaxis* xaxis_init();

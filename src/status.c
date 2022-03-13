@@ -8,7 +8,8 @@ StatusBar* status_init()
     sb->length = 0;
     sb->ysize = 1;
     sb->is_changed = false;
-    sb->color = CMAGENTA;
+    sb->fgcol = CMAGENTA;
+    sb->bgcol = CDEFAULT;
     return sb;
 }
 
@@ -57,11 +58,11 @@ void status_draw(StatusBar* sb)
 
         for (uint32_t ix=0 ; ix<strlen(buf) ; ix++, xpos++) {
             if (xpos >= sb->xsize) {
-                add_str(sb->win, 0, sb->xsize-3, sb->color, "...");
+                add_str(sb->win, 0, sb->xsize-3, sb->fgcol, sb->bgcol, "...");
                 break;
             }
             //mvwaddch(sb->win, 0, xpos, buf[ix]);
-            add_chr(sb->win, 0, xpos, sb->color, buf[ix]);
+            add_chr(sb->win, 0, xpos, sb->fgcol, sb->bgcol, buf[ix]);
         }
     }
 }

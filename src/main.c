@@ -34,6 +34,7 @@ bool check_user_input(void* arg)
 {
     // s struct is passed as an argument to a callback, cast it to the proper type
     State* s = arg;
+    PlotWin* pw;
     //MEVENT event;       // curses mouse event
                         //
     /* check for user input, return 1 if there was input */
@@ -72,12 +73,17 @@ bool check_user_input(void* arg)
                 s->gsize++;
                 break;
             case 'K':
-                s->pany-=DEFAULT_PAN_BIG_STEPS;
-                s->is_pan_changed = true;
+                s->cur_pw = (s->cur_pw == 0) ? s->pws_length-1 : s->cur_pw-1;
+                debug("cur pw up: %d\n", s->cur_pw);
                 break;
             case 'J':
-                s->pany+=DEFAULT_PAN_BIG_STEPS;
-                s->is_pan_changed = true;
+                s->cur_pw = (s->cur_pw == s->pws_length-1) ? 0 : s->cur_pw+1;
+                debug("cur pw down: %d\n", s->cur_pw);
+                break;
+            case 's': // autorange
+                pw = s->pws[s->cur_pw];
+                pw->plot->show_status = !pw->plot->show_status;
+                plot_resize(pw->plot);
                 break;
             case 'R': // autorange
                 s->set_autorange = !s->set_autorange;
@@ -93,8 +99,9 @@ bool check_user_input(void* arg)
                 s->is_paused = !s->is_paused;
                 break;
             case '0' ... '9':
-                //s->lines_enabled[c-'0'] = !s->lines_enabled[c-'0'];
-                //s->line_changed = true;
+                pw = s->pws[s->cur_pw];
+                if (pw->lines[c-'0'])
+                    pw->lines[c-'0']->is_enabled = !pw->lines[c-'0']->is_enabled;
                 break;
             //case KEY_MOUSE:
             //    if (getmouse(&event) == OK) {
@@ -125,23 +132,19 @@ void loop(State* s, Index* index)
         // triggered by KEY_RESIZE
         if (s->is_resized) {
             s->is_resized = false;
-            //for (int i=0 ; i<s->pw_length ; i++) {
-            //    if (plot_resize(s->pws[i]->plot) < 0)
-            //        continue;
-            //}
-            if (pw_update_all(s->pws, s->pw_length, &lock))
+            if (pw_update_all(s->pws, s->pws_length, &lock))
                 break;
         }
 
         // update on new data
         if (! s->is_paused && index_has_new_data(index)) {
-            if (pw_update_all(s->pws, s->pw_length, &lock))
+            if (pw_update_all(s->pws, s->pws_length, &lock))
                 break;
         }
 
         // sleep but update on user input
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
-            if (pw_update_all(s->pws, s->pw_length, &lock))
+            if (pw_update_all(s->pws, s->pws_length, &lock))
                 break;
         }
     }
@@ -187,7 +190,6 @@ int main(int argc, char **argv)
     state_add_pw(s, pw0);
     state_add_pw(s, pw1);
     state_add_pw(s, pw2);
-    s->cur_pw = pw0;
 
     loop(s, index);
 

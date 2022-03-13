@@ -20,8 +20,13 @@ Plot* plot_init(WINDOW* win)
     pl->rlegend = legend_init(pl->ryaxis);
     pl->status  = status_init();
 
+    pl->show_status = false;
+    pl->show_legend = true;
+    pl->show_xaxis = true;
+
     // set all sizes and create all windows
     plot_resize(pl);
+
 
     return pl;
 }
@@ -49,59 +54,67 @@ Graph* graph_init()
 int8_t plot_resize(Plot* pl)
 {
     /* resize/create all windows to fit parent window
-     * Since maintaining proper window (re)sizes is difficult,
+     * Since maintaining proper window (re)sizes is hard,
      * i centralized all of it to make things a bit more managable */
 
     pl->xsize = getmaxx(pl->win);
     pl->ysize = getmaxy(pl->win);
 
+    uint32_t status_ysize = (pl->show_status) ? pl->status->ysize : 0;
+    uint32_t legend_ysize = (pl->show_legend) ? pl->llegend->ysize : 0;
+    uint32_t xaxis_ysize = (pl->show_xaxis) ? pl->xaxis->ysize : 0;
 
     // resize statusbar
-    pl->status->xsize = pl->xsize;
-    delwin(pl->status->win);
-    pl->status->win = derwin(pl->win, pl->status->ysize, pl->status->xsize, pl->ysize-1, 0);
-
+    if (pl->show_status) {
+        pl->status->xsize = pl->xsize;
+        delwin(pl->status->win);
+        pl->status->win = derwin(pl->win, status_ysize, pl->status->xsize, pl->ysize-1, 0);
+        assert(pl->status->win && "Failed to create status window");
+    }
 
     // resize xaxis
-    pl->xaxis->xsize = pl->xsize;
-    delwin(pl->xaxis->win);
-    uint32_t xaxis_ypos = pl->ysize - pl->xaxis->ysize - pl->status->ysize;
-    pl->xaxis->win = derwin(pl->win, pl->xaxis->ysize, pl->xaxis->xsize, xaxis_ypos, 0);
+    if (pl->show_xaxis) {
+        pl->xaxis->xsize = pl->xsize;
+        delwin(pl->xaxis->win);
+        uint32_t xaxis_ypos = pl->ysize - xaxis_ysize - status_ysize;
+        pl->xaxis->win = derwin(pl->win, xaxis_ysize, pl->xaxis->xsize, xaxis_ypos, 0);
+        assert(pl->xaxis->win  && "Failed to create xaxis window");
+    }
 
     // trigger yaxis window resize/recreate
-    int yaxis_ysize = pl->ysize - pl->xaxis->ysize - pl->llegend->ysize - pl->status->ysize;
+    int yaxis_ysize = pl->ysize - xaxis_ysize - legend_ysize - status_ysize;
 
     pl->lyaxis->xsize = 0;
     pl->lyaxis->ysize = yaxis_ysize;
-    if (yaxis_set_window_width(pl->lyaxis) < 0) {
+    if (yaxis_set_window_width(pl->lyaxis, legend_ysize) < 0) {
         debug("Failed to set window width of lyaxis\n");
         return -1;
     }
 
     pl->ryaxis->xsize = 0;
     pl->ryaxis->ysize = yaxis_ysize;
-    if (yaxis_set_window_width(pl->ryaxis) < 0) {
+    if (yaxis_set_window_width(pl->ryaxis, legend_ysize) < 0) {
         debug("Failed to set window width of ryaxis\n");
         return -1;
     }
 
     // resize left and right legend
-    pl->llegend->xsize = floor(pl->xsize/2);
-    pl->llegend->win = derwin(pl->win, pl->llegend->ysize, pl->llegend->xsize, 0, 0);
-    pl->rlegend->xsize = floor(pl->xsize/2);
-    pl->rlegend->win = derwin(pl->win, pl->rlegend->ysize, pl->rlegend->xsize, 0, pl->xsize-pl->rlegend->xsize);
+    if (pl->show_legend) {
+        pl->llegend->xsize = floor(pl->xsize/2);
+        pl->llegend->win = derwin(pl->win, legend_ysize, pl->llegend->xsize, 0, 0);
+        pl->rlegend->xsize = floor(pl->xsize/2);
+        pl->rlegend->win = derwin(pl->win, legend_ysize, pl->rlegend->xsize, 0, pl->xsize-pl->rlegend->xsize);
+    }
 
     // yaxis changes width to data so we need to resize graph window accordingly
     pl->graph->xsize = pl->xsize - (pl->lyaxis->xsize + pl->ryaxis->xsize); 
-    pl->graph->ysize = pl->ysize - pl->xaxis->ysize - pl->llegend->ysize - pl->status->ysize;
+    pl->graph->ysize = pl->ysize - xaxis_ysize - legend_ysize - status_ysize;
     delwin(pl->graph->win);
-    pl->graph->win = derwin(pl->win, pl->graph->ysize, pl->graph->xsize, pl->llegend->ysize, pl->lyaxis->xsize);
+    pl->graph->win = derwin(pl->win, pl->graph->ysize, pl->graph->xsize, legend_ysize, pl->lyaxis->xsize);
 
     assert(pl->win);
     assert(pl->lyaxis->win && "Failed to create lyaxis window");
     assert(pl->ryaxis->win && "Failed to create ryaxis window");
-    assert(pl->xaxis->win  && "Failed to create xaxis window");
-    assert(pl->status->win && "Failed to create status window");
     assert(pl->graph->win  && "Failed to create graph window");
 
     return 0;
@@ -109,8 +122,11 @@ int8_t plot_resize(Plot* pl)
 
 void plot_show_error(WINDOW* win, char* msg)
 {
+    uint32_t xpos = (getmaxx(win) / 2) + (strlen(msg) / 2);
+    uint32_t ypos = getmaxy(win) / 2;
+    //debug("%dx%d\n", ypos, xpos);
     clear_win(win);
-    add_str(win, 0, 0, CRED, msg);
+    add_str(win, 0, 0, CRED, CDEFAULT, msg);
     wrefresh(win);
 }
 
@@ -136,14 +152,17 @@ PlotError plot_draw(Plot* pl, State* s)
     
     // Find the window width of the yaxis so we can calculate the graph width
     int8_t res;
-    if ((res = yaxis_set_window_width(pl->lyaxis)) < 0) {
+    // TODO very ugly solution to the problem, must find out if yaxis changed width
+    //      without calculating legend_ysize
+    uint32_t legend_ysize = (pl->show_legend) ? pl->llegend->ysize : 0;
+    if ((res = yaxis_set_window_width(pl->lyaxis, legend_ysize)) < 0) {
         return PLOT_ERR_RESIZE_FAILED;
     } else if (res > 0) {
         if (plot_resize(pl) < 0)
             return PLOT_ERR_RESIZE_FAILED;
     }
 
-    if ((res = yaxis_set_window_width(pl->ryaxis)) < 0) {
+    if ((res = yaxis_set_window_width(pl->ryaxis, legend_ysize)) < 0) {
         return PLOT_ERR_RESIZE_FAILED;
     } else if (res > 0) {
         if (plot_resize(pl) < 0)
@@ -151,27 +170,33 @@ PlotError plot_draw(Plot* pl, State* s)
     }
 
     clear_win(pl->graph->win);
-    clear_win(pl->xaxis->win);
-    clear_win(pl->llegend->win);
-    clear_win(pl->rlegend->win);
-    clear_win(pl->status->win);
 
     yaxis_draw(pl->lyaxis, pl->graph->win, s);
     yaxis_draw(pl->ryaxis, pl->graph->win, s);
 
     // find data to display on x axis in Yaxis
+    if (pl->show_xaxis)
+        clear_win(pl->xaxis->win);
+
     GroupContainer* gc;
-    if ((gc = yaxis_get_gc(pl->lyaxis)) != NULL)
+    if (pl->show_xaxis && (gc = yaxis_get_gc(pl->lyaxis)) != NULL)
         xaxis_draw(pl->xaxis, gc->group, pl->lyaxis->xsize, pl->graph->xsize);
-    else if ((gc = yaxis_get_gc(pl->ryaxis)) != NULL)
+    else if (pl->show_xaxis && (gc = yaxis_get_gc(pl->ryaxis)) != NULL)
         xaxis_draw(pl->xaxis, gc->group, pl->lyaxis->xsize, pl->graph->xsize);
     else
         debug("No data found\n");
 
-    legend_draw(pl->llegend);
-    legend_draw(pl->rlegend);
+    if (pl->show_legend) {
+        clear_win(pl->llegend->win);
+        clear_win(pl->rlegend->win);
+        legend_draw(pl->llegend);
+        legend_draw(pl->rlegend);
+    }
 
-    status_draw(pl->status);
+    if (pl->show_status) {
+        clear_win(pl->status->win);
+        status_draw(pl->status);
+    }
 
     touchwin(pl->win);
     refresh();

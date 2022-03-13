@@ -52,6 +52,10 @@ struct Plot {
     // total plot dimensions
     int xsize;
     int ysize;
+
+    bool show_status;
+    bool show_legend;
+    bool show_xaxis;
 };
 
 typedef enum PlotError {
