@@ -145,10 +145,11 @@ void* binance_read_thread(void* thread_args)
         }
 
         // do non blocking sleep
-        if (non_blocking_sleep(args->timeout, &check_exit_callback, &(args->is_stopped)))
-            return NULL;
+        if (non_blocking_sleep(args->timeout, &check_exit_callback, args->is_stopped))
+            break;
 
     }
+    debug("[%s] thread exit...\n", args->symbol);
     return NULL;
 
 
