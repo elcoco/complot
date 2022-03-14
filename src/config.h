@@ -23,7 +23,8 @@
 #define DEFAULT_PAN_STEPS 3
 #define DEFAULT_PAN_BIG_STEPS 5
 
-#define MAX_LINES 10
+// TODO this should really be dynamic
+#define MAX_LINES 20
 
 #define GRAPH_MIN_SIZE 5
 

@@ -11,6 +11,8 @@ Yaxis* yaxis_init(WINDOW* parent, AxisSide side)
 
     a->side = side;
 
+    a->xsize = 0;
+
     a->nwhole = 0;
     a->nfrac = 0;
 
@@ -170,7 +172,7 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
     add_str(a->win, a->ysize-ilasty-1, 0, CGREEN, a->bgcol, buf);
 
     for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++) {
-        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, a->bgcol, YAXIS_LDATA_LINE_CHR);
+        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, CDEFAULT, YAXIS_LDATA_LINE_CHR);
     }
 }
 

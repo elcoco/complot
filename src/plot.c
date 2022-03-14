@@ -127,19 +127,20 @@ PlotStatus plot_draw(Plot* pl, State* s)
         return PLERR_NO_DATA;
     }
 
-    // Check if terminal is too narrow to fit windows
-    uint32_t min_xsize = pl->lyaxis->xsize + pl->ryaxis->xsize + GRAPH_MIN_SIZE;
-    if (min_xsize > getmaxx(pl->win))  {
-        ui_show_error(pl->win, "WINDOW TOO SMOLL!");
-        return PLERR_WINDOW_TOO_SMALL;
-    }
-
     // Handle terminal resize
     if (pl->xsize != getmaxx(pl->win) || pl->ysize != getmaxy(pl->win)) {
         if ((plstatus = plot_resize(pl)) < PLSUCCESS)
             return plstatus;
     }
     
+    // Check if terminal is too narrow to fit windows
+    uint32_t min_xsize = pl->lyaxis->xsize + pl->ryaxis->xsize + GRAPH_MIN_SIZE;
+    if (min_xsize > getmaxx(pl->win))  {
+        ui_show_error(pl->win, "WINDOW TOO SMOLL!");
+        debug("min size: %d = %d + %d\n", min_xsize, pl->lyaxis->xsize, pl->ryaxis->xsize);
+        return PLERR_WINDOW_TOO_SMALL;
+    }
+
     // Find the window width of the yaxis so we can calculate the graph width
     // TODO very ugly solution to the problem, must find out if yaxis changed width
     //      without calculating legend_ysize

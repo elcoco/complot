@@ -35,7 +35,6 @@ bool check_user_input(void* arg)
     // s struct is passed as an argument to a callback, cast it to the proper type
     State* s = arg;
     PlotWin* pw;
-    //MEVENT event;       // curses mouse event
                         //
     /* check for user input, return 1 if there was input */
     int c = getch();
@@ -111,15 +110,6 @@ bool check_user_input(void* arg)
                 if (pw->lines[c-'0'])
                     pw->lines[c-'0']->is_enabled = !pw->lines[c-'0']->is_enabled;
                 break;
-            //case KEY_MOUSE:
-            //    if (getmouse(&event) == OK) {
-            //        if(event.bstate & BUTTON1_CLICKED) {
-            //            // This works for left-click
-            //            s->clicked_x = event.x;
-            //            s->clicked_y = event.y;
-            //        }
-            //    }
-            //    break;
             default:
                 return false;
         }
@@ -141,6 +131,8 @@ void loop(State* s, Index* index)
             WINDOW* win = newwin(0, 0, 0, 0);
             PlotWin* pw = pw_init(win, index, s, "BTCBUSD", &lock);
             state_add_pw(s, pw);
+            if (pw_update_all(s->pws, s->pws_length, &lock))
+                break;
         }
 
         // triggered by KEY_RESIZE

@@ -45,3 +45,4 @@
 // TODO order book
 // DONE volume as second line on left axis
 // TODO show/hide lines/axis
+// TODO select ticker to use on new window

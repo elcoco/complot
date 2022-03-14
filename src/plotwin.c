@@ -43,14 +43,16 @@ void pw_destroy(PlotWin* pw)
 
 int8_t pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock)
 {
-    debug("UPDATE ALL: %d\n", length);
     for (int i=0 ; i<length ; i++) {
+        if (i == pws[i]->state->cur_pw) {
+            pws[i]->plot->lyaxis->bgcol = CBLACK;
+            pws[i]->plot->ryaxis->bgcol = CBLACK;
+        } else {
+            pws[i]->plot->lyaxis->bgcol = CDEFAULT;
+            pws[i]->plot->ryaxis->bgcol = CDEFAULT;
+        }
         if (pw_update(pws[i], lock) < 0)
             return -1;
-        if (i == pws[i]->state->cur_pw) {
-            add_str(pws[i]->plot->win, 0, 0, CRED, CDEFAULT, "x");
-            wrefresh(pws[i]->plot->win);
-        }
     }
     return 0;
 }
@@ -161,7 +163,7 @@ int8_t state_add_pw(State* s, PlotWin* pw)
     s->pws = realloc(s->pws, s->pws_length * sizeof(PlotWin*));
     s->pws[s->pws_length-1] = pw;
 
-    s->cur_pw = 0;
+    s->cur_pw = s->pws_length-1;;
     refresh();
     state_resize_pws(s->pws, s->pws_length);
     return 0;
@@ -169,17 +171,16 @@ int8_t state_add_pw(State* s, PlotWin* pw)
 
 int8_t state_remove_pw(State* s, PlotWin* pw)
 {
+    if (s->pws_length == 1) {
+        debug("Not removing last window\n");
+        return -1;
+    }
     /* Remove PlotWin from array */
     PlotWin** pws = malloc(s->pws_length * sizeof(PlotWin*));
     PlotWin** ppws = pws;
     for (uint32_t i=0 ; i<s->pws_length ; i++) {
-        if (s->pws[i] != pw) {
-            debug("%p != %p\n", s->pws[i], pw);
+        if (s->pws[i] != pw)
             *ppws++ = s->pws[i];
-        } else {
-            debug("%p == %p\n", s->pws[i], pw);
-        }
-
     }
     // stopping thread
     pw->request->is_stopped = true;
@@ -191,15 +192,13 @@ int8_t state_remove_pw(State* s, PlotWin* pw)
 
     s->pws = pws;
     s->pws_length--;
-    s->cur_pw = 0;
+
+    s->cur_pw = (s->cur_pw == 0) ? 0 : s->cur_pw-1;
 
     refresh();
 
     if (s->pws_length)
         state_resize_pws(s->pws, s->pws_length);
-
-    for (uint32_t i=0 ; i<s->pws_length ; i++)
-        debug("In array: %s, %d\n", s->pws[i]->request->symbol, s->pws_length);
 
     return 0;
 }
