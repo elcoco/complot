@@ -22,6 +22,7 @@ typedef struct Yaxis Yaxis;
 // forward declare
 typedef struct Line Line;
 typedef struct State State;
+typedef enum PlotStatus PlotStatus;
 
 typedef enum AxisSide {
     AXIS_LEFT,
@@ -76,7 +77,7 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
 void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset);
 void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihigh, int32_t ilow, int32_t iclose);
 void yaxis_draw_tickers(Yaxis* a, int32_t yoffset);
-int8_t yaxis_set_window_width(Yaxis* a, uint32_t yoffset);
+PlotStatus yaxis_set_window_width(Yaxis* a, uint32_t yoffset);
 
 GroupContainer* yaxis_get_gc(Yaxis* a);
 

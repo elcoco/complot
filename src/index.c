@@ -33,8 +33,11 @@ Index* index_init(uint8_t nlines)
 
 void index_destroy(Index* index)
 {
-    for (int i=0 ; i<index->isize ; i++)
-        bin_destroy(*(index->bins+i), index);
+    if (index->is_initialized) {
+        for (int i=0 ; i<index->isize ; i++)
+            bin_destroy(*(index->bins+i), index);
+    }
+
     free(index->bins);
 
     free(index->lineids);

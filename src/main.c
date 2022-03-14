@@ -85,6 +85,14 @@ bool check_user_input(void* arg)
                 pw->plot->show_status = !pw->plot->show_status;
                 plot_resize(pw->plot);
                 break;
+            case 'd':
+                // delete plot window
+                pw = s->pws[s->cur_pw];
+                state_remove_pw(s, pw);
+                break;
+            case 'n':
+                s->do_create_pw = true;
+                break;
             case 'R': // autorange
                 s->set_autorange = !s->set_autorange;
                 break;
@@ -128,6 +136,12 @@ bool check_user_input(void* arg)
 void loop(State* s, Index* index)
 {
     while (!s->is_stopped && !sigint_caught) {
+        if (s->do_create_pw) {
+            s->do_create_pw = false;
+            WINDOW* win = newwin(0, 0, 0, 0);
+            PlotWin* pw = pw_init(win, index, s, "BTCBUSD", &lock);
+            state_add_pw(s, pw);
+        }
 
         // triggered by KEY_RESIZE
         if (s->is_resized) {
@@ -168,7 +182,7 @@ int main(int argc, char **argv)
     //if (!parse_args(&s, argc, argv))
     //    return 1;
 
-    init_ui();
+    ui_init();
 
     // index holds all data normalized into bins
     Index* index;
@@ -193,18 +207,12 @@ int main(int argc, char **argv)
 
     loop(s, index);
 
-    s->is_stopped = true;
-
-    pthread_join(pw0->threadid, NULL);
-    pthread_join(pw1->threadid, NULL);
-    pthread_join(pw2->threadid, NULL);
-
-    plot_destroy(pw0->plot);
-    plot_destroy(pw1->plot);
-    plot_destroy(pw2->plot);
+    state_remove_pw(s, pw0);
+    state_remove_pw(s, pw1);
+    state_remove_pw(s, pw2);
 
     index_destroy(index);
 
-    cleanup_ui();
+    ui_cleanup();
     return 0;
 }

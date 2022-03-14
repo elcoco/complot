@@ -2,7 +2,7 @@
 
 WINDOW *ui_window = NULL;
 
-int init_ui()
+int ui_init()
 {
     // https://stackoverflow.com/questions/61347351/ncurses-stdin-redirection
     // NOTE we have to reopen stdin, piping data into application doesn't play well with ncurses
@@ -15,7 +15,7 @@ int init_ui()
     if (ui_window == NULL)
         return 0;
 
-    init_colors();
+    ui_init_colors();
     curs_set(0);            // don't show cursor
     cbreak();               // don't wait for enter
     noecho();               // don't echo input to screen
@@ -26,7 +26,7 @@ int init_ui()
     return 1;
 }
 
-void cleanup_ui()
+void ui_cleanup()
 {
     printf("\033[?1003l\n"); // Disable mouse movement events, as l = low
     delwin(ui_window);
@@ -55,7 +55,7 @@ int add_str(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol,
     return 0;
 }
 
-void init_colors()
+void ui_init_colors()
 {
     use_default_colors();
 
@@ -78,8 +78,8 @@ void init_colors()
 void set_color(WINDOW* win, uint32_t fgcolor, uint32_t bgcolor)
 {
     wattrset(win, COLOR_PAIR(fgcolor + ((bgcolor-1)*ncolors)));
-    debug("setting color: %d\n", fgcolor*bgcolor);
 }
+
 void unset_color(WINDOW* win, uint32_t fgcolor, uint32_t bgcolor)
 {
     wattroff(win, COLOR_PAIR(fgcolor + (bgcolor*ncolors)));
@@ -94,3 +94,11 @@ void clear_win(WINDOW* win)
     }
 }
 
+void ui_show_error(WINDOW* win, char* msg)
+{
+    uint32_t xpos = (getmaxx(win) / 2) - (strlen(msg) / 2);
+    uint32_t ypos = getmaxy(win) / 2;
+    clear_win(win);
+    add_str(win, ypos, xpos, CRED, CDEFAULT, msg);
+    wrefresh(win);
+}

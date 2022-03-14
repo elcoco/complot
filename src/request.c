@@ -28,8 +28,8 @@ char* do_req(char* url)
     curl = curl_easy_init();
 
     if(!curl) {
-        curl_global_cleanup();
-        return NULL;
+        debug("Failed to init CURL\n");
+        goto on_fail;
     }
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -39,13 +39,16 @@ char* do_req(char* url)
     status = curl_easy_perform(curl);
 
     if(status != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(status));
-        curl_global_cleanup();
-        return NULL;
+        debug("CURL request failed: %s\n", curl_easy_strerror(status));
+        goto on_fail;
     }
 
     curl_global_cleanup();
     return res.response;
+
+    on_fail:
+        curl_global_cleanup();
+        return NULL;
 }
 
 JSONObject* do_binance_req(char* symbol, BinanceInterval interval, int64_t tstart, uint32_t limit)
@@ -91,16 +94,15 @@ void* binance_read_thread(void* thread_args)
     //PlotWin* args = thread_args;
     int64_t tstart = -1;
 
-    while (!*(args->is_stopped)) {
+    while (!args->is_stopped) {
 
-        debug("symbol: %s\n", args->symbol);
         assert(args->index);
         assert(args->symbol);
         JSONObject* rn = do_binance_req(args->symbol, (args->OHLCinterval), tstart, args->limit);
 
         if (rn == NULL) {
             debug("Failed to get data from binance\n");
-            if (non_blocking_sleep(args->timeout, &check_exit_callback, args->is_stopped))
+            if (non_blocking_sleep(args->timeout, &check_exit_callback, &(args->is_stopped)))
                 return NULL;
             continue;
         }
@@ -108,7 +110,7 @@ void* binance_read_thread(void* thread_args)
         //json_print(rn, 0);
 
         if (rn->length > 0)
-            debug("Got %d OHCL datapoints\n", rn->length);
+            debug("[%s] Received %d datapoints\n", args->symbol, rn->length);
 
         double dt_open, dt_close, open, high, low, close, volume;
 
@@ -144,8 +146,10 @@ void* binance_read_thread(void* thread_args)
                 tstart = (int64_t)dt_close;
         }
 
+        json_obj_destroy(rn);
+
         // do non blocking sleep
-        if (non_blocking_sleep(args->timeout, &check_exit_callback, args->is_stopped))
+        if (non_blocking_sleep(args->timeout, &check_exit_callback, &(args->is_stopped)))
             break;
 
     }

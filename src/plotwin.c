@@ -23,7 +23,8 @@ PlotWin* pw_init(WINDOW* win, Index* index, State* state, char* symbol, pthread_
     pw->request->index           = index;
     pw->request->lines           = pw->lines;
     pw->request->lock            = lock;
-    pw->request->is_stopped      = &(state->is_stopped);
+    pw->request->is_stopped      = false;
+    //pw->request->is_stopped      = &(state->is_stopped);
     pw->request->OHLCinterval    = BINANCE_1_MINUTES;
     pw->request->limit           = 500;
     pw->request->timeout         = 60 * 1000 * 1000;
@@ -33,8 +34,16 @@ PlotWin* pw_init(WINDOW* win, Index* index, State* state, char* symbol, pthread_
     return pw;
 }
 
+void pw_destroy(PlotWin* pw)
+{
+    plot_destroy(pw->plot);
+    free(pw->request);
+    free(pw);
+}
+
 int8_t pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock)
 {
+    debug("UPDATE ALL: %d\n", length);
     for (int i=0 ; i<length ; i++) {
         if (pw_update(pws[i], lock) < 0)
             return -1;
@@ -59,17 +68,6 @@ int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock)
     State* s = pw->state;
 
     pthread_mutex_lock(lock);
-
-    // set the changed enabled state
-    /*
-    if (pw->line_changed) {
-        for (int i=0 ; i<index->nlines ; i++) {
-            if (pw->lines[i] != NULL)
-                pw->lines[i]->is_enabled = s->lines_enabled[i];
-        }
-        pw->line_changed = false;
-    }
-    */
 
     Groups* groups;
     if ((groups = index_get_grouped(index, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
@@ -102,7 +100,9 @@ int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock)
     status_set(pl->status, "spread",    "%.3f",  index->spread);
     status_set(pl->status, "panxy",     "%d/%d", s->panx, s->pany);
 
-    plot_draw(pl, s);
+    PlotStatus plstatus;
+    if ((plstatus = plot_draw(pl, s)) < PLSUCCESS)
+        plot_print_error(plstatus);
 
     // cleanup
     groups_destroy(groups);
@@ -121,6 +121,8 @@ State* state_init()
     s->is_pan_changed = false;
     s->set_autorange = true;
 
+    s->do_create_pw = false;
+
     // amount of bins in a group
     s->gsize = DEFAULT_GROUP_SIZE;
     s->is_resized = false;
@@ -132,22 +134,15 @@ State* state_init()
     return s;
 }
 
-int8_t state_add_pw(State* s, PlotWin* pw)
+int8_t state_resize_pws(PlotWin** pws, uint32_t length)
 {
-    /* Add a PlotWin struct to the state->pws array */
-    s->pws_length++;
-    s->pws = realloc(s->pws, s->pws_length * sizeof(PlotWin*));
-    s->pws[s->pws_length-1] = pw;
+    // resize windows to fit as rows in terminal
+    uint32_t wheight = LINES/length;
 
-    refresh();
+    for (uint32_t i=0 ; i<length ; i++) {
+        PlotWin* p = pws[i];
 
-    uint32_t wheight = LINES/s->pws_length;
-
-    // resize windows to fit in rows
-    for (uint32_t i=0 ; i<s->pws_length ; i++) {
-        PlotWin* p = s->pws[i];
-
-        if (i == s->pws_length-1)
+        if (i == length-1)
             wresize(p->plot->win, LINES-(i*wheight), COLS);
         else
             wresize(p->plot->win, wheight, COLS);
@@ -159,3 +154,52 @@ int8_t state_add_pw(State* s, PlotWin* pw)
     return 0;
 }
 
+int8_t state_add_pw(State* s, PlotWin* pw)
+{
+    /* Add a PlotWin struct to the state->pws array */
+    s->pws_length++;
+    s->pws = realloc(s->pws, s->pws_length * sizeof(PlotWin*));
+    s->pws[s->pws_length-1] = pw;
+
+    s->cur_pw = 0;
+    refresh();
+    state_resize_pws(s->pws, s->pws_length);
+    return 0;
+}
+
+int8_t state_remove_pw(State* s, PlotWin* pw)
+{
+    /* Remove PlotWin from array */
+    PlotWin** pws = malloc(s->pws_length * sizeof(PlotWin*));
+    PlotWin** ppws = pws;
+    for (uint32_t i=0 ; i<s->pws_length ; i++) {
+        if (s->pws[i] != pw) {
+            debug("%p != %p\n", s->pws[i], pw);
+            *ppws++ = s->pws[i];
+        } else {
+            debug("%p == %p\n", s->pws[i], pw);
+        }
+
+    }
+    // stopping thread
+    pw->request->is_stopped = true;
+    pthread_join(pw->threadid, NULL);
+
+    pw_destroy(pw);
+
+    free(s->pws);
+
+    s->pws = pws;
+    s->pws_length--;
+    s->cur_pw = 0;
+
+    refresh();
+
+    if (s->pws_length)
+        state_resize_pws(s->pws, s->pws_length);
+
+    for (uint32_t i=0 ; i<s->pws_length ; i++)
+        debug("In array: %s, %d\n", s->pws[i]->request->symbol, s->pws_length);
+
+    return 0;
+}

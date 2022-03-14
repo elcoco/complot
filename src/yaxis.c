@@ -83,13 +83,11 @@ GroupContainer* yaxis_get_gc(Yaxis* a)
     return NULL;
 }
 
-int8_t yaxis_set_window_width(Yaxis* a, uint32_t yoffset)
+PlotStatus yaxis_set_window_width(Yaxis* a, uint32_t yoffset)
 {
     /* Find window width of y tickers. Return 1 if size has changed since last check */
-    if (a->is_empty) {
-        debug("Failed to set yaxis window width, no data\n");
-        return -1;
-    }
+    if (a->is_empty)
+        return PLERR_NO_DATA;
 
     if (a->autorange) {
         a->dmin = a->vdmin;
@@ -115,9 +113,9 @@ int8_t yaxis_set_window_width(Yaxis* a, uint32_t yoffset)
             a->win = derwin(a->parent, a->ysize, a->xsize, yoffset, getmaxx(a->parent)-new_xsize);
             assert(a->win && "Failed to create right axis window");
         }
-        return 1;
+        return PLSTATUS_YAXIS_CHANGED;
     }
-    return 0;
+    return PLSTATUS_YAXIS_UNCHANGED;
 }
 
 void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s)

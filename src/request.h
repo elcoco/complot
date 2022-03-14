@@ -50,7 +50,7 @@ typedef struct Request {
     Index* index;
     Line**  lines;
     pthread_mutex_t* lock;
-    bool* is_stopped;
+    bool is_stopped;
     char symbol[MAX_SYMBOL_SIZE];
     uint32_t timeout;
     BinanceInterval OHLCinterval;

@@ -58,19 +58,22 @@ struct Plot {
     bool show_xaxis;
 };
 
-typedef enum PlotError {
-    PLOT_ERR_NO_DATA          = -3,
-    PLOT_ERR_TOO_SMALL        = -2,
-    PLOT_ERR_RESIZE_FAILED    = -1,
-    PLOT_SUCCESS              = 0
-} PlotError;
+typedef enum PlotStatus {
+    PLERR_NO_DATA            = -4,
+    PLERR_WINDOW_TOO_SMALL   = -3,
+    PLERR_RESIZE_FAILED      = -2,
+    PLSUCCESS                =  0,
+    PLSTATUS_YAXIS_UNCHANGED =  1,
+    PLSTATUS_YAXIS_CHANGED   =  2
+} PlotStatus;
 
 
-Plot*  plot_init(WINDOW* parent);
-void   plot_destroy(Plot* pl);
-PlotError plot_draw(Plot* pl, State* s);
-int8_t plot_resize(Plot* pl);
-void   plot_draw_xaxis(Plot* pl, Group* g);
+Plot*      plot_init(WINDOW* parent);
+void       plot_destroy(Plot* pl);
+PlotStatus plot_draw(Plot* pl, State* s);
+PlotStatus plot_resize(Plot* pl);
+void       plot_draw_xaxis(Plot* pl, Group* g);
+void       plot_print_error(PlotStatus plstatus);
 
 Graph* graph_init();
 

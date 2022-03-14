@@ -27,7 +27,6 @@ Plot* plot_init(WINDOW* win)
     // set all sizes and create all windows
     plot_resize(pl);
 
-
     return pl;
 }
 
@@ -51,11 +50,13 @@ Graph* graph_init()
     return gr;
 }
 
-int8_t plot_resize(Plot* pl)
+PlotStatus plot_resize(Plot* pl)
 {
     /* resize/create all windows to fit parent window
      * Since maintaining proper window (re)sizes is hard,
      * i centralized all of it to make things a bit more managable */
+    // set error here
+    PlotStatus plstatus;
 
     pl->xsize = getmaxx(pl->win);
     pl->ysize = getmaxy(pl->win);
@@ -86,17 +87,13 @@ int8_t plot_resize(Plot* pl)
 
     pl->lyaxis->xsize = 0;
     pl->lyaxis->ysize = yaxis_ysize;
-    if (yaxis_set_window_width(pl->lyaxis, legend_ysize) < 0) {
-        debug("Failed to set window width of lyaxis\n");
-        return -1;
-    }
+    if ((plstatus = yaxis_set_window_width(pl->lyaxis, legend_ysize)) < PLSUCCESS)
+        return plstatus;
 
     pl->ryaxis->xsize = 0;
     pl->ryaxis->ysize = yaxis_ysize;
-    if (yaxis_set_window_width(pl->ryaxis, legend_ysize) < 0) {
-        debug("Failed to set window width of ryaxis\n");
-        return -1;
-    }
+    if ((plstatus = yaxis_set_window_width(pl->ryaxis, legend_ysize)) < PLSUCCESS)
+        return plstatus;
 
     // resize left and right legend
     if (pl->show_legend) {
@@ -117,60 +114,54 @@ int8_t plot_resize(Plot* pl)
     assert(pl->ryaxis->win && "Failed to create ryaxis window");
     assert(pl->graph->win  && "Failed to create graph window");
 
-    return 0;
+    return PLSUCCESS;
 }
 
-void plot_show_error(WINDOW* win, char* msg)
+PlotStatus plot_draw(Plot* pl, State* s)
 {
-    uint32_t xpos = (getmaxx(win) / 2) + (strlen(msg) / 2);
-    uint32_t ypos = getmaxy(win) / 2;
-    //debug("%dx%d\n", ypos, xpos);
-    clear_win(win);
-    add_str(win, 0, 0, CRED, CDEFAULT, msg);
-    wrefresh(win);
-}
+    // set return status here
+    PlotStatus plstatus;
 
-PlotError plot_draw(Plot* pl, State* s)
-{
     if(pl->lyaxis->is_empty || pl->ryaxis->is_empty) {
-        plot_show_error(pl->win, "NO DATA!");
-        return PLOT_ERR_NO_DATA;
+        ui_show_error(pl->win, "NO DATA!");
+        return PLERR_NO_DATA;
     }
 
     // Check if terminal is too narrow to fit windows
     uint32_t min_xsize = pl->lyaxis->xsize + pl->ryaxis->xsize + GRAPH_MIN_SIZE;
     if (min_xsize > getmaxx(pl->win))  {
-        plot_show_error(pl->win, "WINDOW TOO SMOLL!");
-        return PLOT_ERR_TOO_SMALL;
+        ui_show_error(pl->win, "WINDOW TOO SMOLL!");
+        return PLERR_WINDOW_TOO_SMALL;
     }
 
     // Handle terminal resize
     if (pl->xsize != getmaxx(pl->win) || pl->ysize != getmaxy(pl->win)) {
-        if (plot_resize(pl) < 0)
-            return PLOT_ERR_RESIZE_FAILED;
+        if ((plstatus = plot_resize(pl)) < PLSUCCESS)
+            return plstatus;
     }
     
     // Find the window width of the yaxis so we can calculate the graph width
-    int8_t res;
     // TODO very ugly solution to the problem, must find out if yaxis changed width
     //      without calculating legend_ysize
     uint32_t legend_ysize = (pl->show_legend) ? pl->llegend->ysize : 0;
-    if ((res = yaxis_set_window_width(pl->lyaxis, legend_ysize)) < 0) {
-        return PLOT_ERR_RESIZE_FAILED;
-    } else if (res > 0) {
-        if (plot_resize(pl) < 0)
-            return PLOT_ERR_RESIZE_FAILED;
+
+    if ((plstatus = yaxis_set_window_width(pl->lyaxis, legend_ysize)) < PLSUCCESS) {
+        return plstatus;
+    }
+    else if (plstatus == PLSTATUS_YAXIS_CHANGED) {
+        if ((plstatus = plot_resize(pl)) < PLSUCCESS)
+            return plstatus;
     }
 
-    if ((res = yaxis_set_window_width(pl->ryaxis, legend_ysize)) < 0) {
-        return PLOT_ERR_RESIZE_FAILED;
-    } else if (res > 0) {
-        if (plot_resize(pl) < 0)
-            return PLOT_ERR_RESIZE_FAILED;
+    if ((plstatus = yaxis_set_window_width(pl->ryaxis, legend_ysize)) < PLSUCCESS) {
+        return plstatus;
+    }
+    else if (plstatus == PLSTATUS_YAXIS_CHANGED) {
+        if ((plstatus = plot_resize(pl)) < PLSUCCESS)
+            return plstatus;
     }
 
     clear_win(pl->graph->win);
-
     yaxis_draw(pl->lyaxis, pl->graph->win, s);
     yaxis_draw(pl->ryaxis, pl->graph->win, s);
 
@@ -183,8 +174,6 @@ PlotError plot_draw(Plot* pl, State* s)
         xaxis_draw(pl->xaxis, gc->group, pl->lyaxis->xsize, pl->graph->xsize);
     else if (pl->show_xaxis && (gc = yaxis_get_gc(pl->ryaxis)) != NULL)
         xaxis_draw(pl->xaxis, gc->group, pl->lyaxis->xsize, pl->graph->xsize);
-    else
-        debug("No data found\n");
 
     if (pl->show_legend) {
         clear_win(pl->llegend->win);
@@ -201,5 +190,25 @@ PlotError plot_draw(Plot* pl, State* s)
     touchwin(pl->win);
     refresh();
     wrefresh(pl->win);
-    return PLOT_SUCCESS;
+    return PLSUCCESS;
+}
+
+void plot_print_error(PlotStatus plstatus)
+{
+    /* Display error message that is returned from functions */
+    switch (plstatus) {
+        case PLERR_NO_DATA:
+            debug("ERROR: No data\n");
+            break;
+        case PLERR_WINDOW_TOO_SMALL:
+            debug("ERROR: Window too small\n");
+            break;
+        case PLERR_RESIZE_FAILED:
+            debug("ERROR: Failed to resize window\n");
+            break;
+        // we don't want no compiler warnings!
+        case PLSUCCESS:
+        case PLSTATUS_YAXIS_UNCHANGED:
+        case PLSTATUS_YAXIS_CHANGED:
+    }
 }

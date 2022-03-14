@@ -110,6 +110,7 @@ struct Position {
 JSONObject* json_load(char* buf);
 JSONObject* json_load_file(char *path);
 void        json_print(JSONObject* jo, uint32_t level);
+void json_obj_destroy(JSONObject* jo);
 
 // get value casted to the appropriate type
 char*       json_get_string(JSONObject* jo);

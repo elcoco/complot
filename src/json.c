@@ -146,7 +146,11 @@ char* pos_next(Position *pos)
     // NOTE: EOF should not be reached under normal conditions.
     //       This indicates corrupted JSON
     if (pos->npos >= pos->length) {
-        debug("EOL @ c=%c, pos: %d, %d,%d\n", *(pos->c), pos->npos, pos->cols, pos->rows);
+        // check if character is printable
+        if (*(pos->c) >= 32 && *(pos->c) <= 126)
+            debug("EOL @ c=%c, pos: %d, cxr: %dx%d\n", *(pos->c), pos->npos, pos->cols, pos->rows);
+        else
+            debug("EOL @ (unprintable), pos: %d, cxr: %dx%d\n", pos->npos, pos->cols, pos->rows);
         return NULL;
     }
     return pos->c;
@@ -218,24 +222,24 @@ JSONObject* json_object_init(JSONObject* parent)
     return jo;
 }
 
-void json_destroy(JSONObject* jo)
+void json_obj_destroy(JSONObject* jo)
 {
-    if (jo->dtype == JSON_OBJECT || jo->dtype == JSON_ARRAY)
-        json_destroy(jo->value);
 
-    if (jo->parent && (jo->parent->dtype == JSON_OBJECT || jo->parent->dtype == JSON_ARRAY)) {
+    if (jo->dtype == JSON_OBJECT || jo->dtype == JSON_ARRAY) {
 
-        JSONObject* tmpobj = jo;
-        while (tmpobj != NULL) {
-            tmpobj = tmpobj->next;
+        JSONObject* child = jo->value;
+        while (child != NULL) {
+            JSONObject* tmp = child->next;
+            json_obj_destroy(child);
+            child = tmp;
         }
-
+        free(jo->children);
+    } else {
+        free(jo->value);
     }
 
-    // TODO iter tree and free objects
     free(jo);
 }
-
 
 JSONStatus json_parse_number(JSONObject* jo, Position* pos)
 {

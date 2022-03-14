@@ -22,6 +22,8 @@ typedef struct State {
     bool is_pan_changed;
     bool is_resized;
 
+    bool do_create_pw;
+
     int clicked_x;
     int clicked_y;
 
@@ -48,20 +50,18 @@ typedef struct PlotWin {
     State* state;
     Index* index;
 
-    // these lines are shown in plot
-    // TODO this can easily be replaced with the is_enabled attribute in Line struct
-    //bool* lines_enabled;
-    //bool line_changed;
-
     pthread_t threadid;
     Request* request;
 } PlotWin;
 
 
 PlotWin* pw_init(WINDOW* win, Index* index, State* state, char* symbol, pthread_mutex_t* lock);
-int8_t pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock);
-int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock);
+void     pw_destroy(PlotWin* pw);
+int8_t   pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock);
+int8_t   pw_update(PlotWin* pw, pthread_mutex_t* lock);
 
 State* state_init();
+int8_t state_add_pw(State* s, PlotWin* pw);
+int8_t state_remove_pw(State* s, PlotWin* pw);
 
 #endif
