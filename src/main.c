@@ -138,6 +138,7 @@ void loop(State* s, Index* index)
         // triggered by KEY_RESIZE
         if (s->is_resized) {
             s->is_resized = false;
+            state_resize_pws(s->pws, s->pws_length);
             if (pw_update_all(s->pws, s->pws_length, &lock))
                 break;
         }
