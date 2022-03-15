@@ -1,5 +1,13 @@
 #include "curses_menu.h"
 
+char* str_to_lower(char* str)
+{
+    for (char* p=str ; *p != '\0' ; p++) {
+        if (*p >= 'A' && *p <= 'Z')
+            *p += ('a' - 'A');
+    }
+    return str;
+}
 
 ITEM** menu_filter_items(char** options, uint32_t length, char* inp)
 {
@@ -8,7 +16,9 @@ ITEM** menu_filter_items(char** options, uint32_t length, char* inp)
     int i, j;
 
     for (i=0, j=1 ; i<length ; i++) {
-        if (strstr(options[i], inp) || strlen(inp) == 0) {
+        char* option = strdup(options[i]);
+
+        if (strstr(str_to_lower(option), str_to_lower(inp)) || strlen(inp) == 0) {
 
             //items = realloc(items, j+1 * sizeof(ITEM*));
             items[j-1] = new_item(options[i], "");
@@ -17,6 +27,7 @@ ITEM** menu_filter_items(char** options, uint32_t length, char* inp)
             j++;
             debug("MATCH: %s\n", options[i]);
         }
+        free(option);
     }
     debug("END\n");
     return items;
@@ -24,15 +35,15 @@ ITEM** menu_filter_items(char** options, uint32_t length, char* inp)
 
 void menu_select_symbol()
 {
-    char* options[] = {
-        "bever",
-        "disko",
-        "banaan",
-        "aardappel",
-        "blub",
-        "disko2"
-    };
-    char* result = menu_show(options, 6, 20, 20);
+    char** options = malloc(6 * sizeof(char*));
+    options[0] = strdup("BTCBUSD");
+    options[1] = strdup("ADABUSD");
+    options[2] = strdup("XMRBUSD");
+    options[3] = strdup("ETHBUSD");
+    options[4] = strdup("XRPBUSD");
+    options[5] = strdup("TRXBUSD");
+
+    char* result = menu_show(options, 6, 30, 11);
     if (strlen(result))
         debug("return: %s\n", result);
     free(result);
@@ -103,6 +114,7 @@ char* menu_show(char** options, uint32_t noptions, uint32_t maxy, uint32_t maxx)
                 continue;
         }
 
+        // draw filtered items in menu
         unpost_menu(menu);
         destroy_items(items);
         items = menu_filter_items(options, noptions, inp);
@@ -112,7 +124,12 @@ char* menu_show(char** options, uint32_t noptions, uint32_t maxy, uint32_t maxx)
         } else {
             post_menu(menu);
         }
+            
+        // clear line and redraw border
+        wmove(win, height-2, 1);
+        wclrtoeol(win);
         add_str(win, getmaxy(win)-2, 1, CWHITE, CDEFAULT, inp);
+        box(win, 0, 0);
         wrefresh(win);
     }
 
@@ -120,6 +137,5 @@ char* menu_show(char** options, uint32_t noptions, uint32_t maxy, uint32_t maxx)
     unpost_menu(menu);
     free_menu(menu);
     endwin();
-    refresh();
     return result;
 }
