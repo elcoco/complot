@@ -16,6 +16,7 @@
 #include "json.h"
 #include "request.h"
 #include "plotwin.h"
+#include "curses_menu.h"
 
 
 #define SLEEP_MS 100*1000
@@ -79,6 +80,9 @@ bool check_user_input(void* arg)
                 s->cur_pw = (s->cur_pw == s->pws_length-1) ? 0 : s->cur_pw+1;
                 debug("cur pw down: %d\n", s->cur_pw);
                 break;
+            case 'x':
+                menu_select_symbol();
+                break;
             case 's': // autorange
                 pw = s->pws[s->cur_pw];
                 pw->plot->show_status = !pw->plot->show_status;
@@ -122,6 +126,7 @@ bool check_user_input(void* arg)
     }
     return false;
 }
+
 
 void loop(State* s, Index* index)
 {

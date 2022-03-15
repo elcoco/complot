@@ -63,5 +63,6 @@ int8_t   pw_update(PlotWin* pw, pthread_mutex_t* lock);
 State* state_init();
 int8_t state_add_pw(State* s, PlotWin* pw);
 int8_t state_remove_pw(State* s, PlotWin* pw);
+int8_t state_resize_pws(PlotWin** pws, uint32_t length);
 
 #endif

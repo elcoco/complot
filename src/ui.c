@@ -10,6 +10,9 @@ int ui_init()
     //    perror("/dev/tty");
     //    exit(1);
     //}
+
+    // set ESCDELAY so we don't have to wait a seconds after pressing escape key
+    setenv("ESCDELAY", "25", 1); 
     ui_window = initscr();
 
     if (ui_window == NULL)

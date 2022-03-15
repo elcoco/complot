@@ -171,11 +171,11 @@ int8_t state_add_pw(State* s, PlotWin* pw)
 
 int8_t state_remove_pw(State* s, PlotWin* pw)
 {
+    /* Remove PlotWin from array, resize array and destroy struct */
     if (s->pws_length == 1) {
         debug("Not removing last window\n");
         return -1;
     }
-    /* Remove PlotWin from array */
     PlotWin** pws = malloc(s->pws_length * sizeof(PlotWin*));
     PlotWin** ppws = pws;
     for (uint32_t i=0 ; i<s->pws_length ; i++) {
