@@ -8,7 +8,8 @@
 
 #include "ui.h"
 
-void menu_select_symbol();
-char* menu_show(char** options, uint32_t noptions, uint32_t maxy, uint32_t maxx);
+char* menu_select_symbol();
+char* menu_show(char** options, uint32_t maxy, uint32_t maxx);
+char* menu_select_interval();
 
 #endif

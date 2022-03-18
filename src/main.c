@@ -83,6 +83,9 @@ bool check_user_input(void* arg)
             case 'x':
                 menu_select_symbol();
                 break;
+            case 'i':
+                menu_select_interval();
+                break;
             case 's': // autorange
                 pw = s->pws[s->cur_pw];
                 pw->plot->show_status = !pw->plot->show_status;
@@ -133,11 +136,17 @@ void loop(State* s, Index* index)
     while (!s->is_stopped && !sigint_caught) {
         if (s->do_create_pw) {
             s->do_create_pw = false;
+
+            char* symbol = menu_select_symbol();
+            if (symbol == NULL)
+                continue;
+
             WINDOW* win = newwin(0, 0, 0, 0);
-            PlotWin* pw = pw_init(win, index, s, "BTCBUSD", &lock);
+            PlotWin* pw = pw_init(win, index, s, symbol, &lock);
             state_add_pw(s, pw);
             if (pw_update_all(s->pws, s->pws_length, &lock))
                 break;
+            free(symbol);
         }
 
         // triggered by KEY_RESIZE

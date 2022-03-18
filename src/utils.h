@@ -47,5 +47,6 @@ Group* fast_forward_groups(Group* g, uint32_t amount);
 
 void debug(char* fmt, ...);
 bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg);
+char* str_to_lower(char* str);
 
 #endif

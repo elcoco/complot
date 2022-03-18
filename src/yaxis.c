@@ -196,20 +196,22 @@ void xinterpolate(InterpolateXY* points, double x0, double y0, double x1, double
     }
 }
 
-void yinterpolate(InterpolateXY* points, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+int32_t yinterpolate(InterpolateXY* points, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     //uint32_t ysize = getmaxy(wtarget);
     int32_t ystart = (y0<y1) ? y0+1 : y1+1;
     int32_t ylen   = abs(y1-y0);
     int32_t yend   = ystart + ylen-1;
 
+    if (ylen <= 1)
+        return -1;
+
     // ascending and not above eachother
-    if (ylen > 1) {
-        for (int32_t y=ystart ; y<yend ; y++, points++) {
-                points->x = x1;
-                points->y = y;
-        }
+    for (int32_t y=ystart ; y<yend ; y++, points++) {
+        points->x = x1;
+        points->y = y;
     }
+    return 0;
 }
 
 void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
@@ -233,10 +235,10 @@ void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, i
             // draw y interpolated points that are next to eachother
             uint32_t nypoints = abs(xp->y-prevxp->y);
             InterpolateXY ypoints[nypoints];
-            yinterpolate(ypoints, prevxp->x, prevxp->y, xp->x, xp->y);
-
-            for (int32_t i=0 ; i<nypoints ; i++)
-                add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
+            if (yinterpolate(ypoints, prevxp->x, prevxp->y, xp->x, xp->y) >= 0) {
+                for (int32_t i=0 ; i<nypoints ; i++)
+                    add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
+            }
 
             prevxp = xp;
         }
@@ -244,10 +246,10 @@ void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, i
     // interpolate from last intermediate point up to x1/y1
     uint32_t nypoints = abs(y1-prevxp->y);
     InterpolateXY ypoints[nypoints];
-    yinterpolate(ypoints, prevxp->x, prevxp->y, x1, y1);
-
-    for (int32_t i=0 ; i<nypoints ; i++)
-        add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
+    if (yinterpolate(ypoints, prevxp->x, prevxp->y, x1, y1) >= 0) {
+        for (int32_t i=0 ; i<nypoints ; i++)
+            add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
+    }
 }
 
 void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffset)

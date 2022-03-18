@@ -362,6 +362,7 @@ JSONStatus json_parse_array(JSONObject* jo, Position* pos)
 {
     jo->dtype = JSON_ARRAY;
     jo->length = 0;
+    jo->is_array = true;
 
     JSONObject* head = NULL;
     JSONObject* tail = NULL;
@@ -412,6 +413,7 @@ JSONStatus json_parse_object(JSONObject* jo, Position* pos)
 {
     jo->dtype = JSON_OBJECT;
     jo->length = 0;
+    jo->is_object = true;
 
     JSONObject* head = NULL;
     JSONObject* tail = NULL;

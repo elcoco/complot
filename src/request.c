@@ -18,7 +18,7 @@ size_t write_callback(char *data, size_t size, size_t nmemb, void *userdata)
     return realsize;
 }
 
-char* do_req(char* url)
+char* do_req(const char* url)
 {
     CURL *curl;
     CURLcode status;
@@ -51,7 +51,63 @@ char* do_req(char* url)
         return NULL;
 }
 
-JSONObject* do_binance_req(char* symbol, BinanceInterval interval, int64_t tstart, uint32_t limit)
+char** do_binance_symbols_req()
+{
+    char** symbols = malloc(3000*sizeof(char*));
+    //char** symbols = malloc(sizeof(char*));
+    int32_t symbols_size = 0;
+
+    char* data = do_req(binance_ticker_url_fmt);
+    if (data == NULL)
+        return NULL;
+
+    JSONObject* rn = json_load(data);
+    free(data);
+
+    if (rn == NULL)
+        return NULL;
+
+    //json_print(rn, 0);
+    if (!rn->is_array)
+        goto on_error;
+    debug("arr len: %d\n", rn->length);
+
+    JSONObject* symbol_obj = rn->value;
+    while (symbol_obj != NULL) {
+        if (!symbol_obj->is_object)
+            goto on_error;
+
+        JSONObject* child = symbol_obj->value;
+        while (child != NULL) {
+
+            if (strcmp(child->key, "symbol") == 0) {
+                //symbols_size++;
+                //symbols = realloc(symbols, ++symbols_size * sizeof(char*));
+                symbols[symbols_size++] = strdup(json_get_string(child));
+            }
+            child = child->next;
+        }
+        symbol_obj = symbol_obj->next;
+    }
+
+    // end array with NULL
+    //symbols = realloc(symbols, ++symbols_size * sizeof(char*));
+    //
+    symbols[symbols_size] = NULL;
+
+    //for (int i=0 ; symbols[i] != NULL ; i++)
+    //    debug("symbol [%d]: %s\n", i, symbols[i]);
+
+
+    json_obj_destroy(rn);
+    return symbols;
+
+    on_error:
+    json_obj_destroy(rn);
+    return NULL;
+}
+
+JSONObject* do_binance_ohlc_req(char* symbol, BinanceInterval interval, int64_t tstart, uint32_t limit)
 {
     /* limit is: default=500, max=1000
      * tstart is last close time unixtime integer
@@ -61,7 +117,7 @@ JSONObject* do_binance_req(char* symbol, BinanceInterval interval, int64_t tstar
     strcpy(interval_str, binance_interval_map[interval]);
 
     char url[500] = {'\0'};
-    sprintf(url, binance_url_fmt, symbol, interval_str, limit);
+    sprintf(url, binance_ohlc_url_fmt, symbol, interval_str, limit);
     char tstart_str[100] = {'\0'};
 
     if (tstart >= 0) {
@@ -98,7 +154,7 @@ void* binance_read_thread(void* thread_args)
 
         assert(args->index);
         assert(args->symbol);
-        JSONObject* rn = do_binance_req(args->symbol, (args->OHLCinterval), tstart, args->limit);
+        JSONObject* rn = do_binance_ohlc_req(args->symbol, (args->OHLCinterval), tstart, args->limit);
 
         if (rn == NULL) {
             debug("Failed to get data from binance\n");

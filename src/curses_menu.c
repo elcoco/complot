@@ -1,83 +1,107 @@
 #include "curses_menu.h"
 
-char* str_to_lower(char* str)
+
+ITEM** menu_filter_items(char** options, char* inp)
 {
-    for (char* p=str ; *p != '\0' ; p++) {
-        if (*p >= 'A' && *p <= 'Z')
-            *p += ('a' - 'A');
-    }
-    return str;
-}
+    /* Filter array of strings based on input string, return menu ITEM* array */
 
-ITEM** menu_filter_items(char** options, uint32_t length, char* inp)
-{
-    ITEM** items = malloc(100*sizeof(ITEM*));
-    items[0] = NULL;
-    int i, j;
+    int32_t growfac = 300;
+    int32_t isize = growfac;
+    ITEM** items = malloc(isize*sizeof(ITEM*));
 
-    for (i=0, j=1 ; i<length ; i++) {
-        char* option = strdup(options[i]);
+    char** poption = options;
 
-        if (strstr(str_to_lower(option), str_to_lower(inp)) || strlen(inp) == 0) {
+    int32_t i = 0;
+    //for (; *poption != NULL ; poption++) {
+    while (*poption != NULL) {
+        char* loption = strdup(*poption);
+        char* linp = strdup(inp);
 
-            //items = realloc(items, j+1 * sizeof(ITEM*));
-            items[j-1] = new_item(options[i], "");
-            items[j] = NULL;
-
-            j++;
-            debug("MATCH: %s\n", options[i]);
+        if (strstr(str_to_lower(loption), str_to_lower(linp)) || strlen(inp) == 0) {
+        
+            if (i >= isize-1) {
+                isize += growfac;
+                debug("Growing to: %d\n", isize);
+                items = realloc(items, isize*sizeof(ITEM*));
+            }
+            
+            if ((items[i++] = new_item(*poption, "")) == NULL)
+                debug("Failed to create new menu item!!!\n");
         }
-        free(option);
+        free(loption);
+        free(linp);
+        poption++;
     }
-    debug("END\n");
+
+    // end array with NULL
+    if (i >= isize-1)
+        items = realloc(items, isize*sizeof(ITEM*));
+
+    items[i] = NULL;
+
     return items;
 }
 
-void menu_select_symbol()
+char* menu_select_symbol()
 {
-    char** options = malloc(6 * sizeof(char*));
-    options[0] = strdup("BTCBUSD");
-    options[1] = strdup("ADABUSD");
-    options[2] = strdup("XMRBUSD");
-    options[3] = strdup("ETHBUSD");
-    options[4] = strdup("XRPBUSD");
-    options[5] = strdup("TRXBUSD");
+    char** symbols = do_binance_symbols_req();
+    if (symbols == NULL)
+        return NULL;
 
-    char* result = menu_show(options, 6, 30, 11);
-    if (strlen(result))
-        debug("return: %s\n", result);
-    free(result);
+    char* result = menu_show(symbols, 14, 15);
+    if (strlen(result) <= 0)
+        return NULL;
+
+    // TODO free symbols
+
+    return result;
+}
+
+char* menu_select_interval()
+{
+    char* result = menu_show(binance_interval_map, 10, 15);
+    if (strlen(result) <= 0)
+        return NULL;
+    return result;
 }
 
 void destroy_items(ITEM** items)
 {
     for (int i=0 ; items[i] != NULL ; i++)
         free_item(items[i]);
-    free(items);
+    // TODO this causes segfault
+    //free(items);
 }
 
 
-char* menu_show(char** options, uint32_t noptions, uint32_t maxy, uint32_t maxx)
+char* menu_show(char** options, uint32_t maxy, uint32_t maxx)
 {
     MENU* menu;
     WINDOW* win;
     char inp[100] = {'\0'};
     char* result = strdup("");
-    ITEM** items = menu_filter_items(options, noptions, "");
+    ITEM** items = menu_filter_items(options, "");
     int ch;
 
-    uint32_t width = (COLS >= maxx) ? maxx : COLS;
-    uint32_t height = (LINES >= maxy) ? maxy : LINES;
+    uint32_t width = COLS;
+    uint32_t height = LINES;
+    //uint32_t width = (COLS >= maxx) ? maxx : COLS;
+    //uint32_t height = (LINES >= maxy) ? maxy : LINES;
     uint32_t xpos = (COLS/2) - (width/2);
     uint32_t ypos = (LINES/2) - (height/2);
 
-    menu = new_menu(menu_filter_items(options, noptions, ""));
     win = newwin(height, width, ypos, xpos);
+    keypad(win, TRUE);   // Enables keypad mode also necessary for mouse clicks
     box(win, 0, 0);
+                         //
+    menu = new_menu(menu_filter_items(options, ""));
     set_menu_sub(menu, derwin(win, height-2, width-2, 1, 1));
     set_menu_mark(menu, " ");
     post_menu(menu);
-    keypad(win, TRUE);   // Enables keypad mode also necessary for mouse clicks
+                         //
+    //menu->height = height-2;
+    //menu->frows = height-2;
+    //assert(1==0);
 
     while((ch = wgetch(win)) != 27 ) {
         switch(ch) {
@@ -117,9 +141,10 @@ char* menu_show(char** options, uint32_t noptions, uint32_t maxy, uint32_t maxx)
         // draw filtered items in menu
         unpost_menu(menu);
         destroy_items(items);
-        items = menu_filter_items(options, noptions, inp);
+        items = menu_filter_items(options, inp);
+
         if (set_menu_items(menu, items) != E_OK) {
-            clear_win(win);
+            werase(win);
             box(win, 0, 0);
         } else {
             post_menu(menu);

@@ -119,4 +119,12 @@ bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg)
     return false;
 }
 
-
+char* str_to_lower(char* str)
+{
+    /* destructive convert string to lowercase */
+    for (char* p=str ; *p != '\0' ; p++) {
+        if (*p >= 'A' && *p <= 'Z')
+            *p += ('a' - 'A');
+    }
+    return str;
+}
