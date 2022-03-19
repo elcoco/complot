@@ -234,6 +234,8 @@ void json_obj_destroy(JSONObject* jo)
             child = tmp;
         }
         free(jo->children);
+        if (jo->dtype == JSON_OBJECT)
+            free(jo->key);
     } else {
         free(jo->value);
     }

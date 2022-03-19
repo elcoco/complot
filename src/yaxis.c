@@ -247,10 +247,8 @@ void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, i
     int32_t nypoints = abs(y1-prevxp->y);
     InterpolateXY ypoints[nypoints];
     if (yinterpolate(ypoints, prevxp->x, prevxp->y, x1, y1) >= 0) {
-        for (int32_t i=0 ; i<nypoints ; i++) {
-            debug("DEBUG: [%d] nypoints=%d, %d-%d-1 = %d, %d, color=%d, chr=%s\n", i, nypoints, ysize, ypoints[i].y, ysize-ypoints[i].y-1, ypoints[i].x, l->color, l->chr);
+        for (int32_t i=0 ; i<nypoints ; i++)
             add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
-        }
     }
 
 }

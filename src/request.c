@@ -45,11 +45,15 @@ char* do_req(const char* url)
         goto on_fail;
     }
 
-    curl_global_cleanup();
+    curl_easy_cleanup(curl);
+    //curl_global_cleanup();
     return res.response;
 
     on_fail:
-        curl_global_cleanup();
+        if (res.response)
+            free(res.response);
+        //curl_global_cleanup();
+        curl_easy_cleanup(curl);
         return NULL;
 }
 

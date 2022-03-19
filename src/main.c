@@ -93,6 +93,10 @@ bool check_user_input(void* arg)
                 plot_resize(pw->plot);
                 break;
             case 'd':
+                if (s->pws_length == 1) {
+                    debug("Not removing last window\n");
+                    break;
+                }
                 // delete plot window
                 pw = s->pws[s->cur_pw];
                 state_remove_pw(s, pw);
@@ -200,9 +204,8 @@ int main(int argc, char **argv)
 
     loop(s);
 
-    state_remove_pw(s, pw);
-    // TODO destroy all pws
-    // TODO destroy state
+
+    state_destroy(s);
 
     ui_cleanup();
     return 0;

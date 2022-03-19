@@ -90,10 +90,8 @@ int8_t pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock, bool
 int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock, bool force)
 {
     if (!force) {
-        if (!index_has_new_data(pw->index)) {
-            //debug("[%s] No new data!\n", pw->request->symbol);
+        if (!index_has_new_data(pw->index))
             return 0;
-        }
 
         // check if data or exit early
         if (pw->index->npoints == 0)
@@ -174,6 +172,16 @@ State* state_init()
     return s;
 }
 
+void state_destroy(State* s)
+{
+    for (int i=0 ; i<s->pws_length ; i++) {
+        state_remove_pw(s, s->pws[i]);
+    }
+
+    free(s->pws);
+    free(s);
+}
+
 int8_t state_resize_pws(PlotWin** pws, uint32_t length)
 {
     // resize windows to fit as rows in terminal
@@ -210,10 +218,6 @@ int8_t state_add_pw(State* s, PlotWin* pw)
 int8_t state_remove_pw(State* s, PlotWin* pw)
 {
     /* Remove PlotWin from array, resize array and destroy struct */
-    if (s->pws_length == 1) {
-        debug("Not removing last window\n");
-        return -1;
-    }
     PlotWin** pws = malloc(s->pws_length * sizeof(PlotWin*));
     PlotWin** ppws = pws;
     for (uint32_t i=0 ; i<s->pws_length ; i++) {
