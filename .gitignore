@@ -1,6 +1,7 @@
 complot
 ccomplot
 complot.log
+valgrind.log
 obj
 
 # Prerequisites
