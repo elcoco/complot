@@ -57,9 +57,10 @@ typedef struct Request {
     uint32_t limit;
 } RequestArgs;
 
-const static char binance_interval_map[][4] = { "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M" };
-const static char binance_ohlc_url_fmt[] = "https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d";
-const static char binance_ticker_url_fmt[] = "https://api.binance.com/api/v3/ticker/price";
+extern const char* binance_interval_map[];
+//const static char* binance_interval_map[] = { "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M", NULL };
+const static char  binance_ohlc_url_fmt[] = "https://api.binance.com/api/v3/klines?symbol=%s&interval=%s&limit=%d";
+const static char  binance_ticker_url_fmt[] = "https://api.binance.com/api/v3/ticker/price";
 
 char* do_req(const char* url);
 

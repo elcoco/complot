@@ -1,11 +1,13 @@
 #include "plotwin.h"
 
 
-PlotWin* pw_init(WINDOW* win, Index* index, State* state, char* symbol, pthread_mutex_t* lock)
+PlotWin* pw_init(WINDOW* win, State* state, char* symbol, pthread_mutex_t* lock)
 {
     /* Create a full new plot window, and start threads */
     PlotWin* pw = malloc(sizeof(PlotWin));
-    pw->index = index;
+
+    if ((pw->index = index_init(MAX_LINES)) == NULL)
+        return 0;
 
     pw->plot = plot_init(win);
 
@@ -20,13 +22,12 @@ PlotWin* pw_init(WINDOW* win, Index* index, State* state, char* symbol, pthread_
 
     // Request arguments struct is passed to request thread
     pw->request = malloc(sizeof(Request));
-    pw->request->index           = index;
+    pw->request->index           = pw->index;
     pw->request->lines           = pw->lines;
     pw->request->lock            = lock;
     pw->request->is_stopped      = false;
-    //pw->request->is_stopped      = &(state->is_stopped);
-    pw->request->OHLCinterval    = BINANCE_1_MINUTES;
-    pw->request->limit           = 500;
+    pw->request->OHLCinterval    = BINANCE_5_MINUTES;
+    pw->request->limit           = 1000;
     pw->request->timeout         = 60 * 1000 * 1000;
     strcpy(pw->request->symbol, symbol);
 
@@ -37,11 +38,40 @@ PlotWin* pw_init(WINDOW* win, Index* index, State* state, char* symbol, pthread_
 void pw_destroy(PlotWin* pw)
 {
     plot_destroy(pw->plot);
+    index_destroy(pw->index);
     free(pw->request);
     free(pw);
 }
 
-int8_t pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock)
+char* pw_select_interval(PlotWin* pw, const char** intervals)
+{
+    /* Select new interval for candlesticks.
+     * Recreate index and restart thread with new interval. */
+
+    char* result = menu_show(intervals, 17, 7);
+    if (strlen(result) <= 0)
+        return NULL;
+
+
+    pw->request->is_stopped = true;
+    pthread_join(pw->threadid, NULL);
+    pw->request->is_stopped = false;
+    for (int i=0 ; intervals[i] != NULL ; i++) {
+        if (strcmp(result, intervals[i]) == 0)
+            pw->request->OHLCinterval = i;
+    }
+
+    index_destroy(pw->index);
+    if ((pw->index = index_init(MAX_LINES)) == NULL)
+        return 0;
+
+    pw->request->index = pw->index;
+    pthread_create(&(pw->threadid), NULL, binance_read_thread, pw->request);
+
+    return result;
+}
+
+int8_t pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock, bool force)
 {
     for (int i=0 ; i<length ; i++) {
         if (i == pws[i]->state->cur_pw) {
@@ -51,17 +81,24 @@ int8_t pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock)
             pws[i]->plot->lyaxis->bgcol = CDEFAULT;
             pws[i]->plot->ryaxis->bgcol = CDEFAULT;
         }
-        if (pw_update(pws[i], lock) < 0)
+        if (pw_update(pws[i], lock, force) < 0)
             return -1;
     }
     return 0;
 }
 
-int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock)
+int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock, bool force)
 {
-    // check if data or exit early
-    if (pw->index->npoints == 0)
-        return 0;
+    if (!force) {
+        if (!index_has_new_data(pw->index)) {
+            //debug("[%s] No new data!\n", pw->request->symbol);
+            return 0;
+        }
+
+        // check if data or exit early
+        if (pw->index->npoints == 0)
+            return 0;
+    }
         
     Plot* pl = pw->plot;
     Line* l0 = pw->lines[0];
@@ -101,6 +138,7 @@ int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock)
     status_set(pl->status, "gsize",     "%d",    s->gsize);
     status_set(pl->status, "spread",    "%.3f",  index->spread);
     status_set(pl->status, "panxy",     "%d/%d", s->panx, s->pany);
+    status_set(pl->status, "interval",  "%s",    binance_interval_map[pw->request->OHLCinterval]);
 
     PlotStatus plstatus;
     if ((plstatus = plot_draw(pl, s)) < PLSUCCESS)

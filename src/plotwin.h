@@ -6,6 +6,7 @@
 #include "plot.h"
 #include "line.h"
 #include "request.h"
+#include "curses_menu.h"
 
 typedef struct PlotWin PlotWin;
 
@@ -55,10 +56,11 @@ typedef struct PlotWin {
 } PlotWin;
 
 
-PlotWin* pw_init(WINDOW* win, Index* index, State* state, char* symbol, pthread_mutex_t* lock);
+PlotWin* pw_init(WINDOW* win, State* state, char* symbol, pthread_mutex_t* lock);
 void     pw_destroy(PlotWin* pw);
-int8_t   pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock);
-int8_t   pw_update(PlotWin* pw, pthread_mutex_t* lock);
+int8_t   pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock, bool force);
+int8_t   pw_update(PlotWin* pw, pthread_mutex_t* lock, bool force);
+char* pw_select_interval(PlotWin* pw, const char** intervals);
 
 State* state_init();
 int8_t state_add_pw(State* s, PlotWin* pw);

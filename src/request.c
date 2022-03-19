@@ -1,5 +1,7 @@
 #include "request.h"
 
+const char* binance_interval_map[] = { "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M", NULL };
+
 size_t write_callback(char *data, size_t size, size_t nmemb, void *userdata)
 {
     size_t realsize = size * nmemb;
@@ -22,7 +24,7 @@ char* do_req(const char* url)
 {
     CURL *curl;
     CURLcode status;
-    Response res = {0};
+    Response res = {.size=0, .response=NULL};
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl = curl_easy_init();
@@ -53,9 +55,11 @@ char* do_req(const char* url)
 
 char** do_binance_symbols_req()
 {
-    char** symbols = malloc(3000*sizeof(char*));
-    //char** symbols = malloc(sizeof(char*));
-    int32_t symbols_size = 0;
+    /* Request array of symbols, end array with NULL */
+    int32_t ngrow = 300;
+    int32_t ssiz = ngrow;
+    char** symbols = malloc(ssiz*sizeof(char*));
+    int32_t i = 0;
 
     char* data = do_req(binance_ticker_url_fmt);
     if (data == NULL)
@@ -67,13 +71,12 @@ char** do_binance_symbols_req()
     if (rn == NULL)
         return NULL;
 
-    //json_print(rn, 0);
     if (!rn->is_array)
         goto on_error;
-    debug("arr len: %d\n", rn->length);
 
     JSONObject* symbol_obj = rn->value;
     while (symbol_obj != NULL) {
+
         if (!symbol_obj->is_object)
             goto on_error;
 
@@ -81,9 +84,11 @@ char** do_binance_symbols_req()
         while (child != NULL) {
 
             if (strcmp(child->key, "symbol") == 0) {
-                //symbols_size++;
-                //symbols = realloc(symbols, ++symbols_size * sizeof(char*));
-                symbols[symbols_size++] = strdup(json_get_string(child));
+                if (i >= ssiz-1) {
+                    ssiz += ngrow;
+                    symbols = realloc(symbols, ssiz*sizeof(char*));
+                }
+                symbols[i++] = strdup(json_get_string(child));
             }
             child = child->next;
         }
@@ -91,13 +96,10 @@ char** do_binance_symbols_req()
     }
 
     // end array with NULL
-    //symbols = realloc(symbols, ++symbols_size * sizeof(char*));
-    //
-    symbols[symbols_size] = NULL;
+    if (i >= ssiz-1)
+        symbols = realloc(symbols, ssiz*sizeof(char*));
 
-    //for (int i=0 ; symbols[i] != NULL ; i++)
-    //    debug("symbol [%d]: %s\n", i, symbols[i]);
-
+    symbols[i] = NULL;
 
     json_obj_destroy(rn);
     return symbols;
@@ -134,7 +136,6 @@ JSONObject* do_binance_ohlc_req(char* symbol, BinanceInterval interval, int64_t 
     free(data);
     return rn;
 }
-
 
 bool check_exit_callback(void* stopped)
 {
@@ -211,9 +212,4 @@ void* binance_read_thread(void* thread_args)
     }
     debug("[%s] thread exit...\n", args->symbol);
     return NULL;
-
-
 }
-
-
-

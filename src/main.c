@@ -84,7 +84,8 @@ bool check_user_input(void* arg)
                 menu_select_symbol();
                 break;
             case 'i':
-                menu_select_interval();
+                pw = s->pws[s->cur_pw];
+                pw_select_interval(pw, (const char**)binance_interval_map);
                 break;
             case 's': // autorange
                 pw = s->pws[s->cur_pw];
@@ -131,7 +132,7 @@ bool check_user_input(void* arg)
 }
 
 
-void loop(State* s, Index* index)
+void loop(State* s)
 {
     while (!s->is_stopped && !sigint_caught) {
         if (s->do_create_pw) {
@@ -142,9 +143,9 @@ void loop(State* s, Index* index)
                 continue;
 
             WINDOW* win = newwin(0, 0, 0, 0);
-            PlotWin* pw = pw_init(win, index, s, symbol, &lock);
+            PlotWin* pw = pw_init(win, s, symbol, &lock);
             state_add_pw(s, pw);
-            if (pw_update_all(s->pws, s->pws_length, &lock))
+            if (pw_update_all(s->pws, s->pws_length, &lock, true))
                 break;
             free(symbol);
         }
@@ -153,19 +154,19 @@ void loop(State* s, Index* index)
         if (s->is_resized) {
             s->is_resized = false;
             state_resize_pws(s->pws, s->pws_length);
-            if (pw_update_all(s->pws, s->pws_length, &lock))
+            if (pw_update_all(s->pws, s->pws_length, &lock, true))
                 break;
         }
 
         // update on new data
-        if (! s->is_paused && index_has_new_data(index)) {
-            if (pw_update_all(s->pws, s->pws_length, &lock))
+        if (! s->is_paused) {
+            if (pw_update_all(s->pws, s->pws_length, &lock, false))
                 break;
         }
 
         // sleep but update on user input
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
-            if (pw_update_all(s->pws, s->pws_length, &lock))
+            if (pw_update_all(s->pws, s->pws_length, &lock, true))
                 break;
         }
     }
@@ -191,34 +192,17 @@ int main(int argc, char **argv)
 
     ui_init();
 
-    // index holds all data normalized into bins
-    Index* index;
-    if ((index = index_init(MAX_LINES)) == NULL)
-        return 0;
-
     // state shared between plot windows
     // this records things like panning and autoranging etc...
     State* s = state_init();
+    PlotWin* pw = pw_init(newwin(0, 0, 0, 0), s, "XMRBUSD", &lock);
+    state_add_pw(s, pw);
 
-    WINDOW* sw0 = newwin(0, 0, 0, 0);
-    WINDOW* sw1 = newwin(0, 0, 0, 0);
-    WINDOW* sw2 = newwin(0, 0, 0, 0);
+    loop(s);
 
-    PlotWin* pw0 = pw_init(sw0, index, s, "BTCBUSD", &lock);
-    PlotWin* pw1 = pw_init(sw1, index, s, "XMRBUSD", &lock);
-    PlotWin* pw2 = pw_init(sw2, index, s, "ADABUSD", &lock);
-
-    state_add_pw(s, pw0);
-    state_add_pw(s, pw1);
-    state_add_pw(s, pw2);
-
-    loop(s, index);
-
-    state_remove_pw(s, pw0);
-    state_remove_pw(s, pw1);
-    state_remove_pw(s, pw2);
-
-    index_destroy(index);
+    state_remove_pw(s, pw);
+    // TODO destroy all pws
+    // TODO destroy state
 
     ui_cleanup();
     return 0;

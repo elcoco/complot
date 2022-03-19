@@ -9,7 +9,7 @@
 #include "ui.h"
 
 char* menu_select_symbol();
-char* menu_show(char** options, uint32_t maxy, uint32_t maxx);
-char* menu_select_interval();
+char* menu_select_interval(char** intervals);
+char* menu_show(const char** options, uint32_t maxy, uint32_t maxx);
 
 #endif
