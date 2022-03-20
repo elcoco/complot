@@ -373,15 +373,20 @@ JSONStatus json_parse_array(JSONObject* jo, Position* pos)
         JSONObject* child = json_object_init(jo);
 
         JSONStatus ret = json_parse(child, pos);
-        if (ret < 0)
+        if (ret < 0) {
+            json_obj_destroy(child);
             return ret;
-        else if (ret == END_OF_ARRAY)
+        }
+        else if (ret == END_OF_ARRAY) {
+            json_obj_destroy(child);
             break;
+        }
 
         // look for comma or array end
         if (fforward(pos, ",]", "\n ", NULL, "\n", NULL) < 0) {
             printf("Error while parsing array\n");
             print_error(pos, LINES_CONTEXT);
+            json_obj_destroy(child);
             return PARSE_ERROR;
         }
 

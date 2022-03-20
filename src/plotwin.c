@@ -7,7 +7,7 @@ PlotWin* pw_init(WINDOW* win, State* state, char* symbol, pthread_mutex_t* lock)
     PlotWin* pw = malloc(sizeof(PlotWin));
 
     if ((pw->index = index_init(MAX_LINES)) == NULL)
-        return 0;
+        return NULL;
 
     pw->plot = plot_init(win);
 

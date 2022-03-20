@@ -4,7 +4,6 @@
 Index* index_init(uint8_t nlines)
 {
     Index* index = malloc(sizeof(Index));
-    index->bins = malloc(INDEX_DEFAULT_GROW_AMOUNT*sizeof(Bin*));
 
     index->phead = malloc(sizeof(Point*));
     index->ptail = malloc(sizeof(Point*));
@@ -18,6 +17,9 @@ Index* index_init(uint8_t nlines)
     index->grow_amount = INDEX_DEFAULT_GROW_AMOUNT;
     index->isize = INDEX_DEFAULT_GROW_AMOUNT;
     index->nlines = nlines;
+
+    index->bins = malloc(index->isize * sizeof(Bin*));
+    debug("created index with %d * %d = %d bytes\n", index->isize, sizeof(Bin*), index->isize*sizeof(Bin*));
 
     // initialize all lineid structs with NULL pointers
     index->lineids = malloc(index->nlines * sizeof(LineID*));
@@ -38,7 +40,9 @@ void index_destroy(Index* index)
             bin_destroy(*(index->bins+i), index);
     }
 
+    // NOTE for some reason valgrind complains about lost bytes although they are freed here
     free(index->bins);
+    debug("Destroyed index of %d * %d = %d bytes\n", index->isize, sizeof(Bin*), index->isize*sizeof(Bin*));
 
     free(index->lineids);
 
@@ -80,6 +84,8 @@ int8_t index_extend(Index* index)
     for (int i=index->isize-index->grow_amount ; i<index->isize ; i++)
         *(index->bins+i) = bin_create(index, i);
 
+    debug("Extended index to %d * %d = %d bytes\n", index->isize, sizeof(Bin*), index->isize*sizeof(Bin*));
+
     return 1;
 }
 
@@ -109,8 +115,8 @@ double index_map_to_x(Index* index, int32_t i)
 
 void index_set_data_limits(Index* index, Point* p)
 {
+    // find data limits and update index->dmin and index->dmax
     if (p->lineid->ltype == LTYPE_OHLC) {
-        // find data limits and update index->dmin and index->dmax
         if (p->high > index->dmax)
             index->dmax = p->high;
         if (p->low < index->dmin)
