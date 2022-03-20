@@ -180,17 +180,24 @@ void* binance_read_thread(void* thread_args)
 
             if (dp->length != 12) {
                 debug("Received invalid datapoint\n");
-                dp = dp->next;
+                //dp = dp->next;
                 continue;
             }
 
-            dt_open  = json_get_number(dp->children[0]);
-            dt_close = json_get_number(dp->children[6]);
-            open     = atof(json_get_string(dp->children[1]));
-            high     = atof(json_get_string(dp->children[2]));
-            low      = atof(json_get_string(dp->children[3]));
-            close    = atof(json_get_string(dp->children[4]));
-            volume   = atof(json_get_string(dp->children[5]));
+            if (!(dt_open  = json_get_number(dp->children[0])))
+                continue;
+            if (!(dt_close = json_get_number(dp->children[6])))
+                continue;
+            if (!(open     = atof(json_get_string(dp->children[1]))))
+                continue;
+            if (!(high     = atof(json_get_string(dp->children[2]))))
+                continue;
+            if (!(low      = atof(json_get_string(dp->children[3]))))
+                continue;
+            if (!(close    = atof(json_get_string(dp->children[4]))))
+                continue;
+            if (!(volume   = atof(json_get_string(dp->children[5]))))
+                continue;
 
             pthread_mutex_lock(args->lock);
             //debug("%d: %f, %f, %f, %f, %f\n", i, dt_open, open, high, low, close);

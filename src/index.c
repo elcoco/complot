@@ -109,11 +109,19 @@ double index_map_to_x(Index* index, int32_t i)
 
 void index_set_data_limits(Index* index, Point* p)
 {
-    // find data limits and update index->dmin and index->dmax
-    if (p->high > index->dmax)
-        index->dmax = p->high;
-    if (p->low < index->dmin)
-        index->dmin = p->low;
+    if (p->lineid->ltype == LTYPE_OHLC) {
+        // find data limits and update index->dmin and index->dmax
+        if (p->high > index->dmax)
+            index->dmax = p->high;
+        if (p->low < index->dmin)
+            index->dmin = p->low;
+    }
+    else if (p->lineid->ltype == LTYPE_LINE) {
+        if (p->y > index->dmax)
+            index->dmax = p->y;
+        if (p->y < index->dmin)
+            index->dmin = p->y;
+    }
 }
 
 void index_reindex(Index* index)
@@ -270,6 +278,8 @@ Point* point_init(Index* index)
 
 Point* point_create_cspoint(Index* index, LineID* lineid, double x, double open, double high, double low, double close)
 {
+    assert(x && open && high && low && close);
+
     Point* p = point_init(index);
     p->x = x;
     p->open = open;
@@ -277,6 +287,7 @@ Point* point_create_cspoint(Index* index, LineID* lineid, double x, double open,
     p->low = low;
     p->close = close;
     p->lineid = lineid;
+
 
     if (index->lineids[lineid->id] == NULL)
         index->lineids[lineid->id] = lineid;
@@ -294,6 +305,8 @@ Point* point_create_cspoint(Index* index, LineID* lineid, double x, double open,
 
 Point* point_create_point(Index* index, LineID* lineid, double x, double y)
 {
+    assert(x && y && lineid);
+
     Point* p = point_init(index);
     p->x = x;
     p->y = y;

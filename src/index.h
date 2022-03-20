@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include "utils.h"
 #include "index_groups.h"
