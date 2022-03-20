@@ -23,6 +23,8 @@
 #define DEFAULT_PAN_STEPS 3
 #define DEFAULT_PAN_BIG_STEPS 5
 
+#define UI_BLOCK "█"
+
 // TODO this should really be dynamic
 #define MAX_LINES 20
 

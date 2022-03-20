@@ -197,7 +197,7 @@ int8_t state_resize_pws(PlotWin** pws, uint32_t length)
 
         mvwin(p->plot->win, i*wheight, 0);
         plot_resize(p->plot);
-        wrefresh(p->plot->win);
+        ui_refresh(p->plot->win);
     }
     return 0;
 }
@@ -210,7 +210,7 @@ int8_t state_add_pw(State* s, PlotWin* pw)
     s->pws[s->pws_length-1] = pw;
 
     s->cur_pw = s->pws_length-1;;
-    refresh();
+    ui_refresh(NULL);
     state_resize_pws(s->pws, s->pws_length);
     return 0;
 }
@@ -237,7 +237,7 @@ int8_t state_remove_pw(State* s, PlotWin* pw)
 
     s->cur_pw = (s->cur_pw == 0) ? 0 : s->cur_pw-1;
 
-    refresh();
+    ui_refresh(NULL);
 
     if (s->pws_length)
         state_resize_pws(s->pws, s->pws_length);

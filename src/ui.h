@@ -26,15 +26,18 @@ static const uint8_t ncolors = 9;
 int ui_init();
 void ui_init_colors();
 void ui_cleanup();
-void clear_win(WINDOW* win);
 
 void set_color(WINDOW* win, uint32_t fgcolor, uint32_t bgcolor);
 void unset_color(WINDOW* win, uint32_t fgcolor, uint32_t bgcolor);
 
 int add_str(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol, char* fmt, ...);
+int add_str_color(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol, char* fmt, ...);
 int add_chr(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol, char c);
 void ui_show_error(WINDOW* win, char* msg);
 
 int set_status(uint32_t lineno, char* fmt, ...);
+
+void ui_refresh(WINDOW* win);
+void ui_erase(WINDOW* win);
 
 #endif

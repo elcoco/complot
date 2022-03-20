@@ -224,6 +224,8 @@ JSONObject* json_object_init(JSONObject* parent)
 
 void json_obj_destroy(JSONObject* jo)
 {
+    if (jo->dtype == JSON_OBJECT)
+        free(jo->key);
 
     if (jo->dtype == JSON_OBJECT || jo->dtype == JSON_ARRAY) {
 
@@ -234,8 +236,6 @@ void json_obj_destroy(JSONObject* jo)
             child = tmp;
         }
         free(jo->children);
-        if (jo->dtype == JSON_OBJECT)
-            free(jo->key);
     } else {
         free(jo->value);
     }
@@ -427,22 +427,29 @@ JSONStatus json_parse_object(JSONObject* jo, Position* pos)
 
     while (1) {
         JSONObject* child = json_object_init(jo);
-
         JSONStatus ret_key = json_parse_key(child, pos);
-        if (ret_key < 0)
+
+        if (ret_key < 0) {
+            json_obj_destroy(child);
             return ret_key;
-        else if (ret_key == END_OF_OBJECT)
+        }
+        else if (ret_key == END_OF_OBJECT) {
+            json_obj_destroy(child);
             break;
+        }
 
         // parse the value
         JSONStatus ret_value = json_parse(child, pos);
-        if (ret_value != STATUS_SUCCESS)
+        if (ret_value != STATUS_SUCCESS) {
+            json_obj_destroy(child);
             return PARSE_ERROR;
+        }
 
         // look for comma or object end
         if (fforward(pos, ",}", "\n ", NULL, "\n", NULL) < 0) {
             printf("Error while parsing object\n");
             print_error(pos, LINES_CONTEXT);
+            json_obj_destroy(child);
             return PARSE_ERROR;
         }
 

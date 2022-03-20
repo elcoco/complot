@@ -162,13 +162,13 @@ PlotStatus plot_draw(Plot* pl, State* s)
             return plstatus;
     }
 
-    clear_win(pl->graph->win);
+    ui_erase(pl->graph->win);
     yaxis_draw(pl->lyaxis, pl->graph->win, s);
     yaxis_draw(pl->ryaxis, pl->graph->win, s);
 
     // find data to display on x axis in Yaxis
     if (pl->show_xaxis)
-        clear_win(pl->xaxis->win);
+        ui_erase(pl->xaxis->win);
 
     GroupContainer* gc;
     if (pl->show_xaxis && (gc = yaxis_get_gc(pl->lyaxis)) != NULL)
@@ -177,20 +177,20 @@ PlotStatus plot_draw(Plot* pl, State* s)
         xaxis_draw(pl->xaxis, gc->group, pl->lyaxis->xsize, pl->graph->xsize);
 
     if (pl->show_legend) {
-        clear_win(pl->llegend->win);
-        clear_win(pl->rlegend->win);
+        ui_erase(pl->llegend->win);
+        ui_erase(pl->rlegend->win);
         legend_draw(pl->llegend);
         legend_draw(pl->rlegend);
     }
 
     if (pl->show_status) {
-        clear_win(pl->status->win);
+        ui_erase(pl->status->win);
         status_draw(pl->status);
     }
 
     touchwin(pl->win);
-    refresh();
-    wrefresh(pl->win);
+    ui_refresh(NULL);
+    ui_refresh(pl->win);
     return PLSUCCESS;
 }
 

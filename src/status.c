@@ -18,18 +18,19 @@ StatusItem* status_set(StatusBar* sb, char* k, char* fmt, ...)
     va_list ptr;
     va_start(ptr, fmt);
 
+    // find key
     StatusItem** pkv = sb->kv;
     for (uint32_t i=0 ; i<sb->length ; i++, pkv++) {
         if (strcmp((*pkv)->key, k) == 0) {
+            // TODO only if value is changed
             vsprintf((*pkv)->value, fmt, ptr);
             va_end(ptr);
-            // TODO only if value is changed
             sb->is_changed = true;
             return *pkv;
         }
     }
 
-    // item doesn't exist yet => allocate and create!
+    // item doesn't exist yet => extend, allocate and initialize!
     sb->kv = realloc(sb->kv, (sb->length+1) * sizeof(StatusItem*));
     StatusItem* si = malloc(sizeof(StatusItem));
     strcpy(si->key, k);

@@ -172,7 +172,7 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
     add_str(a->win, a->ysize-ilasty-1, 0, CGREEN, a->bgcol, buf);
 
     for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++) {
-        add_str(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, CDEFAULT, YAXIS_LDATA_LINE_CHR);
+        add_str_color(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, CDEFAULT, YAXIS_LDATA_LINE_CHR);
     }
 }
 
@@ -230,14 +230,14 @@ void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, i
 
             // draw intermediate points
             if (y_is_in_view(wtarget, ysize-xp->y-1))
-                add_str(wtarget, ysize-xp->y-1, xp->x, l->color, CDEFAULT, l->chr);
+                add_str_color(wtarget, ysize-xp->y-1, xp->x, l->color, CDEFAULT, l->chr);
 
             // draw y interpolated points that are next to eachother
             int32_t nypoints = abs(xp->y-prevxp->y);
             InterpolateXY ypoints[nypoints];
             if (yinterpolate(ypoints, prevxp->x, prevxp->y, xp->x, xp->y) >= 0) {
                 for (int32_t i=0 ; i<nypoints ; i++)
-                    add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
+                    add_str_color(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
             }
 
             prevxp = xp;
@@ -248,7 +248,7 @@ void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, i
     InterpolateXY ypoints[nypoints];
     if (yinterpolate(ypoints, prevxp->x, prevxp->y, x1, y1) >= 0) {
         for (int32_t i=0 ; i<nypoints ; i++)
-            add_str(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
+            add_str_color(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
     }
 
 }
@@ -279,7 +279,7 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
             // map data point from data range to terminal rows range
             int32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
             if (y_is_in_view(wtarget, ysize-iy-1))
-                add_str(wtarget, ysize-iy-1, ix, l->color, a->bgcol, l->chr);
+                add_str_color(wtarget, ysize-iy-1, ix, l->color, a->bgcol, l->chr);
 
             if (previx > 0)
                 interpolate(l, wtarget, previx, previy, ix, iy);
@@ -316,12 +316,12 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_WICK);
+            add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_WICK);
         }
         for (int y=iopen ; y<=iclose ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_BODY);
+            add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_BODY);
         }
     // RED
     }
@@ -329,12 +329,12 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_WICK);
+            add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_WICK);
         }
         for (int y=iclose ; y<=iopen ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_BODY);
+            add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_BODY);
 
         }
     }

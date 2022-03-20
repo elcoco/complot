@@ -150,6 +150,7 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
     }
 
     cleanup:
+    destroy_items(items);
     unpost_menu(menu);
     free_menu(menu);
     endwin();
