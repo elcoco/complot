@@ -2,6 +2,10 @@
 
 WINDOW *ui_window = NULL;
 
+// keep track of chars and colors of cells on screen
+// so we can draw characters on top of other characters
+static Matrix* matrix;
+
 int ui_init()
 {
     // https://stackoverflow.com/questions/61347351/ncurses-stdin-redirection
@@ -26,6 +30,10 @@ int ui_init()
     keypad(stdscr, TRUE);   // Enables keypad mode also necessary for mouse clicks
     mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL); // Don't mask any mouse events
     printf("\033[?1003h\n"); // Makes the terminal report mouse movement events
+
+    matrix = ui_matrix_init(COLS, LINES);
+    //debug("cell: %s, %d, %d\n", c->chr, c->fgcol, c->bgcol);
+
     return 1;
 }
 
@@ -36,7 +44,50 @@ void ui_cleanup()
     endwin();
 }
 
-int add_chr(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol, char c)
+Matrix* ui_matrix_init(int32_t xsize, int32_t ysize)
+{
+    Matrix* m = malloc(sizeof(Matrix));
+    m->xsize = xsize;
+    m->ysize = ysize;
+    m->is_erased = false;
+
+    m->cells = malloc((ysize*xsize) * sizeof(Cell*));
+    Cell** pcell = m->cells;
+
+    for (int32_t i=0 ; i<(ysize*xsize) ; i++, pcell++) {
+        *pcell = malloc(sizeof(Cell));
+        (*pcell)->chr[0] = '\0';
+        (*pcell)->fgcol = -1;
+        (*pcell)->bgcol = -1;
+    }
+    // end with null for easy itering
+    //*(++pcell) = NULL;
+    return m;
+}
+
+void ui_matrix_destroy(Matrix* m)
+{
+    for (int32_t i=0 ; i<(m->ysize*m->xsize) ; i++) {
+        free(m->cells[i]);
+    }
+    free(m->cells);
+    free(m);
+}
+
+Cell* ui_matrix_get(Matrix* m, int32_t y, int32_t x)
+{
+    return *(m->cells + ((y*m->xsize) + x));
+}
+
+void ui_matrix_set(Matrix* m, int32_t y, int32_t x, char* chr, int32_t fgcol, int32_t bgcol)
+{
+    Cell* cell = ui_matrix_get(m, y, x);
+    strcpy(cell->chr, chr);
+    cell->fgcol = fgcol;
+    cell->bgcol = bgcol;
+}
+
+int add_chr(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char c)
 {
     set_color(win, fgcol, bgcol);
     mvwaddch(win, y, x, c);
@@ -44,8 +95,11 @@ int add_chr(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol,
     return 0;
 }
 
-int add_str(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol, char* fmt, ...)
+int add_str(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...)
 {
+    assert(x>=0);
+    assert(y>=0);
+
     va_list ptr;
     va_start(ptr, fmt);
 
@@ -58,8 +112,10 @@ int add_str(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol,
     return 0;
 }
 
-int add_str_color(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t bgcol, char* fmt, ...)
+int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...)
 {
+    assert(x>=0);
+    assert(y>=0);
 
     /* Maintain current display representation with colors so we can replace background color */
     va_list ptr;
@@ -69,13 +125,17 @@ int add_str_color(WINDOW* win, uint32_t y, uint32_t x, uint32_t fgcol, uint32_t 
     vsprintf(str, fmt, ptr);
 
     // TODO if cell is occupied in matrix, replace background color with color in matrix
-    add_str(win, y, x, fgcol, bgcol, fmt, ptr);
+    Cell* c = ui_matrix_get(matrix, y, x);
+    if (strlen(c->chr) >0)
+        add_str(win, y, x, fgcol, c->fgcol, fmt, ptr);
+    else
+        add_str(win, y, x, fgcol, bgcol, fmt, ptr);
 
     va_end(ptr);
 
     // TODO save color in color matrix if string is a block
     if (strcmp(str, UI_BLOCK) == 0)
-        debug("save in matrix\n");
+        ui_matrix_set(matrix, y, x, str, fgcol, bgcol);
 
     return 0;
 }

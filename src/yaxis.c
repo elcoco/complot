@@ -216,7 +216,7 @@ int32_t yinterpolate(InterpolateXY* points, int32_t x0, int32_t y0, int32_t x1, 
 
 void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
-    uint32_t ysize = getmaxy(wtarget);
+    int32_t ysize = getmaxy(wtarget);
     InterpolateXY* prevxp = &(InterpolateXY) {.x=x0, .y=y0};
     int32_t nxpoints = x1-x0-1;
 
@@ -247,8 +247,10 @@ void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, i
     int32_t nypoints = abs(y1-prevxp->y);
     InterpolateXY ypoints[nypoints];
     if (yinterpolate(ypoints, prevxp->x, prevxp->y, x1, y1) >= 0) {
-        for (int32_t i=0 ; i<nypoints ; i++)
-            add_str_color(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
+        for (int32_t i=0 ; i<nypoints ; i++) {
+            if (y_is_in_view(wtarget, ysize-ypoints[i].y-1))
+                add_str_color(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
+        }
     }
 
 }
@@ -372,7 +374,7 @@ void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffse
     }
 }
 
-void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac)
+void get_tickerstr(char* buf, double ticker, int32_t ntotal, uint32_t nwhole, uint32_t nfrac)
 {
     // TODO null terminate characters in cell
     //
@@ -384,9 +386,9 @@ void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, u
     sprintf(sfrac, "%.20f", ticker - abs(ticker));
     strncat(tmp, sfrac+2, nfrac);
 
-    for (int i=0; i<ntotal-strlen(tmp) ; i++)
-        strcat(buf, "0");
+    // NOTE this segfaults
+    //for (int i=0; i<(int)ntotal-strlen(tmp) ; i++)
+    //    strcat(buf, "0");
 
     strncat(buf, tmp, strlen(tmp));
-    //set_status(1, "ry: %d[%d.%d] %d %d >>%s<<", ntotal, nwhole, nfrac, strlen(tmp), ntotal-strlen(tmp), buf);
 }

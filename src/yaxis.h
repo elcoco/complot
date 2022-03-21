@@ -30,8 +30,8 @@ typedef enum AxisSide {
 } AxisSide;
 
 typedef struct InterpolateXY {
-    uint32_t x;
-    uint32_t y;
+    int32_t x;
+    int32_t y;
 } InterpolateXY;
 
 struct Yaxis {
@@ -84,6 +84,6 @@ GroupContainer* yaxis_get_gc(Yaxis* a);
 void yaxis_add_line(Yaxis* a, Line* l);
 void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty);
 
-void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac);
+void get_tickerstr(char* buf, double ticker, int32_t ntotal, uint32_t nwhole, uint32_t nfrac);
 
 #endif
