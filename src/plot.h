@@ -14,7 +14,6 @@
 #include "index.h"
 #include "status.h"
 #include "legend.h"
-#include "plotwin.h"
 
 // Node struct represents a cell in the matrix
 typedef struct Plot Plot;
@@ -56,6 +55,9 @@ struct Plot {
     bool show_status;
     bool show_legend;
     bool show_xaxis;
+
+    // y offset when drawing
+    int32_t pany;
 };
 
 typedef enum PlotStatus {
@@ -70,7 +72,7 @@ typedef enum PlotStatus {
 
 Plot*      plot_init(WINDOW* parent);
 void       plot_destroy(Plot* pl);
-PlotStatus plot_draw(Plot* pl, State* s);
+PlotStatus plot_draw(Plot* pl);
 PlotStatus plot_resize(Plot* pl);
 void       plot_draw_xaxis(Plot* pl, Group* g);
 void       plot_print_error(PlotStatus plstatus);

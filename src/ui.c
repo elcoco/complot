@@ -114,6 +114,8 @@ int add_str(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, cha
 
 int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...)
 {
+    // TODO keep matrices for every window that calls this function
+    //      lookup matrix when function is called, clear on ui_erase
     assert(x>=0);
     assert(y>=0);
 
@@ -125,11 +127,13 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
     vsprintf(str, fmt, ptr);
 
     // TODO if cell is occupied in matrix, replace background color with color in matrix
-    Cell* c = ui_matrix_get(matrix, y, x);
-    if (strlen(c->chr) >0)
-        add_str(win, y, x, fgcol, c->fgcol, fmt, ptr);
-    else
-        add_str(win, y, x, fgcol, bgcol, fmt, ptr);
+    //Cell* c = ui_matrix_get(matrix, y, x);
+    //if (strlen(c->chr) >0)
+    //    add_str(win, y, x, fgcol, c->fgcol, fmt, ptr);
+    //else
+    //    add_str(win, y, x, fgcol, bgcol, fmt, ptr);
+
+    add_str(win, y, x, fgcol, bgcol, fmt, ptr);
 
     va_end(ptr);
 

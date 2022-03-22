@@ -120,13 +120,13 @@ PlotStatus yaxis_set_window_width(Yaxis* a, uint32_t yoffset)
     return PLSTATUS_YAXIS_UNCHANGED;
 }
 
-void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s)
+void yaxis_draw(Yaxis* a, WINDOW* wtarget, int32_t pany)
 {
     /* Draw all lines in this axis into Plot */
     if (a->is_empty)
         return;
 
-    yaxis_draw_tickers(a, s->pany);
+    yaxis_draw_tickers(a, pany);
 
     Line* l = a->line;
     while (l != NULL && l->is_enabled) {
@@ -141,15 +141,15 @@ void yaxis_draw(Yaxis* a, WINDOW* wtarget, State* s)
         // Highlight last data in tickers
         if (gc->plast != NULL) {
             if (gc->lineid->ltype == LTYPE_OHLC)
-                yaxis_draw_last_data(a, wtarget, s->pany, gc->plast->close);
+                yaxis_draw_last_data(a, wtarget, pany, gc->plast->close);
             else if (gc->lineid->ltype == LTYPE_LINE)
-                yaxis_draw_last_data(a, wtarget, s->pany, gc->plast->y);
+                yaxis_draw_last_data(a, wtarget, pany, gc->plast->y);
         }
 
         if (gc->lineid->ltype == LTYPE_OHLC)
-            yaxis_draw_candlesticks(a, wtarget, gc->group, s->pany);
+            yaxis_draw_candlesticks(a, wtarget, gc->group, pany);
         else if (gc->lineid->ltype == LTYPE_LINE)
-            yaxis_draw_line(a, l, wtarget, gc->group, s->pany);
+            yaxis_draw_line(a, l, wtarget, gc->group, pany);
 
         l = l->next;
     }
@@ -374,7 +374,7 @@ void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffse
     }
 }
 
-void get_tickerstr(char* buf, double ticker, int32_t ntotal, uint32_t nwhole, uint32_t nfrac)
+void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac)
 {
     // TODO null terminate characters in cell
     //
@@ -387,7 +387,7 @@ void get_tickerstr(char* buf, double ticker, int32_t ntotal, uint32_t nwhole, ui
     strncat(tmp, sfrac+2, nfrac);
 
     // NOTE this segfaults
-    //for (int i=0; i<(int)ntotal-strlen(tmp) ; i++)
+    //for (int i=0; i<ntotal-strlen(tmp) ; i++)
     //    strcat(buf, "0");
 
     strncat(buf, tmp, strlen(tmp));

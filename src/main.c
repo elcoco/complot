@@ -35,7 +35,9 @@ bool check_user_input(void* arg)
 {
     // s struct is passed as an argument to a callback, cast it to the proper type
     State* s = arg;
-    PlotWin* pw;
+
+    // current selected PlotWin
+    PlotWin* pw = s->pws[s->cur_pw];
                         //
     /* check for user input, return 1 if there was input */
     int c = getch();
@@ -46,31 +48,31 @@ bool check_user_input(void* arg)
                 s->is_stopped = true;
                 break;
             case 'h':
-                s->panx-=DEFAULT_PAN_STEPS;
-                s->is_pan_changed = true;
-                s->is_paused = true;
+                pw->panx-=DEFAULT_PAN_STEPS;
+                pw->is_pan_changed = true;
+                //pw->is_paused = true;
                 break;
             case 'l':
-                s->panx+=DEFAULT_PAN_STEPS;
-                s->is_pan_changed = true;
-                s->is_paused = true;
+                pw->panx+=DEFAULT_PAN_STEPS;
+                pw->is_pan_changed = true;
+                //pw->is_paused = true;
                 break;
             case 'k':
-                s->pany-=DEFAULT_PAN_STEPS;
-                s->is_pan_changed = true;
-                s->set_autorange = false;
+                pw->pany-=DEFAULT_PAN_STEPS;
+                pw->is_pan_changed = true;
+                pw->set_autorange = false;
                 break;
             case 'j':
-                s->pany+=DEFAULT_PAN_STEPS;
-                s->is_pan_changed = true;
-                s->set_autorange = false;
+                pw->pany+=DEFAULT_PAN_STEPS;
+                pw->is_pan_changed = true;
+                pw->set_autorange = false;
                 break;
             case 'H':
-                if (s->gsize > 1)
-                    s->gsize--;
+                if (pw->gsize > 1)
+                    pw->gsize--;
                 break;
             case 'L':
-                s->gsize++;
+                pw->gsize++;
                 break;
             case 'K':
                 s->cur_pw = (s->cur_pw == 0) ? s->pws_length-1 : s->cur_pw-1;
@@ -84,11 +86,9 @@ bool check_user_input(void* arg)
                 menu_select_symbol();
                 break;
             case 'i':
-                pw = s->pws[s->cur_pw];
                 pw_select_interval(pw, (const char**)binance_interval_map);
                 break;
             case 's': // autorange
-                pw = s->pws[s->cur_pw];
                 pw->plot->show_status = !pw->plot->show_status;
                 plot_resize(pw->plot);
                 break;
@@ -98,27 +98,25 @@ bool check_user_input(void* arg)
                     break;
                 }
                 // delete plot window
-                pw = s->pws[s->cur_pw];
                 state_remove_pw(s, pw);
                 break;
             case 'n':
                 s->do_create_pw = true;
                 break;
             case 'R': // autorange
-                s->set_autorange = !s->set_autorange;
+                pw->set_autorange = !pw->set_autorange;
                 break;
             case 'r': // reset
-                s->panx = 0;
-                s->pany = 0;
+                pw->panx = 0;
+                pw->pany = 0;
                 break;
             case KEY_RESIZE:
                 s->is_resized = true;
                 break;
             case ' ':
-                s->is_paused = !s->is_paused;
+                pw->is_paused = !pw->is_paused;
                 break;
             case '0' ... '9':
-                pw = s->pws[s->cur_pw];
                 if (pw->lines[c-'0'])
                     pw->lines[c-'0']->is_enabled = !pw->lines[c-'0']->is_enabled;
                 break;
@@ -162,11 +160,9 @@ void loop(State* s)
                 break;
         }
 
-        // update on new data
-        if (! s->is_paused) {
-            if (pw_update_all(s->pws, s->pws_length, &lock, false))
-                break;
-        }
+        // update on new data and !paused state
+        if (pw_update_all(s->pws, s->pws_length, &lock, false))
+            break;
 
         // sleep but update on user input
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {

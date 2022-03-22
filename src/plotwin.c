@@ -31,6 +31,15 @@ PlotWin* pw_init(WINDOW* win, State* state, char* symbol, pthread_mutex_t* lock)
     pw->request->timeout         = 60 * 1000 * 1000;
     strcpy(pw->request->symbol, symbol);
 
+    // amount of bins in a group
+    pw->gsize = DEFAULT_GROUP_SIZE;
+    pw->is_resized = false;
+    pw->is_paused = false;
+    pw->panx = 0;
+    pw->pany = 0;
+    pw->is_pan_changed = false;
+    pw->set_autorange = true;
+
     pthread_create(&(pw->threadid), NULL, binance_read_thread, pw->request);
     return pw;
 }
@@ -96,26 +105,32 @@ int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock, bool force)
         // check if data or exit early
         if (pw->index->npoints == 0)
             return 0;
+
+        // exit if plot is paused
+        if (pw->is_paused)
+            return 0;
     }
         
     Plot* pl = pw->plot;
     Line* l0 = pw->lines[0];
     Line* l1 = pw->lines[1];
     Index* index = pw->index;
-    State* s = pw->state;
 
     pthread_mutex_lock(lock);
 
     Groups* groups;
-    if ((groups = index_get_grouped(index, s->gsize, pl->xsize, s->panx, s->pany)) == NULL) {
+    if ((groups = index_get_grouped(index, pw->gsize, pl->xsize, pw->panx, pw->pany)) == NULL) {
         pthread_mutex_unlock(lock);
         return 0;
     }
 
-    pl->lyaxis->autorange = s->set_autorange;
-    pl->ryaxis->autorange = s->set_autorange;
+    pl->lyaxis->autorange = pw->set_autorange;
+    pl->ryaxis->autorange = pw->set_autorange;
     pl->lyaxis->is_empty = true;
     pl->ryaxis->is_empty = true;
+
+    // set y offset
+    pl->pany = pw->pany;
 
     if (line_set_data(l0, groups->lines[l0->lineid->id]) < 0) {
         pthread_mutex_unlock(lock);
@@ -130,16 +145,16 @@ int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock, bool force)
         return -1;
     }
 
-    status_set(pl->status, "autorange", "%d",    s->set_autorange);
-    status_set(pl->status, "paused",    "%d",    s->is_paused);
+    status_set(pl->status, "autorange", "%d",    pw->set_autorange);
+    status_set(pl->status, "paused",    "%d",    pw->is_paused);
     status_set(pl->status, "points",    "%d",    index->npoints);
-    status_set(pl->status, "gsize",     "%d",    s->gsize);
+    status_set(pl->status, "gsize",     "%d",    pw->gsize);
     status_set(pl->status, "spread",    "%.3f",  index->spread);
-    status_set(pl->status, "panxy",     "%d/%d", s->panx, s->pany);
+    status_set(pl->status, "panxy",     "%d/%d", pw->panx, pw->pany);
     status_set(pl->status, "interval",  "%s",    binance_interval_map[pw->request->OHLCinterval]);
 
     PlotStatus plstatus;
-    if ((plstatus = plot_draw(pl, s)) < PLSUCCESS)
+    if ((plstatus = plot_draw(pl)) < PLSUCCESS)
         plot_print_error(plstatus);
 
     // cleanup
@@ -152,17 +167,10 @@ State* state_init()
 {
     /* Shared state struct holds data about pan state, autorange etc... */
     State* s = malloc(sizeof(State));
-    s->is_paused = false;
     s->is_stopped = false;
-    s->panx = 0;
-    s->pany = 0;
-    s->is_pan_changed = false;
-    s->set_autorange = true;
 
     s->do_create_pw = false;
 
-    // amount of bins in a group
-    s->gsize = DEFAULT_GROUP_SIZE;
     s->is_resized = false;
 
     s->pws = NULL;

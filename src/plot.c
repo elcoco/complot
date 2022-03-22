@@ -24,6 +24,8 @@ Plot* plot_init(WINDOW* win)
     pl->show_legend = true;
     pl->show_xaxis = true;
 
+    pl->pany = 0;
+
     // set all sizes and create all windows
     plot_resize(pl);
 
@@ -117,7 +119,7 @@ PlotStatus plot_resize(Plot* pl)
     return PLSUCCESS;
 }
 
-PlotStatus plot_draw(Plot* pl, State* s)
+PlotStatus plot_draw(Plot* pl)
 {
     // set return status here
     PlotStatus plstatus;
@@ -163,8 +165,8 @@ PlotStatus plot_draw(Plot* pl, State* s)
     }
 
     ui_erase(pl->graph->win);
-    yaxis_draw(pl->lyaxis, pl->graph->win, s);
-    yaxis_draw(pl->ryaxis, pl->graph->win, s);
+    yaxis_draw(pl->lyaxis, pl->graph->win, pl->pany);
+    yaxis_draw(pl->ryaxis, pl->graph->win, pl->pany);
 
     // find data to display on x axis in Yaxis
     if (pl->show_xaxis)

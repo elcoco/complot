@@ -7,6 +7,7 @@
 #include <menu.h>
 
 #include "ui.h"
+#include "request.h"
 
 char* menu_select_symbol();
 char* menu_select_interval(char** intervals);
