@@ -246,68 +246,35 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
     //char chr = (char)(buf[0] & A_CHARTEXT);
     
     // get cell contents and extract attributes
-    short prevfg, prevbg;
-    char prevfgbuf[10] = {'\0'};
-    char prevbgbuf[10] = {'\0'};
-    char newfgbuf[10] = {'\0'};
-    char newbgbuf[10] = {'\0'};
+    //char prevfgbuf[10] = {'\0'};
+    //char prevbgbuf[10] = {'\0'};
+    //char newfgbuf[10] = {'\0'};
+    //char newbgbuf[10] = {'\0'};
+    //
+    // TODO ascii is nice and all but we need utf-8 
+    // TODO draw only fg->bg color if char is block
 
     int pair = PAIR_NUMBER((mvwinch(win, y, x) & A_ATTRIBUTES));
+    short prevfg, prevbg;
     pair_content(pair, &prevfg, &prevbg);
 
-    int ctranslated = color_translate(prevfg);
 
-    if (pair > 0  && prevfg != -1) {
-    //if (pair > 0 && strcmp(str, UI_BLOCK) != 0) {
+    if (pair > 0  && prevfg != -1) 
 
-        get_color(prevfgbuf, prevfg);
-        get_color(prevbgbuf, prevbg);
-        get_color_non_standard(newfgbuf, fgcol);
-        get_color_non_standard(newbgbuf, bgcol);
-        //debug("[%dx%d] %s before Found color: %d, %s,%s\n", y, x, str, pair, fgbuf, bgbuf);
+        //get_color(prevfgbuf, prevfg);
+        //get_color(prevbgbuf, prevbg);
+        //get_color_non_standard(newfgbuf, fgcol);
+        //get_color_non_standard(newbgbuf, bgcol);
 
-
-        //if (ctranslated == CDEFAULT)
-        //    add_str(win, y, x, fgcol, bgcol, str);
-        //else
-            add_str(win, y, x, fgcol, ctranslated, str);
+        add_str(win, y, x, fgcol, color_translate(prevfg), str);
         
-        //add_str(win, y, x, fgcol, ctranslated, str);
-        //add_str(win, y, x, fgcol, ctranslated, str);
-        if (fgcol == CMAGENTA) {
-            char ctransbuf[10] = {'\0'};
-            get_color_non_standard(ctransbuf, ctranslated);
-            debug("translated prev fgcol: %d -> %d = %s\n", prevfg, ctranslated, prevfgbuf);
-
-            //(ctranslated == CDEFAULT) ? debug("DEFAULT: %d\n", fg) : debug("ELSE\n");
-            debug("write: %s %s,%s\n", str, newfgbuf, newbgbuf);
-            debug("Color changed %d,%d->%d,%d - %s,%s->%s,%s\n\n", prevfg, prevbg, fgcol, prevfg, prevfgbuf, prevbgbuf, newfgbuf, ctransbuf);
-        }
-    }
-        //add_str(win, y, x, fgcol, fg, str);
-    else {
+        //char ctransbuf[10] = {'\0'};
+        //get_color_non_standard(ctransbuf, fgtrans);
+        //debug("translated prev fgcol: %d -> %d = %s\n", prevfg, fgtrans, prevfgbuf);
+        //debug("write: %s %s,%s\n", str, newfgbuf, newbgbuf);
+        //debug("Color changed %d,%d->%d,%d - %s,%s->%s,%s\n\n", prevfg, prevbg, fgcol, prevfg, prevfgbuf, prevbgbuf, newfgbuf, ctransbuf);
+    else
         add_str(win, y, x, fgcol, bgcol, str);
-
-
-    }
-
-
-    //mvwin_wchnstr(win, y, x, buf, 5);
-    //free(buf);
-
-
-    // TODO if cell is occupied in matrix, replace background color with color in matrix
-    //Cell* c = ui_matrix_get(matrix, y, x);
-    //if (strlen(c->chr) >0)
-    //    add_str(win, y, x, fgcol, c->fgcol, fmt, ptr);
-    //else
-    //    add_str(win, y, x, fgcol, bgcol, fmt, ptr);
-
-
-
-    // TODO save color in color matrix if string is a block
-    //if (strcmp(str, UI_BLOCK) == 0)
-    //    ui_matrix_set(matrix, y, x, str, fgcol, bgcol);
 
     return 0;
 }
