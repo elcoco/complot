@@ -18,6 +18,7 @@
 #include "plotwin.h"
 #include "curses_menu.h"
 
+// TODO create searchable log window
 
 #define SLEEP_MS 100*1000
 
@@ -29,6 +30,50 @@ int sigint_caught = 0;
 void on_sigint(int signum)
 {
     sigint_caught = 1;
+}
+
+void print_usage()
+{
+    printf("COMPLOT :: Crypto candlestick plots in your terminal!\n");
+    //printf("\nMandatory arguments:\n");
+    printf("\nOptional arguments:\n");
+    printf("    -s SYMBOL     Create plot for this symbol\n");
+    printf("    -h            Help!\n");
+}
+
+bool parse_args(State* s, int argc, char** argv)
+{
+    int option;
+
+    while((option = getopt(argc, argv, "s:h")) != -1){ //get option from the getopt() method
+        switch (option) {
+            case 's':
+                debug("Creating plot for symbol: %s\n", optarg);
+                WINDOW* win = newwin(0, 0, 0, 0);
+                PlotWin* pw = pw_init(win, s, optarg, &lock);
+                state_add_pw(s, pw);
+                pw_update_all(s->pws, s->pws_length, &lock, true);
+                break;
+            case ':': 
+                printf("option needs a value\n"); 
+                return false;
+            case 'h': 
+                print_usage();
+                return false;
+            case '?': 
+                print_usage();
+                return false;
+       }
+    }
+    if (argc == 1) {
+        print_usage();
+        return false;
+    }
+    if (s->pws_length == 0) {
+        printf("No symbol selected\n");
+        return false;
+    }
+    return true;
 }
 
 bool check_user_input(void* arg)
@@ -136,7 +181,8 @@ bool check_user_input(void* arg)
 
 void loop(State* s)
 {
-    while (!s->is_stopped && !sigint_caught) {
+    /* Do plot updating and handle events from check_user_input */
+    while (!s->is_stopped && !sigint_caught && s->pws_length > 0) {
         if (s->do_create_pw) {
             s->do_create_pw = false;
 
@@ -172,6 +218,21 @@ void loop(State* s)
     }
 }
 
+void run_test()
+{
+    debug("\nStart test -----------------\n");
+    add_str_color(stdscr, 10, 10, CRED, CBLACK, "12345678910");
+    add_str_color(stdscr, 10, 10, CBLUE, CDEFAULT, "123456789");
+    add_str_color(stdscr, 10, 10, CMAGENTA, CGREEN, "12345678");
+    add_str_color(stdscr, 10, 10, CWHITE, CGREEN, "123456");
+    add_str_color(stdscr, 10, 10, CBLACK, CGREEN, "12345");
+    add_str_color(stdscr, 10, 10, CCYAN, CGREEN, "1234");
+    add_str_color(stdscr, 10, 10, CGREEN, CGREEN, "123");
+    add_str_color(stdscr, 10, 10, CYELLOW, CGREEN, "12");
+    refresh();
+
+}
+
 int main(int argc, char **argv)
 {
     // for UTF8 in curses, messes with atof() see: read_stdin()
@@ -187,22 +248,24 @@ int main(int argc, char **argv)
     if (pthread_mutex_init(&lock, NULL) != 0)
         die("\nMutex init failed\n");
 
-    //if (!parse_args(&s, argc, argv))
-    //    return 1;
-
     ui_init();
+
+    //run_test();
+    //usleep(1000000000);
+    //goto cleanup;
+    
 
     // state shared between plot windows
     // this records things like panning and autoranging etc...
     State* s = state_init();
-    PlotWin* pw = pw_init(newwin(0, 0, 0, 0), s, "XMRBUSD", &lock);
-    state_add_pw(s, pw);
 
-    loop(s);
+    if (parse_args(s, argc, argv))
+        loop(s);
 
 
     state_destroy(s);
 
+cleanup:
     ui_cleanup();
     return 0;
 }

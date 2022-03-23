@@ -112,19 +112,189 @@ int add_str(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, cha
     return 0;
 }
 
+void get_color(char buf[10], int32_t color)
+{
+    switch (color) {
+        case -1:
+            strcpy(buf, "default");
+            break;
+        case COLOR_RED:
+            strcpy(buf, "red");
+            break;
+        case COLOR_GREEN:
+            strcpy(buf, "green");
+            break;
+        case COLOR_YELLOW:
+            strcpy(buf, "yellow");
+            break;
+        case COLOR_BLUE:
+            strcpy(buf, "blue");
+            break;
+        case COLOR_MAGENTA:
+            strcpy(buf, "magenta");
+            break;
+        case COLOR_CYAN:
+            strcpy(buf, "cyan");
+            break;
+        case COLOR_WHITE:
+            strcpy(buf, "white");
+            break;
+        case COLOR_BLACK:
+            strcpy(buf, "black");
+            break;
+        default:
+            strcpy(buf, "error");
+            break;
+
+    }
+}
+
+void get_color_non_standard(char buf[10], int32_t color)
+{
+    switch (color) {
+        case CDEFAULT:
+            strcpy(buf, "default");
+            break;
+        case CRED:
+            strcpy(buf, "red");
+            break;
+        case CGREEN:
+            strcpy(buf, "green");
+            break;
+        case CYELLOW:
+            strcpy(buf, "yellow");
+            break;
+        case CBLUE:
+            strcpy(buf, "blue");
+            break;
+        case CMAGENTA:
+            strcpy(buf, "magenta");
+            break;
+        case CCYAN:
+            strcpy(buf, "cyan");
+            break;
+        case CWHITE:
+            strcpy(buf, "white");
+            break;
+        case CBLACK:
+            strcpy(buf, "black");
+            break;
+        default:
+            strcpy(buf, "error");
+            break;
+    }
+}
+
+int color_translate(int color)
+{
+    switch (color) {
+        case -1:
+            return CDEFAULT;
+        case COLOR_RED:
+            return CRED;
+        case COLOR_GREEN:
+            return CGREEN;
+        case COLOR_YELLOW:
+            return CYELLOW;
+        case COLOR_BLUE:
+            return CBLUE;
+        case COLOR_MAGENTA:
+            return CMAGENTA;
+        case COLOR_CYAN:
+            return CCYAN;
+        case COLOR_WHITE:
+            return CWHITE;
+        case COLOR_BLACK:
+            return CBLACK;
+        default:
+            debug(">>>>>>>>. COLOR ERROR\n");
+            return -1;
+
+    }
+}
+
 int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...)
 {
     // TODO keep matrices for every window that calls this function
     //      lookup matrix when function is called, clear on ui_erase
+    // check: https://www.ibm.com/docs/en/aix/7.2?topic=library-manipulating-video-attributes
     assert(x>=0);
     assert(y>=0);
 
     /* Maintain current display representation with colors so we can replace background color */
     va_list ptr;
     va_start(ptr, fmt);
-
     char str[100] = {'\0'};
     vsprintf(str, fmt, ptr);
+    va_end(ptr);
+
+    //add_str(win, y, x, fgcol, bgcol, str);
+    //return 0;
+
+
+
+
+
+
+    //chtype* buf = calloc(6, sizeof(chtype));
+    //mvwinchnstr(win, y, x, buf, 5);
+    //wchar_t* buf = calloc(6, sizeof(chtype));
+
+    //int res = mvin_wchnstr(win, y, x, buf, 5);
+
+
+    //char chr = (char)(buf[0] & A_CHARTEXT);
+    
+    // get cell contents and extract attributes
+    short prevfg, prevbg;
+    char prevfgbuf[10] = {'\0'};
+    char prevbgbuf[10] = {'\0'};
+    char newfgbuf[10] = {'\0'};
+    char newbgbuf[10] = {'\0'};
+
+    int pair = PAIR_NUMBER((mvwinch(win, y, x) & A_ATTRIBUTES));
+    pair_content(pair, &prevfg, &prevbg);
+
+    int ctranslated = color_translate(prevfg);
+
+    if (pair > 0  && prevfg != -1) {
+    //if (pair > 0 && strcmp(str, UI_BLOCK) != 0) {
+
+        get_color(prevfgbuf, prevfg);
+        get_color(prevbgbuf, prevbg);
+        get_color_non_standard(newfgbuf, fgcol);
+        get_color_non_standard(newbgbuf, bgcol);
+        //debug("[%dx%d] %s before Found color: %d, %s,%s\n", y, x, str, pair, fgbuf, bgbuf);
+
+
+        //if (ctranslated == CDEFAULT)
+        //    add_str(win, y, x, fgcol, bgcol, str);
+        //else
+            add_str(win, y, x, fgcol, ctranslated, str);
+        
+        //add_str(win, y, x, fgcol, ctranslated, str);
+        //add_str(win, y, x, fgcol, ctranslated, str);
+        if (fgcol == CMAGENTA) {
+            char ctransbuf[10] = {'\0'};
+            get_color_non_standard(ctransbuf, ctranslated);
+            debug("translated prev fgcol: %d -> %d = %s\n", prevfg, ctranslated, prevfgbuf);
+
+            //(ctranslated == CDEFAULT) ? debug("DEFAULT: %d\n", fg) : debug("ELSE\n");
+            debug("write: %s %s,%s\n", str, newfgbuf, newbgbuf);
+            debug("Color changed %d,%d->%d,%d - %s,%s->%s,%s\n\n", prevfg, prevbg, fgcol, prevfg, prevfgbuf, prevbgbuf, newfgbuf, ctransbuf);
+        }
+    }
+        //add_str(win, y, x, fgcol, fg, str);
+    else {
+        add_str(win, y, x, fgcol, bgcol, str);
+
+
+    }
+
+
+    //mvwin_wchnstr(win, y, x, buf, 5);
+    //free(buf);
+
 
     // TODO if cell is occupied in matrix, replace background color with color in matrix
     //Cell* c = ui_matrix_get(matrix, y, x);
@@ -133,13 +303,11 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
     //else
     //    add_str(win, y, x, fgcol, bgcol, fmt, ptr);
 
-    add_str(win, y, x, fgcol, bgcol, fmt, ptr);
 
-    va_end(ptr);
 
     // TODO save color in color matrix if string is a block
-    if (strcmp(str, UI_BLOCK) == 0)
-        ui_matrix_set(matrix, y, x, str, fgcol, bgcol);
+    //if (strcmp(str, UI_BLOCK) == 0)
+    //    ui_matrix_set(matrix, y, x, str, fgcol, bgcol);
 
     return 0;
 }
@@ -194,11 +362,19 @@ void ui_erase(WINDOW* win)
         erase();
 }
 
-void ui_show_error(WINDOW* win, char* msg)
+void ui_show_error(WINDOW* win, char* fmt, ...)
 {
+    va_list ptr;
+    va_start(ptr, fmt);
+
+    char msg[100] = {'\0'};
+    vsprintf(msg, fmt, ptr);
+
     uint32_t xpos = (getmaxx(win) / 2) - (strlen(msg) / 2);
     uint32_t ypos = getmaxy(win) / 2;
     ui_erase(win);
     add_str(win, ypos, xpos, CRED, CDEFAULT, msg);
     wrefresh(win);
+
+    va_end(ptr);
 }

@@ -338,7 +338,7 @@ JSONStatus json_parse_key(JSONObject* jo, Position* pos)
     return STATUS_SUCCESS;
 }
 
-JSONStatus json_parse_string(JSONObject* jo, Position* pos)
+JSONStatus json_parse_string(JSONObject* jo, Position* pos, char quote_chr)
 {
     char tmp[MAX_BUF] = {'\0'};
     char c;
@@ -346,11 +346,30 @@ JSONStatus json_parse_string(JSONObject* jo, Position* pos)
     jo->dtype = JSON_STRING;
     jo->is_string = true;
 
-    if ((c = fforward(pos, "\"'\n", NULL, NULL, "\n", tmp)) < 0) {
-        printf("Error while parsing string, Failed to find closing quotes\n");
-        print_error(pos, LINES_CONTEXT);
+    // look for closing quotes, quote_chr tells us if it is " or ' that we're looking for
+    if (quote_chr == '\'') {
+        if ((c = fforward(pos, "'\n", NULL, NULL, "\n", tmp)) < 0) {
+            printf("Error while parsing string, Failed to find closing quotes\n");
+            print_error(pos, LINES_CONTEXT);
+            return PARSE_ERROR;
+        }
+    }
+    else if (quote_chr == '"') {
+        if ((c = fforward(pos, "\"\n", NULL, NULL, "\n", tmp)) < 0) {
+            printf("Error while parsing string, Failed to find closing quotes\n");
+            print_error(pos, LINES_CONTEXT);
+            return PARSE_ERROR;
+        }
+    }
+    else {
         return PARSE_ERROR;
     }
+
+    //if ((c = fforward(pos, "\"'\n", NULL, NULL, "\n", tmp)) < 0) {
+    //    printf("Error while parsing string, Failed to find closing quotes\n");
+    //    print_error(pos, LINES_CONTEXT);
+    //    return PARSE_ERROR;
+    //}
     jo->value = strdup(tmp);
 
 
@@ -509,7 +528,7 @@ JSONStatus json_parse(JSONObject* jo, Position* pos)
     }
     else if (c == '"' || c == '\'') {
         pos_next(pos);
-        return json_parse_string(jo, pos);
+        return json_parse_string(jo, pos, c);
     }
     else if (strchr("0123456789-n.", c)) {
         return json_parse_number(jo, pos);

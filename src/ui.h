@@ -47,7 +47,8 @@ int add_chr(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, cha
 int add_str(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...);
 int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...);
 
-void ui_show_error(WINDOW* win, char* msg);
+//void ui_show_error(WINDOW* win, char* msg);
+void ui_show_error(WINDOW* win, char* fmt, ...);
 
 Matrix* ui_matrix_init(int32_t xsize, int32_t ysize);
 Cell* ui_matrix_get(Matrix* m, int32_t y, int32_t x);

@@ -98,6 +98,14 @@ int8_t pw_update_all(PlotWin** pws, uint32_t length, pthread_mutex_t* lock, bool
 
 int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock, bool force)
 {
+    // check if thread is still alive
+    if (pw->request->is_stopped) {
+        ui_show_error(pw->plot->win, "Failed to get data for symbol %s!", pw->request->symbol);
+        //debug("ERROR: thread is stopped, die now please!\n");
+        //state_remove_pw(pw->state, pw);
+        //return -1;
+    }
+        
     if (!force) {
         if (!index_has_new_data(pw->index))
             return 0;
@@ -110,7 +118,7 @@ int8_t pw_update(PlotWin* pw, pthread_mutex_t* lock, bool force)
         if (pw->is_paused)
             return 0;
     }
-        
+
     Plot* pl = pw->plot;
     Line* l0 = pw->lines[0];
     Line* l1 = pw->lines[1];

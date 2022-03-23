@@ -156,6 +156,7 @@ void* binance_read_thread(void* thread_args)
     int64_t tstart = -1;
 
     while (!args->is_stopped) {
+        debug("GETTING DATA\n");
 
         assert(args->index);
         assert(args->symbol);
@@ -179,9 +180,11 @@ void* binance_read_thread(void* thread_args)
             JSONObject* dp = rn->children[i];
 
             if (dp->length != 12) {
+                args->is_stopped = true;
                 debug("Received invalid datapoint\n");
                 //dp = dp->next;
-                continue;
+                //continue;
+                break;
             }
 
             if (!(dt_open  = json_get_number(dp->children[0])))
@@ -214,6 +217,7 @@ void* binance_read_thread(void* thread_args)
                 tstart = (int64_t)dt_close;
         }
 
+        //json_print(rn, 0);
         json_obj_destroy(rn);
 
         // do non blocking sleep

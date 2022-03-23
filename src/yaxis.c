@@ -207,7 +207,7 @@ int32_t yinterpolate(InterpolateXY* points, int32_t x0, int32_t y0, int32_t x1, 
         return -1;
 
     // ascending and not above eachother
-    for (int32_t y=ystart ; y<yend ; y++, points++) {
+    for (int32_t y=ystart ; y<yend-1 ; y++, points++) {
         points->x = x1;
         points->y = y;
     }
@@ -281,7 +281,7 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
             // map data point from data range to terminal rows range
             int32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
             if (y_is_in_view(wtarget, ysize-iy-1))
-                add_str_color(wtarget, ysize-iy-1, ix, l->color, a->bgcol, l->chr);
+                add_str_color(wtarget, ysize-iy-1, ix, l->color, CDEFAULT, l->chr);
 
             if (previx > 0)
                 interpolate(l, wtarget, previx, previy, ix, iy);
@@ -318,12 +318,10 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_WICK);
-        }
-        for (int y=iopen ; y<=iclose ; y++) {
-            if (y < 0 || y > getmaxy(win)-1)
-                continue;
-            add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_BODY);
+            if (y >= iopen && y <= iclose)
+                add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_BODY);
+            else
+                add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_WICK);
         }
     // RED
     }
@@ -331,16 +329,16 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
         for (int y=ilow ; y<=ihigh ; y++) {
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
-            add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_WICK);
-        }
-        for (int y=iclose ; y<=iopen ; y++) {
-            if (y < 0 || y > getmaxy(win)-1)
-                continue;
-            add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_BODY);
-
+            if (y <= iopen && y >= iclose)
+                add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_BODY);
+            else
+                add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_WICK);
         }
     }
 }
+
+
+
 
 void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
 {
