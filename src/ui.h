@@ -1,6 +1,8 @@
 #ifndef UI_H
 #define UI_H
 
+#define _XOPEN_SOURCE_EXTENDED 1
+
 #include <curses.h>
 #include <sys/time.h>   // for non blocking sleep
 #include <stdbool.h>

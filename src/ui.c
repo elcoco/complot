@@ -231,50 +231,66 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
     //add_str(win, y, x, fgcol, bgcol, str);
     //return 0;
 
+    /*
+     * NOTE: we can not use the winch family of functions to get characters
+     *       from the display because this interface doesn't work with UTF-8.
+     *       To get wide characters we have to use mvwin_wch to get cchar_t
+     *       characters and then extract the attributes using getcchar().
+     *       To be able to have a multibyte char, the wchar_t type is used.
+     *
+     *       int getcchar(
+     *           const cchar_t *wcval,
+     *           wchar_t *wch,
+     *           attr_t *attrs,
+     *           short *color_pair,
+     *           void *opts );
+     */
 
-
-
-
-
-    //chtype* buf = calloc(6, sizeof(chtype));
-    //mvwinchnstr(win, y, x, buf, 5);
-    //wchar_t* buf = calloc(6, sizeof(chtype));
-
-    //int res = mvin_wchnstr(win, y, x, buf, 5);
-
-
-    //char chr = (char)(buf[0] & A_CHARTEXT);
-    
-    // get cell contents and extract attributes
-    //char prevfgbuf[10] = {'\0'};
-    //char prevbgbuf[10] = {'\0'};
-    //char newfgbuf[10] = {'\0'};
-    //char newbgbuf[10] = {'\0'};
-    //
-    // TODO ascii is nice and all but we need utf-8 
-    // TODO draw only fg->bg color if char is block
-
-    int pair = PAIR_NUMBER((mvwinch(win, y, x) & A_ATTRIBUTES));
+    cchar_t wcval;
+    wchar_t oldwstr[20];
+    attr_t attrs;
+    short color_pair;
     short prevfg, prevbg;
-    pair_content(pair, &prevfg, &prevbg);
 
+    // get wide utf8 character
+    //mvwin_wchnstr(win, y, x, wcval, 5);
+    mvwin_wch(win, y, x, &wcval);
 
-    if (pair > 0  && prevfg != -1) 
+    // extract wide character and attributes from wcval
+    if (getcchar(&wcval, oldwstr, &attrs, &color_pair, NULL) == ERR) {
+        debug("Failed to get cchar\n");
+        return -1;
+    }
 
-        //get_color(prevfgbuf, prevfg);
-        //get_color(prevbgbuf, prevbg);
-        //get_color_non_standard(newfgbuf, fgcol);
-        //get_color_non_standard(newbgbuf, bgcol);
+    // extract fg and bg color from pair
+    pair_content(color_pair, &prevfg, &prevbg);
 
-        add_str(win, y, x, fgcol, color_translate(prevfg), str);
-        
-        //char ctransbuf[10] = {'\0'};
-        //get_color_non_standard(ctransbuf, fgtrans);
-        //debug("translated prev fgcol: %d -> %d = %s\n", prevfg, fgtrans, prevfgbuf);
-        //debug("write: %s %s,%s\n", str, newfgbuf, newbgbuf);
-        //debug("Color changed %d,%d->%d,%d - %s,%s->%s,%s\n\n", prevfg, prevbg, fgcol, prevfg, prevfgbuf, prevbgbuf, newfgbuf, ctransbuf);
-    else
+    char testfgbuf[10] = {'\0'};
+    char testbgbuf[10] = {'\0'};
+    get_color(testfgbuf, prevfg);
+    get_color(testbgbuf, prevbg);
+    debug("Found char: [%ls] %s - %s\n", oldwstr, testfgbuf, testbgbuf);
+
+    if (color_pair > 0  && prevfg != -1)  {
+
+        // TODO only use UTF-8 strings because we cannot compare char* and wchar*
+        wchar_t newwstr[5];
+        mbstowcs(newwstr, str, 5);
+
+        char oldstr[5] = {'\0'};
+        wcstombs(oldstr, oldwstr, sizeof oldstr);
+
+        if (wcscmp(oldwstr, UI_BLOCK) == 0 && wcscmp(newwstr, UI_BLOCK) != 0)
+            add_str(win, y, x, fgcol, color_translate(prevfg), str);
+
+        else if (wcscmp(oldwstr, UI_BLOCK) != 0 && wcscmp(newwstr, UI_BLOCK) == 0)
+            add_str(win, y, x, color_translate(prevfg), fgcol, oldstr);
+        else
+            add_str(win, y, x, fgcol, bgcol, str);
+    }
+    else {
         add_str(win, y, x, fgcol, bgcol, str);
+    }
 
     return 0;
 }

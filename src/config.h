@@ -5,8 +5,8 @@
 
 #define LINE_LINE_ICON        "█"
 #define LINE_OHLC_ICON        "┿"
-#define LINE_DEFAULT_LINE_CHR "X"
-//#define LINE_DEFAULT_LINE_CHR "█"
+//#define LINE_DEFAULT_LINE_CHR "X"
+#define LINE_DEFAULT_LINE_CHR "█"
 
 #define PLOT_MIN_WINDOW_XSIZE 10
 #define PLOT_MIN_WINDOW_YSIZE 10
@@ -15,19 +15,20 @@
 
 #define XAXIS_TICK_SPACING 15
 
-#define YAXIS_LDATA_LINE_CHR "-"
-//#define YAXIS_LDATA_LINE_CHR "─"
-#define YAXIS_OHLC_BODY "O"
-#define YAXIS_OHLC_WICK "|"
-//#define YAXIS_OHLC_BODY "█"
-//#define YAXIS_OHLC_WICK "┃"
+//#define YAXIS_LDATA_LINE_CHR "-"
+#define YAXIS_LDATA_LINE_CHR "─"
+//#define YAXIS_OHLC_BODY "O"
+//#define YAXIS_OHLC_WICK "|"
+#define YAXIS_OHLC_BODY "█"
+#define YAXIS_OHLC_WICK "┃"
 
 
 #define DEFAULT_GROUP_SIZE 1
 #define DEFAULT_PAN_STEPS 3
 #define DEFAULT_PAN_BIG_STEPS 5
 
-#define UI_BLOCK "█"
+// L means wide character
+#define UI_BLOCK L"█"
 
 // TODO this should really be dynamic
 #define MAX_LINES 20
