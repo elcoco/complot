@@ -28,12 +28,12 @@
 typedef struct Group Group;
 
 
-float get_avg(float avg, uint16_t i, float value);
 uint16_t get_rand(uint16_t lower, uint16_t upper);
 int32_t map_dec_to_i(float value, float amin, float amax, float bmin, float bmax);
 int32_t map(double value, double in_min, double in_max, uint32_t out_min, uint32_t out_max);
 
 uint32_t find_nfrac(double f);
+uint32_t find_nfrac2(double min, double max);
 uint32_t find_nwhole(double f);
 uint32_t count_digits(uint64_t n);
 
@@ -48,5 +48,8 @@ Group* fast_forward_groups(Group* g, uint32_t amount);
 void debug(char* fmt, ...);
 bool non_blocking_sleep(int interval, bool(*callback)(void* arg), void* arg);
 char* str_to_lower(char* str);
+
+double get_avg(double avg, uint32_t i, double value);
+bool y_is_in_view(WINDOW* win, uint32_t iy);
 
 #endif

@@ -61,6 +61,9 @@ struct Group {
 
     // group id, is used to let x tickers follow candles
     uint32_t id;
+
+    // count how many points are in this group
+    uint32_t counter;
 };
 
 /* Container returned from index_get_grouped(). */

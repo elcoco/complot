@@ -402,14 +402,18 @@ void line_add_line_point(LineContainer** lc, Point* p)
     if ((*lc)->is_empty) {
         (*lc)->is_empty = false;
         (*lc)->y = p->y;
-        (*lc)->npoints = 0;
+        (*lc)->npoints = 1;
         return;
     }
+
+    (*lc)->y = get_avg((*lc)->y, (*lc)->npoints, p->y);
+
     (*lc)->npoints++;
 
     // TODO we should calculate an average here, for now we just take the highest y
-    if (p->y > (*lc)->y)
-        (*lc)->y = p->y;
+    //if (p->y > (*lc)->y)
+    //    (*lc)->y = p->y;
+
 }
 
 int8_t line_add_point(Bin* b, Point* p)

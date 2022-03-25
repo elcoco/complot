@@ -28,8 +28,10 @@ int ui_init()
     noecho();               // don't echo input to screen
     nodelay(stdscr, TRUE);  // don't block
     keypad(stdscr, TRUE);   // Enables keypad mode also necessary for mouse clicks
-    mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL); // Don't mask any mouse events
-    printf("\033[?1003h\n"); // Makes the terminal report mouse movement events
+
+    // NOTE mouse specific settings
+    //mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL); // Don't mask any mouse events
+    //printf("\033[?1003h\n"); // Makes the terminal report mouse movement events
 
     matrix = ui_matrix_init(COLS, LINES);
     //debug("cell: %s, %d, %d\n", c->chr, c->fgcol, c->bgcol);
@@ -265,26 +267,23 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
     // extract fg and bg color from pair
     pair_content(color_pair, &prevfg, &prevbg);
 
-    char testfgbuf[10] = {'\0'};
-    char testbgbuf[10] = {'\0'};
-    get_color(testfgbuf, prevfg);
-    get_color(testbgbuf, prevbg);
-    debug("Found char: [%ls] %s - %s\n", oldwstr, testfgbuf, testbgbuf);
-
     if (color_pair > 0  && prevfg != -1)  {
 
-        // TODO only use UTF-8 strings because we cannot compare char* and wchar*
+        // convert to wchar_t
         wchar_t newwstr[5];
         mbstowcs(newwstr, str, 5);
 
+        // convert to char*
         char oldstr[5] = {'\0'};
         wcstombs(oldstr, oldwstr, sizeof oldstr);
 
+        // if last character was a block, reuse fgcolor from last char
         if (wcscmp(oldwstr, UI_BLOCK) == 0 && wcscmp(newwstr, UI_BLOCK) != 0)
             add_str(win, y, x, fgcol, color_translate(prevfg), str);
 
         else if (wcscmp(oldwstr, UI_BLOCK) != 0 && wcscmp(newwstr, UI_BLOCK) == 0)
             add_str(win, y, x, color_translate(prevfg), fgcol, oldstr);
+
         else
             add_str(win, y, x, fgcol, bgcol, str);
     }

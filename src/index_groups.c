@@ -36,12 +36,15 @@ Group* group_line_update(Group* g, LineContainer* lc)
         g->low = lc->y;
     }
 
-    if (lc->y > g->high)
-        g->high = lc->y;
-    if (lc->y < g->low)
-        g->low = lc->y;
+    g->y = get_avg(g->y, g->counter, lc->y);
 
-    // TODO Y must be calculated as an average
+    g->high = g->y;
+    //if (g->y > g->high)
+    //    g->high = g->y;
+    if (g->y < g->low)
+        g->low = g->y;
+
+    g->counter++;
 
     return g;
 }
@@ -147,6 +150,7 @@ Group* group_init(Index* index, int32_t gstart, uint32_t gsize, Group** gtail)
     g->wend   = index_map_to_x(index, gstart + gsize);
     g->is_empty = true;
     g->next = NULL;
+    g->counter = 0;
 
     // Set unique constant id for this group.
     // This is used to keep x tickers in the right spot.

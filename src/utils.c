@@ -6,14 +6,21 @@ void die(char* msg)
     exit(0);
 }
 
-float get_avg(float avg, uint16_t i, float value)
+double get_avg(double avg, uint32_t i, double value)
 {
+    /* get a rolling average */
     return (avg * i + value) / (i+1);
 }
 
 uint16_t get_rand(uint16_t lower, uint16_t upper)
 {
     return (rand() % (upper - lower + 1)) + lower;
+}
+
+bool y_is_in_view(WINDOW* win, uint32_t iy)
+{
+    /* check if y fits in window matrix */
+    return (iy >= 0 && iy < getmaxy(win));
 }
 
 int32_t map(double value, double in_min, double in_max, uint32_t out_min, uint32_t out_max)
@@ -24,6 +31,36 @@ int32_t map(double value, double in_min, double in_max, uint32_t out_min, uint32
 uint32_t count_digits(uint64_t n)
 {
     return (n==0) ? 1 : floor(log10(n) + 1);
+}
+
+uint32_t find_nfrac2(double min, double max)
+{
+    /* Find the amount of decimals that should be displayed on the yaxis.
+     * Compare ymax and ymin from left to right.
+     * If digit is not same, this is amount of digits for precision.
+     */
+    char minbuf[100] = {'\0'};
+    char maxbuf[100] = {'\0'};
+
+    sprintf(minbuf, "%f", min - abs(min));
+    sprintf(maxbuf, "%f", max - abs(max));
+
+    char* pmin = minbuf;
+    char* pmax = maxbuf;
+
+    // skip 0. chars
+    pmin += 2;
+    pmax += 2;
+
+    int i;
+
+    for (i=0 ; i<strlen(minbuf) ; i++, pmin++, pmax++) {
+        if (*pmin != *pmax) {
+            debug("[%d] found! %s:%s = %c - %c\n", i, minbuf, maxbuf, *pmin, *pmax);
+            break;
+        }
+    }
+    return i+3;
 }
 
 uint32_t find_nfrac(double f)
@@ -128,3 +165,4 @@ char* str_to_lower(char* str)
     }
     return str;
 }
+

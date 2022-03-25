@@ -98,7 +98,8 @@ PlotStatus yaxis_set_window_width(Yaxis* a, uint32_t yoffset)
 
     // digits before and after the dot
     a->nwhole = find_nwhole(a->dmax); 
-    a->nfrac  = find_nfrac(a->dmax - a->dmin);
+    a->nfrac  = find_nfrac2(a->dmin, a->dmax);
+    //a->nfrac  = find_nfrac(a->dmax - a->dmin);
     uint32_t new_xsize = a->nwhole + 1 + a->nfrac;
 
     // resize axis window to new ticker width if changed
@@ -174,12 +175,6 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
     for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++) {
         add_str_color(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, CDEFAULT, YAXIS_LDATA_LINE_CHR);
     }
-}
-
-bool y_is_in_view(WINDOW* win, uint32_t iy)
-{
-    /* check if y fits in window matrix */
-    return (iy >= 0 && iy < getmaxy(win));
 }
 
 void xinterpolate(InterpolateXY* points, double x0, double y0, double x1, double y1)
@@ -295,8 +290,10 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
     }
 }
 
+
 void yaxis_draw_tickers(Yaxis* a, int32_t yoffset)
 {
+
     // calculate stepsize between tickers
     double step = (a->dmax - a->dmin) / a->ysize;
 
@@ -375,14 +372,24 @@ void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffse
 void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac)
 {
     // TODO null terminate characters in cell
+    // TODO pad zeros on left
     //
     /* create ticker with specific amount of decimals and copy to string */
     char tmp[50] = {'\0'};
     char sfrac[50] = {'\0'};
 
+
     sprintf(tmp, "%d.", abs(ticker));
+
+    for (int i=0 ; i<nwhole - (strlen(tmp)-1) ; i++) {
+        buf[i] = '0';
+        buf[i+1] = '\0';
+        //strcat(buf, "0");
+    }
+
     sprintf(sfrac, "%.20f", ticker - abs(ticker));
     strncat(tmp, sfrac+2, nfrac);
+
 
     // NOTE this segfaults
     //for (int i=0; i<ntotal-strlen(tmp) ; i++)
