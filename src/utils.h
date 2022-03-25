@@ -11,6 +11,7 @@
 #include <time.h>
 #include <sys/time.h>   // for non blocking sleep
 #include <curses.h>
+#include <errno.h>
 
 #include "index_groups.h"
 
@@ -25,6 +26,12 @@
 #define SLEEP_CHECK_INTERVAL 10000
 #define MAX_SYMBOL_SIZE 10
 
+// custom assert macro with formatted message and ui cleanup
+#define clean_errno() (errno == 0 ? "None" : strerror(errno))
+#define log_error(M, ...) fprintf(stderr, "[ERROR] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
+#define assertf(A, M, ...) if(!(A)) {ui_cleanup() ; log_error(M, ##__VA_ARGS__); assert(A); }
+
+// forward declare
 typedef struct Group Group;
 
 
@@ -51,5 +58,6 @@ char* str_to_lower(char* str);
 
 double get_avg(double avg, uint32_t i, double value);
 bool y_is_in_view(WINDOW* win, uint32_t iy);
+void xassert(bool expr, char* fmt, ...);
 
 #endif

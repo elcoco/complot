@@ -3,7 +3,8 @@
 void die(char* msg)
 {
     printf("ERROR: %s\n", msg);
-    exit(0);
+    abort();
+    //exit(0);
 }
 
 double get_avg(double avg, uint32_t i, double value)
@@ -55,10 +56,8 @@ uint32_t find_nfrac2(double min, double max)
     int i;
 
     for (i=0 ; i<strlen(minbuf) ; i++, pmin++, pmax++) {
-        if (*pmin != *pmax) {
-            debug("[%d] found! %s:%s = %c - %c\n", i, minbuf, maxbuf, *pmin, *pmax);
+        if (*pmin != *pmax)
             break;
-        }
     }
     return i+3;
 }

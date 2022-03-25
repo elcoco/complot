@@ -99,8 +99,10 @@ int add_chr(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, cha
 
 int add_str(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...)
 {
-    assert(x>=0);
-    assert(y>=0);
+    assertf(x>=0, "x = %d", x);
+    assertf(y>=0, "y = %d", y);
+    assertf(x<getmaxx(win), "x = %d", x);
+    assertf(y<getmaxy(win), "y = %d", y);
 
     va_list ptr;
     va_start(ptr, fmt);
@@ -109,7 +111,6 @@ int add_str(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, cha
     mvwprintw(win, y, x, fmt, ptr);
     unset_color(win, fgcol, bgcol);
     va_end(ptr);
-
 
     return 0;
 }
@@ -220,8 +221,6 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
     // TODO keep matrices for every window that calls this function
     //      lookup matrix when function is called, clear on ui_erase
     // check: https://www.ibm.com/docs/en/aix/7.2?topic=library-manipulating-video-attributes
-    assert(x>=0);
-    assert(y>=0);
 
     /* Maintain current display representation with colors so we can replace background color */
     va_list ptr;
