@@ -26,10 +26,20 @@ typedef enum AxisSide {
     AXIS_RIGHT
 } AxisSide;
 
-typedef struct InterpolateXY {
+typedef enum PType {
+    DPOINT,
+    XINT_POINT,
+    YINT_POINT
+} PType;
+
+typedef struct InterpolateXY InterpolateXY;
+struct InterpolateXY {
     int32_t x;
     int32_t y;
-} InterpolateXY;
+    InterpolateXY* next;
+    InterpolateXY* prev;
+    PType ptype;
+};
 
 struct Yaxis {
     WINDOW* parent;

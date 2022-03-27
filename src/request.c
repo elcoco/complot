@@ -208,7 +208,8 @@ void* binance_read_thread(void* thread_args)
             Line* l_vol = args->lines[0];
             Line* l_ohlc = args->lines[1];
 
-            point_create_point(args->index, l_vol->lineid, dt_open, volume);
+            if (i % 5 == 0)
+                point_create_point(args->index, l_vol->lineid, dt_open, volume);
             point_create_cspoint(args->index, l_ohlc->lineid, dt_open, open, high, low, close);
 
             pthread_mutex_unlock(args->lock);

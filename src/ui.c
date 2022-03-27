@@ -218,22 +218,7 @@ int color_translate(int color)
 
 int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...)
 {
-    // TODO keep matrices for every window that calls this function
-    //      lookup matrix when function is called, clear on ui_erase
-    // check: https://www.ibm.com/docs/en/aix/7.2?topic=library-manipulating-video-attributes
-
-    /* Maintain current display representation with colors so we can replace background color */
-    va_list ptr;
-    va_start(ptr, fmt);
-    char str[100] = {'\0'};
-    vsprintf(str, fmt, ptr);
-    va_end(ptr);
-
-    //add_str(win, y, x, fgcol, bgcol, str);
-    //return 0;
-
-    /*
-     * NOTE: we can not use the winch family of functions to get characters
+    /* NOTE: we can not use the winch family of functions to get characters
      *       from the display because this interface doesn't work with UTF-8.
      *       To get wide characters we have to use mvwin_wch to get cchar_t
      *       characters and then extract the attributes using getcchar().
@@ -247,14 +232,19 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
      *           void *opts );
      */
 
+    va_list ptr;
+    va_start(ptr, fmt);
+    char str[100] = {'\0'};
+    vsprintf(str, fmt, ptr);
+    va_end(ptr);
+
     cchar_t wcval;
     wchar_t oldwstr[20];
     attr_t attrs;
     short color_pair;
     short prevfg, prevbg;
 
-    // get wide utf8 character
-    //mvwin_wchnstr(win, y, x, wcval, 5);
+    // get wide utf8 character from cell
     mvwin_wch(win, y, x, &wcval);
 
     // extract wide character and attributes from wcval

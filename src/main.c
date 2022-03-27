@@ -20,6 +20,7 @@
 #include "curses_menu.h"
 
 // TODO create searchable log window
+// TODO create more awesome line drawing algorithm
 
 #define SLEEP_MS 100*1000
 

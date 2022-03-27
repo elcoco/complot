@@ -177,7 +177,30 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
     }
 }
 
-void xinterpolate(InterpolateXY* points, double x0, double y0, double x1, double y1)
+
+InterpolateXY* int_point_init(InterpolateXY* prev, InterpolateXY* next, int32_t x, int32_t y)
+{
+    /* Create a new point.
+     * If prev!=NULL append point after prev in linked list
+     * If next!=NULL insert point before next in linked list
+     */
+    InterpolateXY* p = malloc(sizeof(InterpolateXY));
+
+    if (prev != NULL) {
+        prev->next = p;
+    }
+    if (next != NULL) {
+        next->prev = p;
+    }
+    p->prev = prev;
+    p->next = next;
+    p->x = x;
+    p->y = y;
+    p->ptype = DPOINT;
+    return p;
+}
+
+InterpolateXY* xinterpolate(InterpolateXY* p, double x0, double y0, double x1, double y1)
 {
     // calculate grow factor between points: y = xd + y
     double d = (y1 - y0) / (x1 - x0);
@@ -185,69 +208,83 @@ void xinterpolate(InterpolateXY* points, double x0, double y0, double x1, double
     // calculate how many xs we need to interpolate
     uint32_t xlen = x1 - x0;
 
-    for (uint32_t x=1, i=0 ; x<xlen ; x++, i++, points++) {
-        points->x = floor(x+x0);
-        points->y = floor((points->x - x0) * d + y0);
+    for (uint32_t x=1 ; x<xlen ; x++) {
+        p = int_point_init(p, NULL, floor(x+x0), floor((p->x - x0) * d + y0));
+        p->ptype = XINT_POINT;
     }
+    return p;
 }
 
-int32_t yinterpolate(InterpolateXY* points, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+InterpolateXY* yinterpolate(InterpolateXY* p, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
-    //uint32_t ysize = getmaxy(wtarget);
-    int32_t ystart = (y0<y1) ? y0+1 : y1+1;
     int32_t ylen   = abs(y1-y0);
-    int32_t yend   = ystart + ylen;
 
-    if (ylen <= 1)
-        return -1;
+    assertf(p->ptype == XINT_POINT || p->ptype == DPOINT, "point is not an X point or a Data point");
 
-    // ascending and not above eachother
-    for (int32_t y=ystart ; y<yend-1 ; y++, points++) {
-        points->x = x1;
-        points->y = y;
+    // ascending
+    if (y0 < y1) {
+        int32_t ystart = y0+1;
+        int32_t yend   = ystart + ylen -1;
+
+        for (int32_t y=ystart ; y<yend ; y++) {
+            p = int_point_init(p, p->next, x1, y);
+            p->ptype = YINT_POINT;
+        }
     }
-    return 0;
+
+    // descending
+    else if (y0 > y1) {
+        int32_t ystart = y0-1;
+        int32_t yend   = ystart - ylen +1;
+
+        for (int32_t y=ystart ; y>yend ; y--) {
+            p = int_point_init(p, p->next, x1, y);
+            p->ptype = YINT_POINT;
+        }
+    }
+
+    return p;
 }
 
-void interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+void print_point(InterpolateXY* p, WINDOW* wtarget, Line* l)
 {
     int32_t ysize = getmaxy(wtarget);
-    InterpolateXY* prevxp = &(InterpolateXY) {.x=x0, .y=y0};
-    int32_t nxpoints = x1-x0-1;
 
-    if (nxpoints > 0) {
+    if (!y_is_in_view(wtarget, ysize-p->y-1))
+        return;
 
-        InterpolateXY xpoints[nxpoints];
-        InterpolateXY* xp = xpoints;
-        xinterpolate(xpoints, x0, y0, x1, y1);
-
-        for (int32_t i=0 ; i<nxpoints ; i++, xp++) {
-
-            // draw intermediate points
-            if (y_is_in_view(wtarget, ysize-xp->y-1))
-                add_str_color(wtarget, ysize-xp->y-1, xp->x, l->color, CDEFAULT, l->chr);
-
-            // draw y interpolated points that are next to eachother
-            int32_t nypoints = abs(xp->y-prevxp->y);
-            InterpolateXY ypoints[nypoints];
-            if (yinterpolate(ypoints, prevxp->x, prevxp->y, xp->x, xp->y) >= 0) {
-                for (int32_t i=0 ; i<nypoints ; i++)
-                    add_str_color(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
-            }
-
-            prevxp = xp;
-        }
+    switch (p->ptype) {
+        case DPOINT:
+            add_str_color(wtarget, ysize-p->y-1, p->x, CBLUE, CDEFAULT, l->chr);
+            break;
+        case XINT_POINT:
+            add_str_color(wtarget, ysize-p->y-1, p->x, CMAGENTA, CDEFAULT, l->chr);
+            break;
+        case YINT_POINT:
+            add_str_color(wtarget, ysize-p->y-1, p->x, CGREEN, CDEFAULT, l->chr);
+            break;
     }
-    // interpolate from last intermediate point up to x1/y1
-    int32_t nypoints = abs(y1-prevxp->y);
-    InterpolateXY ypoints[nypoints];
-    if (yinterpolate(ypoints, prevxp->x, prevxp->y, x1, y1) >= 0) {
-        for (int32_t i=0 ; i<nypoints ; i++) {
-            if (y_is_in_view(wtarget, ysize-ypoints[i].y-1))
-                add_str_color(wtarget, ysize-ypoints[i].y-1, ypoints[i].x, l->color, CDEFAULT, l->chr);
-        }
+}
+
+InterpolateXY* interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+{
+    /* Interpolate points in x and y direction */
+
+    // create head of linked list from first point
+    InterpolateXY* head = int_point_init(NULL, NULL, x0, y0);
+
+    // add X-interpolated points to ll and append last point to end
+    int_point_init(xinterpolate(head, x0, y0, x1, y1), NULL, x1, y1);
+
+    InterpolateXY* xp = head;
+
+    // yinterpolate inbetween x points
+    while (xp->next) {
+        xp = yinterpolate(xp, xp->x, xp->y, xp->next->x, xp->next->y);
+        xp = xp->next;
     }
 
+    return head;
 }
 
 void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffset)
@@ -275,11 +312,14 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
 
             // map data point from data range to terminal rows range
             int32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
-            if (y_is_in_view(wtarget, ysize-iy-1))
-                add_str_color(wtarget, ysize-iy-1, ix, l->color, CDEFAULT, l->chr);
 
-            if (previx > 0)
-                interpolate(l, wtarget, previx, previy, ix, iy);
+            if (previx > 0) {
+                InterpolateXY* p = interpolate(l, wtarget, previx, previy, ix, iy);
+                while (p != NULL) {
+                    print_point(p, wtarget, l);
+                    p = p->next;
+                }
+            }
 
             previx = ix;
             previy = iy;
@@ -289,7 +329,6 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
         ix++;
     }
 }
-
 
 void yaxis_draw_tickers(Yaxis* a, int32_t yoffset)
 {
@@ -333,9 +372,6 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
         }
     }
 }
-
-
-
 
 void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffset)
 {
