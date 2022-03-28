@@ -209,7 +209,7 @@ InterpolateXY* xinterpolate(InterpolateXY* p, double x0, double y0, double x1, d
     uint32_t xlen = x1 - x0;
 
     for (uint32_t x=1 ; x<xlen ; x++) {
-        p = int_point_init(p, NULL, floor(x+x0), floor((p->x - x0) * d + y0));
+        p = int_point_init(p, NULL, floor(x+x0), floor((x1 - x0) * d + y0));
         p->ptype = XINT_POINT;
     }
     return p;
@@ -242,41 +242,171 @@ InterpolateXY* yinterpolate(InterpolateXY* p, int32_t x0, int32_t y0, int32_t x1
             p->ptype = YINT_POINT;
         }
     }
-
     return p;
+}
+
+POrientation get_point_orientation(InterpolateXY* p1, InterpolateXY* p2)
+{
+    /* Return orientation of p1 to p2 */
+    // if point1 is LEFT from p2
+    if (p1->x < p2->x) {
+        if (p1->y < p2->y)
+            return PO_SW;
+        else if (p1->y > p2->y)
+            return PO_NW;
+        else
+            return PO_W;
+    }
+
+    // if point1 is RIGHT from p2
+    else if (p1->x > p2->x) {
+        if (p1->y < p2->y)
+            return PO_SE;
+        else if (p1->y > p2->y)
+            return PO_NE;
+        else
+            return PO_E;
+    }
+
+    // if ABOVE eachother
+    else {
+        if (p1->y > p2->y)
+            return PO_N;
+        else if (p1->y < p2->y)
+            return PO_S;
+        else
+            debug("ERROR\n");
+    }
+}
+
+void printll(InterpolateXY* p)
+{
+    debug("----------------------------------------------\n");
+    while (p != NULL) {
+        if (p->prev && p->next)
+            debug("%d,%d\t<-\t%d,%d\t->\t%d,%d\t=\t%s\n", p->prev->x, p->prev->y, p->x, p->y, p->next->x, p->next->y, YAXIS_LR);
+        if (!p->prev && p->next)
+            debug("NULL\t<-\t%d,%d\t->\t%d,%d\t=\t%s\n", p->x, p->y, p->next->x, p->next->y, YAXIS_LR);
+        if (p->prev && !p->next)
+            debug("%d,%d\t<-\t%d,%d\t->\tNULL\t=\t%s\n", p->prev->x, p->prev->y, p->x, p->y, YAXIS_LR);
+        p = p->next;
+    }
+
+}
+
+void get_line_chr(WINDOW* wtarget, InterpolateXY* cp)
+{
+    /* Return character depending on orientation of cp against left and right point */
+
+    int32_t ysize = getmaxy(wtarget);
+
+    InterpolateXY* lp = cp->prev;
+    InterpolateXY* rp = cp->next;
+    POrientation lo;
+    POrientation ro;
+
+    if (!lp)
+        lo = PO_W;
+    else
+        lo = get_point_orientation(lp, cp);
+
+    if (!rp)
+        ro = PO_E;
+    else
+        ro = get_point_orientation(rp, cp);
+
+    //debug("found: %d, %d\n", lo, ro);
+
+    char chr[5] = {'\0'};
+
+    if (lo == PO_N && ro == PO_S)
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TB);
+
+    else if (lo == PO_S && ro == PO_N)
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TB);
+
+    else if (lo == PO_S && ro == PO_E)
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_BR);
+
+    else if (lo == PO_N && ro == PO_E)
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TR);
+
+    else if ((lo == PO_W || lo == PO_NW || lo == PO_SW) && ro == PO_E)
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
+
+
+    else if (lo == PO_W && ro == PO_NE) {
+        add_str_color(wtarget, ysize-cp->y-2,   cp->x, CBLUE, CDEFAULT, YAXIS_BR);
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LT);
+    }
+
+    else if (lo == PO_W && ro == PO_SE) {
+        add_str_color(wtarget, ysize-cp->y ,  cp->x, CBLUE, CDEFAULT, YAXIS_TR);
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LB);
+    }
+
+    //else if (lo == PO_W && ro == PO_E)
+    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
+
+    else if ((lo == PO_NW || lo == PO_SW) && (ro == PO_S))
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LB);
+
+    else if ((lo == PO_NW || lo == PO_SW) && (ro == PO_N))
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LT);
+
+    //else if ((lo == PO_NW || lo == PO_SW || lo == PO_W) && (ro == PO_NE || ro == PO_E || ro == PO_SE ))
+    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
+
+
+    else
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, "*");
+
+    //if ((lo == PO_NW || lo == PO_W || lo == PO_SW) && (ro == PO_NE || ro == PO_E || ro == PO_SE)) {
+    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
+    //}
+    //else if (lo == PO_N && (ro == PO_NE || ro == PO_E || ro == PO_SE)) {
+    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TR);
+    //}
+    //else if (lo == PO_S && (ro == PO_NE || ro == PO_E || ro == PO_SE)) {
+    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_BR);
+    //}
+    //else
+    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, "*");
+
+
+    //add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, chr);
+
 }
 
 void print_point(InterpolateXY* p, WINDOW* wtarget, Line* l)
 {
+
     int32_t ysize = getmaxy(wtarget);
 
     if (!y_is_in_view(wtarget, ysize-p->y-1))
         return;
 
-    switch (p->ptype) {
-        case DPOINT:
-            add_str_color(wtarget, ysize-p->y-1, p->x, CBLUE, CDEFAULT, l->chr);
-            break;
-        case XINT_POINT:
-            add_str_color(wtarget, ysize-p->y-1, p->x, CMAGENTA, CDEFAULT, l->chr);
-            break;
-        case YINT_POINT:
-            add_str_color(wtarget, ysize-p->y-1, p->x, CGREEN, CDEFAULT, l->chr);
-            break;
-    }
+    get_line_chr(wtarget, p);
+
+    //switch (p->ptype) {
+    //    case DPOINT:
+    //        add_str_color(wtarget, ysize-p->y-1, p->x, CBLUE, CDEFAULT, l->chr);
+    //        break;
+    //    case XINT_POINT:
+    //        add_str_color(wtarget, ysize-p->y-1, p->x, CMAGENTA, CDEFAULT, l->chr);
+    //        break;
+    //    case YINT_POINT:
+    //        add_str_color(wtarget, ysize-p->y-1, p->x, CGREEN, CDEFAULT, l->chr);
+    //        break;
+    //}
 }
 
-InterpolateXY* interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+InterpolateXY* interpolate(Line* l, WINDOW* wtarget, InterpolateXY* prev, InterpolateXY* cur)
 {
     /* Interpolate points in x and y direction */
+    xinterpolate(prev, prev->x, prev->y, cur->x, cur->y);
 
-    // create head of linked list from first point
-    InterpolateXY* head = int_point_init(NULL, NULL, x0, y0);
-
-    // add X-interpolated points to ll and append last point to end
-    int_point_init(xinterpolate(head, x0, y0, x1, y1), NULL, x1, y1);
-
-    InterpolateXY* xp = head;
+    InterpolateXY* xp = prev;
 
     // yinterpolate inbetween x points
     while (xp->next) {
@@ -284,7 +414,7 @@ InterpolateXY* interpolate(Line* l, WINDOW* wtarget, int32_t x0, int32_t y0, int
         xp = xp->next;
     }
 
-    return head;
+    return xp;
 }
 
 void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffset)
@@ -307,27 +437,35 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
     int32_t previx = -1;
     int32_t previy = -1;
 
+    InterpolateXY* head = NULL;
+    InterpolateXY* prev = NULL;
+    InterpolateXY* cur = NULL;
+
     while (g != NULL) {
         if (! g->is_empty) {
 
             // map data point from data range to terminal rows range
             int32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
 
-            if (previx > 0) {
-                InterpolateXY* p = interpolate(l, wtarget, previx, previy, ix, iy);
-                while (p != NULL) {
-                    print_point(p, wtarget, l);
-                    p = p->next;
-                }
+            if (!prev) {
+                prev = int_point_init(NULL, NULL, ix, iy);
+                head = prev;
             }
-
-            previx = ix;
-            previy = iy;
-
+            else {
+                cur = int_point_init(prev, NULL, ix, iy);
+                prev = interpolate(l, wtarget, prev, cur);
+            }
         }
         g = g->next;
         ix++;
     }
+
+    InterpolateXY* p = head;
+    while (p != NULL) {
+        print_point(p, wtarget, l);
+        p = p->next;
+    }
+    printll(head);
 }
 
 void yaxis_draw_tickers(Yaxis* a, int32_t yoffset)

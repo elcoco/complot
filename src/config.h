@@ -22,6 +22,16 @@
 #define YAXIS_OHLC_BODY "█"
 #define YAXIS_OHLC_WICK "┃"
 
+#define YAXIS_BR "╭"
+#define YAXIS_TB "│"
+#define YAXIS_TR "╰"
+
+#define YAXIS_LB "╮"
+#define YAXIS_LT "╯"
+
+#define YAXIS_LR "─"
+
+
 
 #define DEFAULT_GROUP_SIZE 1
 #define DEFAULT_PAN_STEPS 3
