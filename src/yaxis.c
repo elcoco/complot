@@ -180,7 +180,7 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
 
 InterpolateXY* int_point_init(InterpolateXY* prev, InterpolateXY* next, int32_t x, int32_t y)
 {
-    /* Create a new point.
+    /* Create a new point, used to interpolate sets of points.
      * If prev!=NULL append point after prev in linked list
      * If next!=NULL insert point before next in linked list
      */
@@ -223,8 +223,12 @@ InterpolateXY* yinterpolate(InterpolateXY* p, int32_t x0, int32_t y0, int32_t x1
 
     // ascending
     if (y0 < y1) {
-        int32_t ystart = y0+1;
-        int32_t yend   = ystart + ylen -1;
+        int32_t ystart = y0;
+        int32_t yend   = ystart + ylen;
+
+        // NOTE uncomment to connect points diagonally
+        //int32_t ystart = y0+1;
+        //int32_t yend   = ystart + ylen -1;
 
         for (int32_t y=ystart ; y<yend ; y++) {
             p = int_point_init(p, p->next, x1, y);
@@ -234,8 +238,12 @@ InterpolateXY* yinterpolate(InterpolateXY* p, int32_t x0, int32_t y0, int32_t x1
 
     // descending
     else if (y0 > y1) {
-        int32_t ystart = y0-1;
-        int32_t yend   = ystart - ylen +1;
+        int32_t ystart = y0;
+        int32_t yend   = ystart - ylen;
+
+        // NOTE uncomment to connect points diagonally
+        //int32_t ystart = y0-1;
+        //int32_t yend   = ystart - ylen +1;
 
         for (int32_t y=ystart ; y>yend ; y--) {
             p = int_point_init(p, p->next, x1, y);
@@ -249,24 +257,12 @@ POrientation get_point_orientation(InterpolateXY* p1, InterpolateXY* p2)
 {
     /* Return orientation of p1 to p2 */
     // if point1 is LEFT from p2
-    if (p1->x < p2->x) {
-        if (p1->y < p2->y)
-            return PO_SW;
-        else if (p1->y > p2->y)
-            return PO_NW;
-        else
-            return PO_W;
-    }
+    if (p1->x < p2->x)
+        return PO_W;
 
     // if point1 is RIGHT from p2
-    else if (p1->x > p2->x) {
-        if (p1->y < p2->y)
-            return PO_SE;
-        else if (p1->y > p2->y)
-            return PO_NE;
-        else
-            return PO_E;
-    }
+    else if (p1->x > p2->x)
+        return PO_E;
 
     // if ABOVE eachother
     else {
@@ -275,7 +271,7 @@ POrientation get_point_orientation(InterpolateXY* p1, InterpolateXY* p2)
         else if (p1->y < p2->y)
             return PO_S;
         else
-            debug("ERROR\n");
+            return PO_ERROR;
     }
 }
 
@@ -294,9 +290,11 @@ void printll(InterpolateXY* p)
 
 }
 
-void get_line_chr(WINDOW* wtarget, InterpolateXY* cp)
+void yaxis_draw_pipeline_chr(InterpolateXY* cp, WINDOW* wtarget, Line* l)
 {
-    /* Return character depending on orientation of cp against left and right point */
+    /* Find orientation of 2 points (left and right) relative to middle point.
+     * Print the right pipe unicode character to connect the line.,
+     * cp is a point from a linked list of interpolated points. */
 
     int32_t ysize = getmaxy(wtarget);
 
@@ -304,6 +302,9 @@ void get_line_chr(WINDOW* wtarget, InterpolateXY* cp)
     InterpolateXY* rp = cp->next;
     POrientation lo;
     POrientation ro;
+
+    if (!y_is_in_view(wtarget, ysize-cp->y-1))
+        return;
 
     if (!lp)
         lo = PO_W;
@@ -315,90 +316,26 @@ void get_line_chr(WINDOW* wtarget, InterpolateXY* cp)
     else
         ro = get_point_orientation(rp, cp);
 
-    //debug("found: %d, %d\n", lo, ro);
-
-    char chr[5] = {'\0'};
-
-    if (lo == PO_N && ro == PO_S)
+    if ((lo == PO_N && ro == PO_S) || (lo == PO_S && ro == PO_N))
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TB);
-
-    else if (lo == PO_S && ro == PO_N)
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TB);
-
-    else if (lo == PO_S && ro == PO_E)
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_BR);
 
     else if (lo == PO_N && ro == PO_E)
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TR);
 
-    else if ((lo == PO_W || lo == PO_NW || lo == PO_SW) && ro == PO_E)
+    else if (lo == PO_S && ro == PO_E)
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_BR);
+
+    else if (lo == PO_W && ro == PO_E)
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
 
-
-    else if (lo == PO_W && ro == PO_NE) {
-        add_str_color(wtarget, ysize-cp->y-2,   cp->x, CBLUE, CDEFAULT, YAXIS_BR);
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LT);
-    }
-
-    else if (lo == PO_W && ro == PO_SE) {
-        add_str_color(wtarget, ysize-cp->y ,  cp->x, CBLUE, CDEFAULT, YAXIS_TR);
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LB);
-    }
-
-    //else if (lo == PO_W && ro == PO_E)
-    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
-
-    else if ((lo == PO_NW || lo == PO_SW) && (ro == PO_S))
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LB);
-
-    else if ((lo == PO_NW || lo == PO_SW) && (ro == PO_N))
+    else if (lo == PO_W && ro == PO_N)
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LT);
 
-    //else if ((lo == PO_NW || lo == PO_SW || lo == PO_W) && (ro == PO_NE || ro == PO_E || ro == PO_SE ))
-    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
-
+    else if (lo == PO_W && ro == PO_S)
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LB);
 
     else
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, "*");
-
-    //if ((lo == PO_NW || lo == PO_W || lo == PO_SW) && (ro == PO_NE || ro == PO_E || ro == PO_SE)) {
-    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
-    //}
-    //else if (lo == PO_N && (ro == PO_NE || ro == PO_E || ro == PO_SE)) {
-    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TR);
-    //}
-    //else if (lo == PO_S && (ro == PO_NE || ro == PO_E || ro == PO_SE)) {
-    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_BR);
-    //}
-    //else
-    //    add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, "*");
-
-
-    //add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, chr);
-
-}
-
-void print_point(InterpolateXY* p, WINDOW* wtarget, Line* l)
-{
-
-    int32_t ysize = getmaxy(wtarget);
-
-    if (!y_is_in_view(wtarget, ysize-p->y-1))
-        return;
-
-    get_line_chr(wtarget, p);
-
-    //switch (p->ptype) {
-    //    case DPOINT:
-    //        add_str_color(wtarget, ysize-p->y-1, p->x, CBLUE, CDEFAULT, l->chr);
-    //        break;
-    //    case XINT_POINT:
-    //        add_str_color(wtarget, ysize-p->y-1, p->x, CMAGENTA, CDEFAULT, l->chr);
-    //        break;
-    //    case YINT_POINT:
-    //        add_str_color(wtarget, ysize-p->y-1, p->x, CGREEN, CDEFAULT, l->chr);
-    //        break;
-    //}
 }
 
 InterpolateXY* interpolate(Line* l, WINDOW* wtarget, InterpolateXY* prev, InterpolateXY* cur)
@@ -434,9 +371,6 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
         goffset--;
     }
 
-    int32_t previx = -1;
-    int32_t previy = -1;
-
     InterpolateXY* head = NULL;
     InterpolateXY* prev = NULL;
     InterpolateXY* cur = NULL;
@@ -462,10 +396,10 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
 
     InterpolateXY* p = head;
     while (p != NULL) {
-        print_point(p, wtarget, l);
+        yaxis_draw_pipeline_chr(p, wtarget, l);
         p = p->next;
     }
-    printll(head);
+    //printll(head);
 }
 
 void yaxis_draw_tickers(Yaxis* a, int32_t yoffset)
@@ -545,29 +479,22 @@ void yaxis_draw_candlesticks(Yaxis* a, WINDOW* wtarget, Group* g, int32_t yoffse
 
 void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, uint32_t nfrac)
 {
-    // TODO null terminate characters in cell
-    // TODO pad zeros on left
-    //
     /* create ticker with specific amount of decimals and copy to string */
-    char tmp[50] = {'\0'};
-    char sfrac[50] = {'\0'};
+    char swhole[50]   = {'\0'};
+    char sfrac[50]    = {'\0'};
+    char spadding[50] = {'\0'};
 
-
-    sprintf(tmp, "%d.", abs(ticker));
-
-    for (int i=0 ; i<nwhole - (strlen(tmp)-1) ; i++) {
-        buf[i] = '0';
-        buf[i+1] = '\0';
-        //strcat(buf, "0");
-    }
+    sprintf(swhole, "%d.", abs(ticker));
+    
+    // calculate amount of zeros at start of string
+    int zpad = ((int)nwhole - (int)strlen(swhole)+1 > 0) ? (int)nwhole - (int)strlen(swhole) +1 : 0;
+    memset(spadding, '0', zpad);
+    spadding[zpad] = '\0';
 
     sprintf(sfrac, "%.20f", ticker - abs(ticker));
-    strncat(tmp, sfrac+2, nfrac);
 
+    sprintf(buf, "%s%s%s", spadding, swhole, sfrac+2);
+    buf[ntotal] = '\0';
 
-    // NOTE this segfaults
-    //for (int i=0; i<ntotal-strlen(tmp) ; i++)
-    //    strcat(buf, "0");
-
-    strncat(buf, tmp, strlen(tmp));
+    //debug("%d %d >%s< - %s - %s = >%s<\n", (int)nwhole - (int)strlen(swhole), zpad, spadding, swhole, sfrac+2, buf);
 }

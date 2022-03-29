@@ -267,7 +267,6 @@ int main(int argc, char **argv)
 
     state_destroy(s);
 
-cleanup:
     ui_cleanup();
     return 0;
 }

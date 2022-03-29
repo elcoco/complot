@@ -35,13 +35,10 @@ typedef enum PType {
 // orientation between 2 points, is used for choosing th eright line drawing character
 typedef enum POrientation {
     PO_N,
-    PO_NE,
     PO_E,
-    PO_SE,
     PO_S,
-    PO_SW,
     PO_W,
-    PO_NW,
+    PO_ERROR
 } POrientation;
 
 typedef struct InterpolateXY InterpolateXY;
