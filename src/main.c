@@ -199,15 +199,15 @@ void loop(State* s)
             s->do_create_pw = false;
 
             char* symbol = menu_select_symbol();
-            if (symbol == NULL)
-                continue;
+            if (symbol != NULL) {
+                WINDOW* win = newwin(0, 0, 0, 0);
+                PlotWin* pw = pw_init(win, s, symbol, &lock);
+                state_add_pw(s, pw);
+                free(symbol);
+            }
 
-            WINDOW* win = newwin(0, 0, 0, 0);
-            PlotWin* pw = pw_init(win, s, symbol, &lock);
-            state_add_pw(s, pw);
             if (pw_update_all(s->pws, s->pws_length, &lock, true))
                 break;
-            free(symbol);
         }
 
         // update on new data and !paused state

@@ -47,7 +47,7 @@ char* menu_select_symbol()
     if (symbols == NULL)
         return NULL;
 
-    char* result = menu_show((const char**)symbols, 14, 15);
+    char* result = menu_show((const char**)symbols, 19, 15);
     if (strlen(result) <= 0)
         return NULL;
 
@@ -74,8 +74,6 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
     ITEM** items = menu_filter_items(options, "");
     int ch;
 
-    //uint32_t width = COLS;
-    //uint32_t height = LINES;
     uint32_t width = (COLS >= maxx) ? maxx : COLS;
     uint32_t height = (LINES >= maxy) ? maxy : LINES;
     uint32_t xpos = (COLS/2) - (width/2);
@@ -90,10 +88,6 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
     set_menu_mark(menu, " ");
     post_menu(menu);
                          //
-    //menu->height = height-2;
-    //menu->frows = height-2;
-    //assert(1==0);
-
     while((ch = wgetch(win)) != 27 ) {
         switch(ch) {
             case KEY_DOWN:

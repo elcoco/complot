@@ -173,7 +173,7 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
     add_str(a->win, a->ysize-ilasty-1, 0, CGREEN, a->bgcol, buf);
 
     for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++)
-        add_str_color(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, CDEFAULT, YAXIS_LDATA_LINE_CHR);
+        add_str_color(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, CDEFAULT, true, YAXIS_LDATA_LINE_CHR);
 }
 
 
@@ -310,19 +310,19 @@ void yaxis_draw_pipeline_chr(InterpolateXY* cp, WINDOW* wtarget, Line* l)
         ro = ipoint_get_orientation(rp, cp);
 
     if ((lo == PO_N && ro == PO_S) || (lo == PO_S && ro == PO_N))
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TB);
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, false, YAXIS_TB);
     else if (lo == PO_N && ro == PO_E)
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TR);
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, false, YAXIS_TR);
     else if (lo == PO_S && ro == PO_E)
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_BR);
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, false, YAXIS_BR);
     else if (lo == PO_W && ro == PO_E)
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, false, YAXIS_LR);
     else if (lo == PO_W && ro == PO_N)
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LT);
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, false, YAXIS_LT);
     else if (lo == PO_W && ro == PO_S)
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LB);
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, false, YAXIS_LB);
     else
-        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, "*");
+        add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, false, "*");
 }
 
 InterpolateXY* interpolate(Line* l, WINDOW* wtarget, InterpolateXY* prev, InterpolateXY* cur)
@@ -413,9 +413,9 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
             if (y >= iopen && y <= iclose)
-                add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_BODY);
+                add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, false, YAXIS_OHLC_BODY);
             else
-                add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, YAXIS_OHLC_WICK);
+                add_str_color(win, ysize-y-1, ix, CGREEN, CDEFAULT, false, YAXIS_OHLC_WICK);
         }
     // RED
     }
@@ -424,9 +424,9 @@ void yaxis_draw_candlestick(WINDOW* win, uint32_t ix, int32_t iopen, int32_t ihi
             if (y < 0 || y > getmaxy(win)-1)
                 continue;
             if (y <= iopen && y >= iclose)
-                add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_BODY);
+                add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, false, YAXIS_OHLC_BODY);
             else
-                add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, YAXIS_OHLC_WICK);
+                add_str_color(win, ysize-y-1, ix, CRED, CDEFAULT, false, YAXIS_OHLC_WICK);
         }
     }
 }

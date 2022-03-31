@@ -115,79 +115,6 @@ int add_str(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, cha
     return 0;
 }
 
-void get_color(char buf[10], int32_t color)
-{
-    switch (color) {
-        case -1:
-            strcpy(buf, "default");
-            break;
-        case COLOR_RED:
-            strcpy(buf, "red");
-            break;
-        case COLOR_GREEN:
-            strcpy(buf, "green");
-            break;
-        case COLOR_YELLOW:
-            strcpy(buf, "yellow");
-            break;
-        case COLOR_BLUE:
-            strcpy(buf, "blue");
-            break;
-        case COLOR_MAGENTA:
-            strcpy(buf, "magenta");
-            break;
-        case COLOR_CYAN:
-            strcpy(buf, "cyan");
-            break;
-        case COLOR_WHITE:
-            strcpy(buf, "white");
-            break;
-        case COLOR_BLACK:
-            strcpy(buf, "black");
-            break;
-        default:
-            strcpy(buf, "error");
-            break;
-
-    }
-}
-
-void get_color_non_standard(char buf[10], int32_t color)
-{
-    switch (color) {
-        case CDEFAULT:
-            strcpy(buf, "default");
-            break;
-        case CRED:
-            strcpy(buf, "red");
-            break;
-        case CGREEN:
-            strcpy(buf, "green");
-            break;
-        case CYELLOW:
-            strcpy(buf, "yellow");
-            break;
-        case CBLUE:
-            strcpy(buf, "blue");
-            break;
-        case CMAGENTA:
-            strcpy(buf, "magenta");
-            break;
-        case CCYAN:
-            strcpy(buf, "cyan");
-            break;
-        case CWHITE:
-            strcpy(buf, "white");
-            break;
-        case CBLACK:
-            strcpy(buf, "black");
-            break;
-        default:
-            strcpy(buf, "error");
-            break;
-    }
-}
-
 int color_translate(int color)
 {
     switch (color) {
@@ -216,7 +143,7 @@ int color_translate(int color)
     }
 }
 
-int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...)
+int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, bool in_bg, char* fmt, ...)
 {
     /* NOTE: we can not use the winch family of functions to get characters
      *       from the display because this interface doesn't work with UTF-8.
@@ -230,6 +157,8 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
      *           attr_t *attrs,
      *           short *color_pair,
      *           void *opts );
+     *
+     * in_bg == true: don't draw character in foreground if it cant be mixed with a previous character
      */
 
     va_list ptr;
@@ -273,7 +202,7 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
         else if (wcscmp(oldwstr, UI_BLOCK) != 0 && wcscmp(newwstr, UI_BLOCK) == 0)
             add_str(win, y, x, color_translate(prevfg), fgcol, oldstr);
 
-        else
+        else if (!in_bg)
             add_str(win, y, x, fgcol, bgcol, str);
     }
     else {
