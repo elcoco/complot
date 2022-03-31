@@ -99,10 +99,10 @@ int add_chr(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, cha
 
 int add_str(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, char* fmt, ...)
 {
-    assertf(x>=0, "x = %d", x);
-    assertf(y>=0, "y = %d", y);
-    assertf(x<getmaxx(win), "x = %d", x);
-    assertf(y<getmaxy(win), "y = %d", y);
+    assertf(x>=0, "x = %d, max = %d", x, getmaxx(win)-1);
+    assertf(y>=0, "y = %d, max = %d", y, getmaxy(win)-1);
+    assertf(x<getmaxx(win), "x = %d, max = %d", x, getmaxx(win)-1);
+    assertf(y<getmaxy(win), "y = %d, max = %d", y, getmaxy(win)-1);
 
     va_list ptr;
     va_start(ptr, fmt);
@@ -266,7 +266,7 @@ int add_str_color(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgco
         char oldstr[5] = {'\0'};
         wcstombs(oldstr, oldwstr, sizeof oldstr);
 
-        // if last character was a block, reuse fgcolor from last char
+        // if last character was a block, reuse fgcolor from previous char
         if (wcscmp(oldwstr, UI_BLOCK) == 0 && wcscmp(newwstr, UI_BLOCK) != 0)
             add_str(win, y, x, fgcol, color_translate(prevfg), str);
 

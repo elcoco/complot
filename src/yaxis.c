@@ -172,13 +172,12 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
     get_tickerstr(buf, lasty, a->xsize, a->nwhole, a->nfrac);
     add_str(a->win, a->ysize-ilasty-1, 0, CGREEN, a->bgcol, buf);
 
-    for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++) {
+    for (uint32_t ix=0 ; ix<getmaxx(wgraph) ; ix++)
         add_str_color(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, CDEFAULT, YAXIS_LDATA_LINE_CHR);
-    }
 }
 
 
-InterpolateXY* int_point_init(InterpolateXY* prev, InterpolateXY* next, int32_t x, int32_t y)
+InterpolateXY* ipoint_init(InterpolateXY* prev, InterpolateXY* next, int32_t x, int32_t y)
 {
     /* Create a new point, used to interpolate sets of points.
      * If prev!=NULL append point after prev in linked list
@@ -200,7 +199,16 @@ InterpolateXY* int_point_init(InterpolateXY* prev, InterpolateXY* next, int32_t 
     return p;
 }
 
-InterpolateXY* xinterpolate(InterpolateXY* p, double x0, double y0, double x1, double y1)
+void ipoint_destroy(InterpolateXY* p)
+{
+    while (p != NULL) {
+        InterpolateXY* tmp = p->next;
+        free(p);
+        p = tmp;
+    }
+}
+
+InterpolateXY* ipoint_xinterpolate(InterpolateXY* p, double x0, double y0, double x1, double y1)
 {
     // calculate grow factor between points: y = xd + y
     double d = (y1 - y0) / (x1 - x0);
@@ -209,13 +217,13 @@ InterpolateXY* xinterpolate(InterpolateXY* p, double x0, double y0, double x1, d
     uint32_t xlen = x1 - x0;
 
     for (uint32_t x=1 ; x<xlen ; x++) {
-        p = int_point_init(p, NULL, floor(x+x0), floor((x1 - x0) * d + y0));
+        p = ipoint_init(p, NULL, floor(x+x0), floor((x1 - x0) * d + y0));
         p->ptype = XINT_POINT;
     }
     return p;
 }
 
-InterpolateXY* yinterpolate(InterpolateXY* p, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+InterpolateXY* ipoint_yinterpolate(InterpolateXY* p, int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     int32_t ylen   = abs(y1-y0);
 
@@ -231,7 +239,7 @@ InterpolateXY* yinterpolate(InterpolateXY* p, int32_t x0, int32_t y0, int32_t x1
         //int32_t yend   = ystart + ylen -1;
 
         for (int32_t y=ystart ; y<yend ; y++) {
-            p = int_point_init(p, p->next, x1, y);
+            p = ipoint_init(p, p->next, x1, y);
             p->ptype = YINT_POINT;
         }
     }
@@ -246,14 +254,14 @@ InterpolateXY* yinterpolate(InterpolateXY* p, int32_t x0, int32_t y0, int32_t x1
         //int32_t yend   = ystart - ylen +1;
 
         for (int32_t y=ystart ; y>yend ; y--) {
-            p = int_point_init(p, p->next, x1, y);
+            p = ipoint_init(p, p->next, x1, y);
             p->ptype = YINT_POINT;
         }
     }
     return p;
 }
 
-POrientation get_point_orientation(InterpolateXY* p1, InterpolateXY* p2)
+POrientation ipoint_get_orientation(InterpolateXY* p1, InterpolateXY* p2)
 {
     /* Return orientation of p1 to p2 */
     // if point1 is LEFT from p2
@@ -275,21 +283,6 @@ POrientation get_point_orientation(InterpolateXY* p1, InterpolateXY* p2)
     }
 }
 
-void printll(InterpolateXY* p)
-{
-    debug("----------------------------------------------\n");
-    while (p != NULL) {
-        if (p->prev && p->next)
-            debug("%d,%d\t<-\t%d,%d\t->\t%d,%d\t=\t%s\n", p->prev->x, p->prev->y, p->x, p->y, p->next->x, p->next->y, YAXIS_LR);
-        if (!p->prev && p->next)
-            debug("NULL\t<-\t%d,%d\t->\t%d,%d\t=\t%s\n", p->x, p->y, p->next->x, p->next->y, YAXIS_LR);
-        if (p->prev && !p->next)
-            debug("%d,%d\t<-\t%d,%d\t->\tNULL\t=\t%s\n", p->prev->x, p->prev->y, p->x, p->y, YAXIS_LR);
-        p = p->next;
-    }
-
-}
-
 void yaxis_draw_pipeline_chr(InterpolateXY* cp, WINDOW* wtarget, Line* l)
 {
     /* Find orientation of 2 points (left and right) relative to middle point.
@@ -309,31 +302,25 @@ void yaxis_draw_pipeline_chr(InterpolateXY* cp, WINDOW* wtarget, Line* l)
     if (!lp)
         lo = PO_W;
     else
-        lo = get_point_orientation(lp, cp);
+        lo = ipoint_get_orientation(lp, cp);
 
     if (!rp)
         ro = PO_E;
     else
-        ro = get_point_orientation(rp, cp);
+        ro = ipoint_get_orientation(rp, cp);
 
     if ((lo == PO_N && ro == PO_S) || (lo == PO_S && ro == PO_N))
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TB);
-
     else if (lo == PO_N && ro == PO_E)
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_TR);
-
     else if (lo == PO_S && ro == PO_E)
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_BR);
-
     else if (lo == PO_W && ro == PO_E)
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LR);
-
     else if (lo == PO_W && ro == PO_N)
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LT);
-
     else if (lo == PO_W && ro == PO_S)
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, YAXIS_LB);
-
     else
         add_str_color(wtarget, ysize-cp->y-1, cp->x, CBLUE, CDEFAULT, "*");
 }
@@ -341,16 +328,15 @@ void yaxis_draw_pipeline_chr(InterpolateXY* cp, WINDOW* wtarget, Line* l)
 InterpolateXY* interpolate(Line* l, WINDOW* wtarget, InterpolateXY* prev, InterpolateXY* cur)
 {
     /* Interpolate points in x and y direction */
-    xinterpolate(prev, prev->x, prev->y, cur->x, cur->y);
+    ipoint_xinterpolate(prev, prev->x, prev->y, cur->x, cur->y);
 
     InterpolateXY* xp = prev;
 
     // yinterpolate inbetween x points
     while (xp->next) {
-        xp = yinterpolate(xp, xp->x, xp->y, xp->next->x, xp->next->y);
+        xp = ipoint_yinterpolate(xp, xp->x, xp->y, xp->next->x, xp->next->y);
         xp = xp->next;
     }
-
     return xp;
 }
 
@@ -366,6 +352,7 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
     // we have to get more groups from index than we actually need so we need to skip the groups that don't fit in plot
     uint32_t goffset = COLS - getmaxx(wtarget);
     //uint32_t goffset = getmaxx(a->win) - getmaxx(wtarget);
+
     while (goffset != 0) {
         g = g->next;
         goffset--;
@@ -382,11 +369,11 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
             int32_t iy  = map(g->y,  a->dmin, a->dmax, 0, ysize-1) + yoffset;
 
             if (!prev) {
-                prev = int_point_init(NULL, NULL, ix, iy);
+                prev = ipoint_init(NULL, NULL, ix, iy);
                 head = prev;
             }
             else {
-                cur = int_point_init(prev, NULL, ix, iy);
+                cur = ipoint_init(prev, NULL, ix, iy);
                 prev = interpolate(l, wtarget, prev, cur);
             }
         }
@@ -399,12 +386,11 @@ void yaxis_draw_line(Yaxis* a, Line* l, WINDOW* wtarget, Group* g, int32_t yoffs
         yaxis_draw_pipeline_chr(p, wtarget, l);
         p = p->next;
     }
-    //printll(head);
+    ipoint_destroy(head);
 }
 
 void yaxis_draw_tickers(Yaxis* a, int32_t yoffset)
 {
-
     // calculate stepsize between tickers
     double step = (a->dmax - a->dmin) / a->ysize;
 
@@ -497,4 +483,18 @@ void get_tickerstr(char* buf, double ticker, uint32_t ntotal, uint32_t nwhole, u
     buf[ntotal] = '\0';
 
     //debug("%d %d >%s< - %s - %s = >%s<\n", (int)nwhole - (int)strlen(swhole), zpad, spadding, swhole, sfrac+2, buf);
+}
+
+void printll(InterpolateXY* p)
+{
+    debug("----------------------------------------------\n");
+    while (p != NULL) {
+        if (p->prev && p->next)
+            debug("%d,%d\t<-\t%d,%d\t->\t%d,%d\t=\t%s\n", p->prev->x, p->prev->y, p->x, p->y, p->next->x, p->next->y, YAXIS_LR);
+        if (!p->prev && p->next)
+            debug("NULL\t<-\t%d,%d\t->\t%d,%d\t=\t%s\n", p->x, p->y, p->next->x, p->next->y, YAXIS_LR);
+        if (p->prev && !p->next)
+            debug("%d,%d\t<-\t%d,%d\t->\tNULL\t=\t%s\n", p->prev->x, p->prev->y, p->x, p->y, YAXIS_LR);
+        p = p->next;
+    }
 }

@@ -131,6 +131,7 @@ PlotStatus plot_draw(Plot* pl)
 
     // Handle terminal resize
     if (pl->xsize != getmaxx(pl->win) || pl->ysize != getmaxy(pl->win)) {
+        debug("!!!!!!!!!!!!!!!!!!1 resize selecta\n");
         if ((plstatus = plot_resize(pl)) < PLSUCCESS)
             return plstatus;
     }

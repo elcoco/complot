@@ -47,3 +47,7 @@
 // TODO show/hide lines/axis
 // TODO select ticker to use on new window
 // TODO use werase() instead of clear_win() 
+
+// TODO implement braile lines
+//      src: (python) https://github.com/asciimoo/drawille
+//      src: (c)      https://github.com/Huulivoide/libdrawille/tree/master/src

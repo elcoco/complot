@@ -185,6 +185,16 @@ void loop(State* s)
 {
     /* Do plot updating and handle events from check_user_input */
     while (!s->is_stopped && !sigint_caught && s->pws_length > 0) {
+
+        // triggered by KEY_RESIZE
+        //if (s->is_resized) {
+        //    s->is_resized = false;
+        //    state_resize_pws(s->pws, s->pws_length);
+        //    debug("doing resize\n");
+        //    if (pw_update_all(s->pws, s->pws_length, &lock, true))
+        //        break;
+        //}
+
         if (s->do_create_pw) {
             s->do_create_pw = false;
 
@@ -200,39 +210,25 @@ void loop(State* s)
             free(symbol);
         }
 
-        // triggered by KEY_RESIZE
-        if (s->is_resized) {
-            s->is_resized = false;
-            state_resize_pws(s->pws, s->pws_length);
-            if (pw_update_all(s->pws, s->pws_length, &lock, true))
-                break;
-        }
-
         // update on new data and !paused state
         if (pw_update_all(s->pws, s->pws_length, &lock, false))
             break;
 
         // sleep but update on user input
         if (non_blocking_sleep(SLEEP_MS, &check_user_input, s)) {
+
+            if (s->is_resized) {
+                s->is_resized = false;
+                state_resize_pws(s->pws, s->pws_length);
+                debug("doing resize\n");
+                if (pw_update_all(s->pws, s->pws_length, &lock, true))
+                    break;
+            }
+
             if (pw_update_all(s->pws, s->pws_length, &lock, true))
                 break;
         }
     }
-}
-
-void run_test()
-{
-    debug("\nStart test -----------------\n");
-    add_str_color(stdscr, 10, 10, CRED, CBLACK, "12345678910");
-    add_str_color(stdscr, 10, 10, CBLUE, CDEFAULT, "123456789");
-    add_str_color(stdscr, 10, 10, CMAGENTA, CGREEN, "12345678");
-    add_str_color(stdscr, 10, 10, CWHITE, CGREEN, "123456");
-    add_str_color(stdscr, 10, 10, CBLACK, CGREEN, "12345");
-    add_str_color(stdscr, 10, 10, CCYAN, CGREEN, "1234");
-    add_str_color(stdscr, 10, 10, CGREEN, CGREEN, "123");
-    add_str_color(stdscr, 10, 10, CYELLOW, CGREEN, "12");
-    refresh();
-
 }
 
 int main(int argc, char **argv)
@@ -251,11 +247,6 @@ int main(int argc, char **argv)
         die("\nMutex init failed\n");
 
     ui_init();
-
-    //run_test();
-    //usleep(1000000000);
-    //goto cleanup;
-    
 
     // state shared between plot windows
     // this records things like panning and autoranging etc...
