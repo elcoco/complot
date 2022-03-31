@@ -47,3 +47,25 @@ void xaxis_draw(Xaxis* xa, Group* g, uint32_t xstart, uint32_t width)
         ix++;
     }
 }
+
+
+void xaxis_draw_grid(Xaxis* xa, WINDOW* wtarget, Group* g)
+{
+    uint32_t ix = 0;
+    uint32_t ysize = getmaxy(wtarget);
+
+    g = fast_forward_groups(g, COLS - getmaxx(wtarget));
+
+    while (g != NULL) {
+        if (g->id % XAXIS_TICK_SPACING == 0) {
+            if (ix >= xa->xsize)
+                return;
+            for (uint32_t iy=0 ; iy<getmaxy(wtarget) ; iy++)
+                add_str_color(wtarget, ysize-iy-1, ix, XAXIS_GRID_COLOR, CDEFAULT, true, XAXIS_GRID_CHR);
+        }
+        g = g->next;
+        ix++;
+    }
+}
+
+

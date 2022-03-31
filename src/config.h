@@ -14,6 +14,8 @@
 #define LEGEND_MAX_SIZE 200
 
 #define XAXIS_TICK_SPACING 15
+#define XAXIS_GRID_CHR "│"
+#define XAXIS_GRID_COLOR CDEFAULT
 
 //#define YAXIS_LDATA_LINE_CHR "-"
 #define YAXIS_LDATA_LINE_CHR "─"
@@ -25,10 +27,8 @@
 #define YAXIS_BR "╭"
 #define YAXIS_TB "│"
 #define YAXIS_TR "╰"
-
 #define YAXIS_LB "╮"
 #define YAXIS_LT "╯"
-
 #define YAXIS_LR "─"
 
 

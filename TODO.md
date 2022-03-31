@@ -51,3 +51,4 @@
 // TODO implement braile lines
 //      src: (python) https://github.com/asciimoo/drawille
 //      src: (c)      https://github.com/Huulivoide/libdrawille/tree/master/src
+// TODO draw grid

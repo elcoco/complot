@@ -139,6 +139,9 @@ bool check_user_input(void* arg)
                 pw->plot->show_status = !pw->plot->show_status;
                 plot_resize(pw->plot);
                 break;
+            case 'g': // autorange
+                pw->plot->show_grid = !pw->plot->show_grid;
+                break;
             case 'd':
                 if (s->pws_length == 1) {
                     debug("Not removing last window\n");

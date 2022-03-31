@@ -176,7 +176,6 @@ void yaxis_draw_last_data(Yaxis* a, WINDOW* wgraph, double pany, double lasty)
         add_str_color(wgraph, a->ysize-ilasty-1, ix, CMAGENTA, CDEFAULT, true, YAXIS_LDATA_LINE_CHR);
 }
 
-
 InterpolateXY* ipoint_init(InterpolateXY* prev, InterpolateXY* next, int32_t x, int32_t y)
 {
     /* Create a new point, used to interpolate sets of points.

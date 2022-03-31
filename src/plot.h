@@ -55,6 +55,7 @@ struct Plot {
     bool show_status;
     bool show_legend;
     bool show_xaxis;
+    bool show_grid;
 
     // y offset when drawing
     int32_t pany;

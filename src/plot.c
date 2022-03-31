@@ -23,6 +23,7 @@ Plot* plot_init(WINDOW* win)
     pl->show_status = false;
     pl->show_legend = true;
     pl->show_xaxis = true;
+    pl->show_grid = true;
 
     pl->pany = 0;
 
@@ -178,6 +179,9 @@ PlotStatus plot_draw(Plot* pl)
         xaxis_draw(pl->xaxis, gc->group, pl->lyaxis->xsize, pl->graph->xsize);
     else if (pl->show_xaxis && (gc = yaxis_get_gc(pl->ryaxis)) != NULL)
         xaxis_draw(pl->xaxis, gc->group, pl->lyaxis->xsize, pl->graph->xsize);
+
+    if (pl->show_grid)
+        xaxis_draw_grid(pl->xaxis, pl->graph->win, gc->group);
 
     if (pl->show_legend) {
         ui_erase(pl->llegend->win);
