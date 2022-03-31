@@ -31,5 +31,6 @@ struct Xaxis {
 Xaxis* xaxis_init();
 void   xaxis_destroy(Xaxis* xa);
 void xaxis_draw(Xaxis* xa, Group* g, uint32_t xstart, uint32_t width);
+void xaxis_draw_grid(Xaxis* xa, WINDOW* wtarget, Group* g);
 
 #endif
