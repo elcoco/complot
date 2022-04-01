@@ -8,6 +8,9 @@
 //#define LINE_DEFAULT_LINE_CHR "X"
 #define LINE_DEFAULT_LINE_CHR "█"
 
+#define PLOT_LARROW "◀"
+#define PLOT_RARROW "▶"
+
 #define PLOT_MIN_WINDOW_XSIZE 10
 #define PLOT_MIN_WINDOW_YSIZE 10
 
@@ -30,8 +33,6 @@
 #define YAXIS_LB "╮"
 #define YAXIS_LT "╯"
 #define YAXIS_LR "─"
-
-
 
 #define DEFAULT_GROUP_SIZE 1
 #define DEFAULT_PAN_STEPS 3
