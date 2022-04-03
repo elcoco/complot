@@ -13,8 +13,9 @@
 #include <curses.h>
 #include <errno.h>
 
-#include "index_groups.h"
 #include "config.h"
+#include "index_groups.h"
+#include "curses_menu.h"
 
 
 #define B_TL "┌"
@@ -25,7 +26,6 @@
 #define B_V  '|'
 
 #define SLEEP_CHECK_INTERVAL 10000
-#define MAX_SYMBOL_SIZE 10
 
 // custom assert macro with formatted message and ui cleanup
 #define clean_errno() (errno == 0 ? "None" : strerror(errno))
@@ -60,5 +60,7 @@ char* str_to_lower(char* str);
 double get_avg(double avg, uint32_t i, double value);
 bool y_is_in_view(WINDOW* win, uint32_t iy);
 void xassert(bool expr, char* fmt, ...);
+
+void display_log_win();
 
 #endif

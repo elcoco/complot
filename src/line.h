@@ -17,7 +17,10 @@ typedef struct Line Line;
 // forward declare from index.h
 typedef struct Group Group;
 typedef struct Groups Groups;
+typedef struct GroupContainer GroupContainer;
 typedef struct Yaxis Yaxis;
+typedef struct LineID LineID;
+typedef struct Index Index;
 
 /* Represents a line. Lineid is the index for lineid in the indexer */
 struct Line {

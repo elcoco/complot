@@ -21,6 +21,7 @@
 // forward declare
 typedef struct PlotWin PlotWin;
 typedef struct Line Line;
+typedef struct JSONObject JSONObject;
 
 typedef struct Response {
     char* response;

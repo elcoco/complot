@@ -221,7 +221,7 @@ void display_log_win()
 
     fclose(fp);
 
-    char** reversed = reverse_arr((void**)lines, lpos+1);
+    const char** reversed = (const char**)reverse_arr((void**)lines, lpos+1);
 
     menu_show(reversed, LINES-6, COLS-6);
 

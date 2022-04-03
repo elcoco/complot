@@ -21,12 +21,9 @@ ITEM** menu_filter_items(const char** options, char* inp)
         
             if (i >= itemsiz-1) {
                 itemsiz += ngrow;
-                //debug("Growing to: %d\n", itemsiz);
                 items = realloc(items, itemsiz*sizeof(ITEM*));
             }
 
-            //debug(">item: %s<\n", *poption); 
-            
             if ((items[i++] = new_item(*poption, "")) == NULL) {
                 //debug("Failed to create new menu item\n");
             }
@@ -51,7 +48,7 @@ char* menu_select_symbol()
     if (symbols == NULL)
         return NULL;
 
-    char* result = menu_show((const char**)symbols, 19, 15);
+    char* result = menu_show((const char**)symbols, LINES-6, 15);
     if (strlen(result) <= 0)
         return NULL;
 
@@ -75,7 +72,7 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
 {
     MENU* menu;
     WINDOW* win;
-    char inp[100] = {'\0'};
+    char inp[MENU_MAX_INPUT_SIZE] = {'\0'};
     char* result = strdup("");
     ITEM** items = menu_filter_items(options, "");
     int ch;
@@ -88,11 +85,16 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
     win = newwin(height, width, ypos, xpos);
     keypad(win, TRUE);   // Enables keypad mode also necessary for mouse clicks
     box(win, 0, 0);
-                         //
+
     menu = new_menu(items);
+    set_menu_format(menu, height-3, 1);
+
     set_menu_sub(menu, derwin(win, height-2, width-2, 1, 1));
     set_menu_mark(menu, " ");
     post_menu(menu);
+
+    refresh();
+    wrefresh(win);
                          //
     while((ch = wgetch(win)) != 27 ) {
         switch(ch) {
