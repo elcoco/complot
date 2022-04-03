@@ -1,7 +1,8 @@
 complot
 ccomplot
 complot.log
-valgrind.log
+valgrind.log*
+vgcore*
 obj
 
 # Prerequisites
