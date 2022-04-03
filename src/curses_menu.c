@@ -4,6 +4,7 @@
 ITEM** menu_filter_items(const char** options, char* inp)
 {
     /* Filter array of strings based on input string, return menu ITEM* array */
+    // NOTE!!!! don't put newlines at end of strings, curses will complain!!!!
 
     int32_t ngrow = 300;
     int32_t itemsiz = ngrow;
@@ -20,12 +21,15 @@ ITEM** menu_filter_items(const char** options, char* inp)
         
             if (i >= itemsiz-1) {
                 itemsiz += ngrow;
-                debug("Growing to: %d\n", itemsiz);
+                //debug("Growing to: %d\n", itemsiz);
                 items = realloc(items, itemsiz*sizeof(ITEM*));
             }
+
+            //debug(">item: %s<\n", *poption); 
             
-            if ((items[i++] = new_item(*poption, "")) == NULL)
-                debug("Failed to create new menu item!!!\n");
+            if ((items[i++] = new_item(*poption, "")) == NULL) {
+                //debug("Failed to create new menu item\n");
+            }
         }
         free(loption);
         free(linp);
@@ -58,6 +62,8 @@ char* menu_select_symbol()
 
 void destroy_items(ITEM** items)
 {
+    /* free item destroys the pointers to the strings.
+     * curses doesn't store the actual strings! */
     for (int i=0 ; items[i] != NULL ; i++)
         free_item(items[i]);
     // TODO this causes segfault
@@ -144,9 +150,13 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
     }
 
     cleanup:
-    destroy_items(items);
     unpost_menu(menu);
     free_menu(menu);
+
+    // first free menu and THEN items or else heap corruption
+    destroy_items(items);
+    free(items);
+
     endwin();
     return result;
 }

@@ -46,5 +46,9 @@
 
 #define GRAPH_MIN_SIZE 5
 
+#define LOG_PATH "./complot.log"
+
+#define MAX_LOG_LINE_LENGTH 100
+#define MAX_LOG_LINE_NO_LENGTH 10
 
 #endif

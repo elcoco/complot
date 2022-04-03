@@ -14,6 +14,7 @@
 #include <errno.h>
 
 #include "index_groups.h"
+#include "config.h"
 
 
 #define B_TL "┌"

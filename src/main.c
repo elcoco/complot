@@ -130,7 +130,8 @@ bool check_user_input(void* arg)
                 debug("cur pw down: %d\n", s->cur_pw);
                 break;
             case 'x':
-                menu_select_symbol();
+                display_log_win();
+                //menu_select_symbol();
                 break;
             case 'i':
                 pw_select_interval(pw, (const char**)binance_interval_map);

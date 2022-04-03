@@ -131,7 +131,7 @@ void debug(char* fmt, ...)
     vsprintf(buf, fmt, ptr);
     va_end(ptr);
 
-    FILE* fp = fopen("./complot.log", "a");
+    FILE* fp = fopen(LOG_PATH, "a");
     fputs(buf, fp);
     fclose(fp);
 }
@@ -165,3 +165,71 @@ char* str_to_lower(char* str)
     return str;
 }
 
+void** reverse_arr(void **arr, int length)
+{
+    /* Reverse an array that is delimited with NULL */
+    void** reversed = malloc(length * sizeof(void*));
+
+    void** parr = arr;
+    void** prev = reversed+length-2;
+
+    while (*parr != NULL)
+        *prev-- = *parr++;
+
+    reversed[length-1] = NULL;
+    return reversed;
+
+
+}
+
+void display_log_win()
+{
+
+    // position in data
+    int32_t lpos = 0;
+
+    // buffer size
+    int32_t lsize = 500;
+
+    char **lines = malloc(lsize * sizeof(char*));
+    FILE* fp = fopen(LOG_PATH, "r");
+
+    if (fp == NULL)
+        goto cleanup;
+
+    char buf[MAX_LOG_LINE_LENGTH] = {'\0'};
+
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+        if (lsize-1 <= lpos) {
+            lsize += 500;
+            lines = realloc(lines, lsize * sizeof(char*));
+        }
+
+        // remove newline
+        if (strlen(buf) && buf[strlen(buf)-1] == '\n')
+            buf[strlen(buf)-1] = '\0';
+
+        // add line number
+        char tmp[MAX_LOG_LINE_LENGTH+MAX_LOG_LINE_NO_LENGTH] = {'\0'};
+        sprintf(tmp, "%d: %s", lpos, buf);
+        lines[lpos] = strdup(tmp);
+
+        lpos++;
+    }
+
+    lines[lpos] = NULL;
+
+    fclose(fp);
+
+    char** reversed = reverse_arr((void**)lines, lpos+1);
+
+    menu_show(reversed, LINES-6, COLS-6);
+
+    cleanup:
+        char** parr = lines;
+        while (*parr != NULL)
+            free(*parr++);
+
+        free(lines);
+        free(reversed);
+}
