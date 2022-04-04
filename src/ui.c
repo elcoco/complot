@@ -108,7 +108,9 @@ int add_str(WINDOW* win, int32_t y, int32_t x, int32_t fgcol, int32_t bgcol, cha
     va_start(ptr, fmt);
 
     set_color(win, fgcol, bgcol);
-    mvwprintw(win, y, x, fmt, ptr);
+    //mvwprintw(win, y, x, fmt, ptr);
+    wmove(win, y, x);
+    vw_printw(win, fmt, ptr);
     unset_color(win, fgcol, bgcol);
     va_end(ptr);
 

@@ -82,6 +82,8 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
     uint32_t xpos = (COLS/2) - (width/2);
     uint32_t ypos = (LINES/2) - (height/2);
 
+    curs_set(1);
+
     win = newwin(height, width, ypos, xpos);
     keypad(win, TRUE);   // Enables keypad mode also necessary for mouse clicks
     box(win, 0, 0);
@@ -92,6 +94,8 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
     set_menu_sub(menu, derwin(win, height-2, width-2, 1, 1));
     set_menu_mark(menu, " ");
     post_menu(menu);
+
+    add_str(win, getmaxy(win)-2, 2, CWHITE, CDEFAULT, ":");
 
     refresh();
     wrefresh(win);
@@ -146,7 +150,7 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
         // clear line and redraw border
         wmove(win, height-2, 1);
         wclrtoeol(win);
-        add_str(win, getmaxy(win)-2, 1, CWHITE, CDEFAULT, inp);
+        add_str(win, getmaxy(win)-2, 2, CWHITE, CDEFAULT, ":%s", inp);
         box(win, 0, 0);
         wrefresh(win);
     }
@@ -158,6 +162,8 @@ char* menu_show(const char** options, uint32_t maxy, uint32_t maxx)
     // first free menu and THEN items or else heap corruption
     destroy_items(items);
     free(items);
+
+    curs_set(0);
 
     endwin();
     return result;

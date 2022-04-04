@@ -59,7 +59,6 @@ char* str_to_lower(char* str);
 
 double get_avg(double avg, uint32_t i, double value);
 bool y_is_in_view(WINDOW* win, uint32_t iy);
-void xassert(bool expr, char* fmt, ...);
 
 void display_log_win();
 
