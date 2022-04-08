@@ -183,8 +183,6 @@ int8_t index_insert(Index* index, Point* p)
             debug("Failed to extend index!\n");
             return -1;
         }
-
-
     } else if (ix < 0) {
         printf("Out of bounds, grow to left not implemented...\n");
         printf("ix   = %d\n", ix);
@@ -368,7 +366,7 @@ void line_add_ohlc_point(OHLCContainer** lc, Point* p)
         (*lc)->low = p->low;
         (*lc)->xmin = p->x;
         (*lc)->xmax = p->x;
-        (*lc)->npoints = 0;
+        (*lc)->npoints = 1;
         return;
     }
 
@@ -389,6 +387,21 @@ void line_add_ohlc_point(OHLCContainer** lc, Point* p)
 
     if (p->low < (*lc)->low)
         (*lc)->low = p->low;
+
+
+    // NOTE: this keeps only last data in this bin ////////
+    // Market data will come in for unfinished candle sticks.
+    // We are only interested in the last data for this time period.
+    // If we keep all the datapoints we get weird results for high and lows.
+    (*lc)->open = p->open;
+    (*lc)->close = p->close;
+    //(*lc)->high = p->high;
+    //(*lc)->low = p->low;
+    //(*lc)->xmin = p->x;
+    //(*lc)->xmax = p->x;
+    (*lc)->npoints = 1;
+    return;
+    ///////////////////////////////////////////
 }
 
 void line_add_line_point(LineContainer** lc, Point* p)
@@ -413,7 +426,6 @@ void line_add_line_point(LineContainer** lc, Point* p)
     // TODO we should calculate an average here, for now we just take the highest y
     //if (p->y > (*lc)->y)
     //    (*lc)->y = p->y;
-
 }
 
 int8_t line_add_point(Bin* b, Point* p)

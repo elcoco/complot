@@ -19,8 +19,10 @@
 #include "plotwin.h"
 #include "curses_menu.h"
 
-// TODO create searchable log window
+// DONE create searchable log window
 // TODO create more awesome line drawing algorithm
+// TODO when adding datapoint to index, check if previous data in bin aligns with bin close time
+//      if it does, delete these points in bin that do not align.
 
 #define SLEEP_MS 100*1000
 

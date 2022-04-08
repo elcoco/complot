@@ -53,9 +53,14 @@ uint32_t find_nfrac2(double min, double max)
     pmin += 2;
     pmax += 2;
 
-    int i;
+    int minlen = strlen(pmin);
+    int maxlen = strlen(pmax);
 
-    for (i=0 ; i<strlen(minbuf) ; i++, pmin++, pmax++) {
+    int i;
+    //debug("Comparing: %s - %s\n", minbuf, maxbuf);
+
+    for (i=0 ; i<minlen && i<maxlen ; i++, pmin++, pmax++) {
+        //debug("%d: checking %c and %c\n", i, *pmin, *pmax);
         if (*pmin != *pmax)
             break;
     }
