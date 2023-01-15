@@ -202,7 +202,7 @@ void display_log_win()
     if (fp == NULL)
         goto cleanup;
 
-    char buf[MAX_LOG_LINE_LENGTH] = {'\0'};
+    char buf[MAX_LOG_LINE_LENGTH+MAX_LOG_LINE_NO_LENGTH] = {'\0'};
 
     while (fgets(buf, sizeof(buf), fp) != NULL) {
         if (lsize-1 <= lpos) {
@@ -215,7 +215,7 @@ void display_log_win()
             buf[strlen(buf)-1] = '\0';
 
         // add line number
-        char tmp[MAX_LOG_LINE_LENGTH+MAX_LOG_LINE_NO_LENGTH] = {'\0'};
+        char tmp[sizeof(buf)+sizeof(lpos)+1] = {'\0'};
         sprintf(tmp, "%d: %s", lpos, buf);
         lines[lpos] = strdup(tmp);
 

@@ -49,7 +49,7 @@
 #define LOG_PATH "./complot.log"
 
 // utils.h
-#define MAX_LOG_LINE_LENGTH 100
+#define MAX_LOG_LINE_LENGTH 128
 #define MAX_LOG_LINE_NO_LENGTH 10
 
 // request.h

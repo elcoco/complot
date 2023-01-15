@@ -29,6 +29,12 @@
 // thread lock
 pthread_mutex_t lock;
 
+char exit_msg[256] = "";
+char help_msg[] = "COMPLOT :: Crypto candlestick plots in your terminal!\n"
+                  "Optional arguments:\n"
+                  "    -s SYMBOL     Create plot for this symbol\n"
+                  "    -h            Help!\n";
+
 int sigint_caught = 0;
 
 void on_sigint(int signum)
@@ -36,13 +42,9 @@ void on_sigint(int signum)
     sigint_caught = 1;
 }
 
-void print_usage()
+void set_msg(char* msg)
 {
-    printf("COMPLOT :: Crypto candlestick plots in your terminal!\n");
-    //printf("\nMandatory arguments:\n");
-    printf("\nOptional arguments:\n");
-    printf("    -s SYMBOL     Create plot for this symbol\n");
-    printf("    -h            Help!\n");
+    strcpy(exit_msg, msg);
 }
 
 bool parse_args(State* s, int argc, char** argv)
@@ -59,22 +61,22 @@ bool parse_args(State* s, int argc, char** argv)
                 pw_update_all(s->pws, s->pws_length, &lock, true);
                 break;
             case ':': 
-                printf("option needs a value\n"); 
+                set_msg("Option needs a value\n"); 
                 return false;
             case 'h': 
-                print_usage();
+                set_msg(help_msg);
                 return false;
             case '?': 
-                print_usage();
+                set_msg(help_msg);
                 return false;
        }
     }
     if (argc == 1) {
-        print_usage();
+        set_msg(help_msg);
         return false;
     }
     if (s->pws_length == 0) {
-        printf("No symbol selected\n");
+        set_msg("No symbol selected\n");
         return false;
     }
     return true;
@@ -252,18 +254,20 @@ int main(int argc, char **argv)
     if (pthread_mutex_init(&lock, NULL) != 0)
         die("\nMutex init failed\n");
 
-    ui_init();
-
     // state shared between plot windows
     // this records things like panning and autoranging etc...
     State* s = state_init();
 
+    ui_init();
+
     if (parse_args(s, argc, argv))
         loop(s);
 
-
     state_destroy(s);
-
     ui_cleanup();
+
+    if (strlen(exit_msg) > 0)
+        printf("%s", exit_msg);
+
     return 0;
 }
