@@ -22,8 +22,11 @@ Included is an example application that plots financial data streamed from binan
     K       move selection up
     J       move selection down
 
+    r       reset view
+    R       toggle y axis autorange for selected plot
+    i       select interval for selected plot
+
     x       display log window
-    i       select interval of currently selected plot
     s       toggle status bar
     g       toggle grid
 
