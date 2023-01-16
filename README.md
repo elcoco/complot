@@ -3,7 +3,7 @@
 Complot is a C library that can do live plotting in ncurses.  
 Included is an example application that plots financial data streamed from binance.  
 
-![screenshots/2023-01-16_16-41.png](screenshot)
+![screenshot](screenshots/2023-01-16_16-41.png)
 
 # Controls:
 
