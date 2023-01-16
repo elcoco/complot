@@ -31,9 +31,13 @@ Included is an example application that plots financial data streamed from binan
     g       toggle grid
 
 
-# Compile and run
+# Dependencies:
 
-There are no dependencies so a simple make will do.  
+    - curl
+    - ncurses
+
+
+# Compile and run:
 
     make
     ./complot -s XMRBTC
